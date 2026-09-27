@@ -112,30 +112,66 @@ function parseSummary(value) {
   return value
 }
 
-const codec = (typeSymbol, parse) => ({ mode: 'strict', typeSymbol, create: () => ({ parse }) })
-
-const SUMMARY_DESCRIPTOR = {
-  id: `${REMOTE_PACKAGE}#${REMOTE_NAMESPACE}/summary`,
-  service: REMOTE_SERVICE,
-  namespace: REMOTE_NAMESPACE,
-  method: 'summary',
-  invocation: { kind: 'direct' },
-  parameters: [
-    {
-      name: 'filter',
-      wire: 'filter',
-      source: 'json',
-      codec: codec(`${REMOTE_PACKAGE}#UsageFilter`, parseFilter),
-      acceptsUndefined: true,
-    },
-  ],
-  result: codec(`${REMOTE_PACKAGE}#UsageSummary`, parseSummary),
-}
-
 const clamp = (value, max) => {
   const number = typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : 0
   return Math.max(0, Math.min(max, number))
 }
+
+const codec = (typeSymbol, parse) => ({ mode: 'strict', typeSymbol, create: () => ({ parse }) })
+
+function descriptor(method, parameters, typeSymbol, parse) {
+  return {
+    id: `${REMOTE_PACKAGE}#${REMOTE_NAMESPACE}/${method}`,
+    service: REMOTE_SERVICE,
+    namespace: REMOTE_NAMESPACE,
+    method,
+    invocation: { kind: 'direct' },
+    parameters,
+    result: codec(`${REMOTE_PACKAGE}#${typeSymbol}`, parse),
+  }
+}
+
+const jsonParameter = (name, typeSymbol, parse, acceptsUndefined = false) => ({
+  name,
+  wire: name,
+  source: 'json',
+  codec: codec(`${REMOTE_PACKAGE}#${typeSymbol}`, parse),
+  acceptsUndefined,
+})
+
+const SUMMARY_DESCRIPTOR = descriptor(
+  'summary',
+  [jsonParameter('filter', 'UsageFilter', parseFilter, true)],
+  'UsageSummary',
+  parseSummary,
+)
+
+/** Both config endpoints answer this shape; the form renders it verbatim. */
+function parseConfigView(value) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError('dshUsage/config result: not an object')
+  }
+  if (typeof value.hours !== 'number' || typeof value.days !== 'number') {
+    throw new TypeError('dshUsage/config result: missing hours or days')
+  }
+  return value
+}
+
+/** The form's save payload: two integers, clamped here rather than trusted. */
+function parseConfigPatch(value) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError('dshUsage/setConfig patch: not an object')
+  }
+  return { hours: clamp(value.hours, 23), days: clamp(value.days, 30) }
+}
+
+const CONFIG_DESCRIPTOR = descriptor('config', [], 'UsageConfig', parseConfigView)
+const SET_CONFIG_DESCRIPTOR = descriptor(
+  'setConfig',
+  [jsonParameter('patch', 'UsageConfigPatch', parseConfigPatch)],
+  'UsageConfig',
+  parseConfigView,
+)
 
 /**
  * The Remote receiver. Methods live on the prototype because the gateway reads
@@ -146,6 +182,44 @@ const clamp = (value, max) => {
 class UsageService {
   constructor(windows) {
     this.windows = windows
+    this.configEditor = undefined
+  }
+
+  /**
+   * Receive the Loader's config editor. Kept optional on purpose: without it the
+   * plugin still reports and renders its windows, only the form turns read-only.
+   */
+  attachConfigEditor(configEditor) {
+    this.configEditor = configEditor
+  }
+
+  /** This plugin's own Loader row, found in the composed configuration. */
+  entry() {
+    if (!this.configEditor) return undefined
+    const rows = this.configEditor.configuration()
+    const mine = rows.find((item) => {
+      const options = item.entry?.options
+      return options?.name === REMOTE_PACKAGE || item.entry?.id?.includes(REMOTE_PACKAGE)
+    })
+    return mine?.entry
+  }
+
+  /** The windows in force, plus whether the form may write them. */
+  async config() {
+    return { ...this.windows, writable: this.entry() !== undefined }
+  }
+
+  /**
+   * Persist new windows through the Loader's own editor, so the value lands in
+   * the profile patch rather than in a file this plugin owns. The Loader then
+   * restarts this fiber with the new config, which recomputes the card.
+   */
+  async setConfig(patch) {
+    const next = parseConfigPatch(patch)
+    const entry = this.entry()
+    if (entry === undefined) throw new Error('找不到本插件的 Loader 条目，无法写入配置')
+    await this.configEditor.edit(entry, (current) => ({ ...current, hours: next.hours, days: next.days }))
+    return { ...next, writable: true }
   }
 
   /** Token usage rolled up for one range, plus the sidebar card for one config. */
@@ -179,8 +253,8 @@ class UsageService {
 }
 
 /**
- * Register the service and its descriptor. Both registrations are tied to this
- * fiber's lifetime, so unloading the plugin withdraws the endpoint.
+ * Register the service and its descriptors. Both registrations are tied to this
+ * fiber's lifetime, so unloading the plugin withdraws the endpoints.
  */
 export function apply(ctx, config) {
   const windows = { hours: clamp(config?.hours, 23), days: clamp(config?.days, 30) }
@@ -194,12 +268,17 @@ export function apply(ctx, config) {
       remoteCtx.reflect.provide(REMOTE_SERVICE, service)
       boot.providedAt = Date.now()
 
+      // Optional on purpose: a profile without the editor keeps working.
+      remoteCtx.inject(['configEditor'], (configCtx) => {
+        service.attachConfigEditor(configCtx.configEditor)
+      })
+
       const unregister = remoteCtx.typert.register({
         package: REMOTE_PACKAGE,
         face: 'host',
         schemas: [],
         model: { services: [], events: [], objects: [] },
-        invocations: [SUMMARY_DESCRIPTOR],
+        invocations: [SUMMARY_DESCRIPTOR, CONFIG_DESCRIPTOR, SET_CONFIG_DESCRIPTOR],
       })
       boot.registeredAt = Date.now()
       remoteCtx.effect(() => () => void unregister(), 'dsh-token-usage: usage remote')

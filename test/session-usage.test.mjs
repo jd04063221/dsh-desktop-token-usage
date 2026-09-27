@@ -209,6 +209,16 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.ok(standard.validate({ hours: 24 }).issues, 'hours above 23 must be refused')
   assert.ok(standard.validate({ days: 31 }).issues, 'days above 30 must be refused')
 
+  const edits = []
+  const configEditor = {
+    configuration: () => [
+      { entry: { id: 'include:other', options: { name: 'some-other-plugin' } } },
+      { entry: { id: 'include:dsh-token-usage', options: { name: 'dsh-token-usage' } }, inherited: {}, override: {} },
+    ],
+    edit: async (entry, change) => {
+      edits.push({ entryId: entry.id, next: change({ hours: 0, days: 0 }, {}) })
+    },
+  }
   apply(
     {
       inject: (deps, callback) => {
@@ -217,6 +227,10 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
           typert: { register: () => () => {} },
           reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
           effect: () => {},
+          inject: (innerDeps, innerCallback) => {
+            assert.deepEqual(innerDeps, ['configEditor'])
+            innerCallback({ configEditor })
+          },
         })
       },
     },
@@ -231,6 +245,15 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.deepEqual(payload.card.blocks.map((block) => block.id), ['hours', 'days'])
   assert.equal(payload.card.all, null)
 
+  // The config endpoints report the windows in force and write through the
+  // Loader's own editor, choosing this plugin's row out of the whole profile.
+  const service = provided[0].value
+  assert.deepEqual(await service.config(), { hours: 6, days: 7, writable: true })
+  assert.deepEqual(await service.setConfig({ hours: 12, days: -4 }), { hours: 12, days: 0, writable: true })
+  assert.equal(edits.length, 1)
+  assert.equal(edits[0].entryId, 'include:dsh-token-usage')
+  assert.deepEqual(edits[0].next, { hours: 12, days: 0 })
+
   // The same call must leave a diagnostic trail the shell can read back.
   const logPath = path.join(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'), 'cache', 'dsh-token-usage', 'calls.json')
   const log = JSON.parse(fs.readFileSync(logPath, 'utf8'))
@@ -238,6 +261,24 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.equal(last.sessions, payload.totals.sessions)
   assert.deepEqual(last.filter, { sinceMs: null, untilMs: null, sources: ['client'] })
   assert.deepEqual(last.cardBlocks, ['hours', 'days'])
+})
+
+test('without a Loader config editor the config endpoints degrade honestly', async () => {
+  const provided = []
+  const { apply } = await import('../index.js')
+  apply({
+    inject: (deps, callback) => {
+      callback({
+        typert: { register: () => () => {} },
+        reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
+        effect: () => {},
+        inject: () => {},
+      })
+    },
+  })
+  const service = provided[0].value
+  assert.deepEqual(await service.config(), { hours: 0, days: 0, writable: false })
+  await assert.rejects(() => service.setConfig({ hours: 1, days: 1 }), /找不到本插件的 Loader 条目/)
 })
 
 test('localDayStart snaps to local midnight', () => {

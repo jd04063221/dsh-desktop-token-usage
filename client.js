@@ -96,6 +96,9 @@ window.__ModuleLoader__.load({
       error: null,
       data: null,
       filter: { range: 'all', source: 'all', since: '', until: '' },
+      config: null,
+      configStatus: 'idle',
+      configError: null,
     }
     let ticket = 0
 
@@ -117,6 +120,13 @@ window.__ModuleLoader__.load({
       for (const listener of [...listeners]) listener()
     }
 
+    /** A failed Remote answers `{ ok: false, error }`; a throw carries `message`. */
+    const failureOf = (response) => {
+      const failure = response && response.error
+      return failure ? failure.message ?? failure.code : undefined
+    }
+    const messageOf = (error) => (error && error.message ? error.message : String(error))
+
     async function load(filter = snapshot.filter, { silent = false } = {}) {
       const mine = ++ticket
       if (!namespace) {
@@ -133,25 +143,59 @@ window.__ModuleLoader__.load({
         // A Remote returns its `{ ok, value }` envelope as-is: a failure is a
         // value, not a throw, so the branch must be read before trusting it.
         if (!response || response.ok !== true) {
-          const failure = response && response.error
-          patch({
-            status: 'error',
-            error: (failure && (failure.message ?? failure.code)) || '用量服务返回了无法识别的响应',
-          })
+          patch({ status: 'error', error: failureOf(response) || '用量服务返回了无法识别的响应' })
           return
         }
         patch({ status: 'ready', data: response.value, error: null })
       } catch (error) {
         if (mine !== ticket) return
-        patch({ status: 'error', error: error && error.message ? error.message : String(error) })
+        patch({ status: 'error', error: messageOf(error) })
       }
+    }
+
+    async function loadConfig() {
+      if (!namespace) {
+        patch({ configStatus: 'waiting' })
+        return
+      }
+      patch({ configStatus: snapshot.config ? 'ready' : 'loading' })
+      try {
+        const response = await namespace.config()
+        if (!response || response.ok !== true) {
+          patch({ configStatus: 'error', configError: failureOf(response) || '配置读取失败' })
+          return
+        }
+        patch({ configStatus: 'ready', config: response.value, configError: null })
+      } catch (error) {
+        patch({ configStatus: 'error', configError: messageOf(error) })
+      }
+    }
+
+    /**
+     * Persisting a window change restarts this plugin's fiber, so the call itself
+     * can be cut short even though the write landed. The read afterwards is the
+     * authority on what actually took effect.
+     */
+    async function saveConfig(next) {
+      if (!namespace) return
+      patch({ configStatus: 'saving', configError: null })
+      try {
+        await namespace.setConfig({ hours: next.hours, days: next.days })
+      } catch (error) {
+        patch({ configError: messageOf(error) })
+      }
+      await loadConfig()
+      await load(snapshot.filter, { silent: true })
     }
 
     const setFilter = (changes) => {
       patch({ filter: { ...snapshot.filter, ...changes } })
       void load(snapshot.filter)
     }
-    const reload = () => void load(snapshot.filter, { silent: true })
+    const reload = () => {
+      void load(snapshot.filter, { silent: true })
+      void loadConfig()
+    }
 
     /**
      * Subscribe through the two hooks every React since 16.8 exports. The shell's
@@ -257,6 +301,17 @@ window.__ModuleLoader__.load({
 .dtu-windowLabel{color:var(--dsw-alias-label-secondary);font-size:11.5px;font-weight:600}
 .dtu-windowValue{color:var(--dsw-alias-label-primary);font-size:12.5px;font-variant-numeric:tabular-nums}
 .dtu-windowMeta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
+.dtu-form{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1);max-width:560px}
+.dtu-formTitle{font-weight:600}
+.dtu-hint{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}
+.dtu-field{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.dtu-input{width:96px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary);border-radius:6px;padding:4px 8px;font:inherit;text-align:right}
+.dtu-input:disabled{opacity:.55}
+.dtu-formActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dtu-save{appearance:none;border:1px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font:inherit;font-weight:600;padding:5px 16px;border-radius:8px;cursor:pointer}
+.dtu-save:disabled{opacity:.5;cursor:default}
+.dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
+.dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
 .dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
 .dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
@@ -458,6 +513,93 @@ window.__ModuleLoader__.load({
           h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
         ),
         body,
+      )
+    }
+
+    // ── configuration form ──────────────────────────────────────────────────
+
+    /** `近 6 小时 + 近 7 天`, or `累计` when both windows are off. */
+    function describeWindows(config) {
+      const parts = []
+      if (config.hours > 0) parts.push(`近 ${config.hours} 小时`)
+      if (config.days > 0) parts.push(`近 ${config.days} 天`)
+      return parts.length > 0 ? parts.join(' + ') : '累计'
+    }
+
+    /**
+     * The plugin's own configuration card. DSH renders no editor from a Config
+     * schema — a plugin that has configuration draws it itself into
+     * `plugins.bundle.config`, keyed by its package name, and saves through the
+     * Loader's config editor on the Host.
+     */
+    function ConfigForm() {
+      const state = useStore()
+      const [draft, setDraft] = React.useState(null)
+      const current = state.config ?? { hours: 0, days: 0, writable: false }
+      const values = draft ?? { hours: current.hours, days: current.days }
+      const busy = state.configStatus === 'saving'
+      const locked = busy || current.writable === false
+      const edit = (key, raw) => {
+        const parsed = Number.parseInt(raw, 10)
+        setDraft({ ...values, [key]: Number.isFinite(parsed) ? parsed : 0 })
+      }
+      return h(
+        'div',
+        { className: 'dtu-form' },
+        h('div', { className: 'dtu-formTitle' }, '侧边栏卡片显示的时间跨度'),
+        h(
+          'div',
+          { className: 'dtu-hint' },
+          '0 表示关闭该窗口；两个都关闭时卡片显示累计值。窗口按本地时间取整到小时，保存后立即生效。',
+        ),
+        h(
+          'label',
+          { className: 'dtu-field' },
+          h('span', null, '最近多少小时（0-23）'),
+          h('input', {
+            className: 'dtu-input',
+            type: 'number',
+            min: 0,
+            max: 23,
+            value: values.hours,
+            disabled: locked,
+            onChange: (event) => edit('hours', event.target.value),
+          }),
+        ),
+        h(
+          'label',
+          { className: 'dtu-field' },
+          h('span', null, '最近多少天（0-30）'),
+          h('input', {
+            className: 'dtu-input',
+            type: 'number',
+            min: 0,
+            max: 30,
+            value: values.days,
+            disabled: locked,
+            onChange: (event) => edit('days', event.target.value),
+          }),
+        ),
+        h(
+          'div',
+          { className: 'dtu-formActions' },
+          h(
+            'button',
+            { type: 'button', className: 'dtu-save', disabled: locked, onClick: () => void saveConfig(values) },
+            busy ? '保存中…' : '保存',
+          ),
+          h('span', { className: 'dtu-formStatus' }, `当前：${describeWindows(current)}`),
+        ),
+        state.configError
+          ? h('div', { className: 'dtu-formStatus', 'data-tone': 'error' }, state.configError)
+          : null,
+        current.writable === false && state.configStatus !== 'loading'
+          ? h(
+              'div',
+              { className: 'dtu-formStatus', 'data-tone': 'error' },
+              '这个 profile 没有提供配置编辑器，请改 profile 的 cordis.patch.yml。',
+            )
+          : null,
       )
     }
 
@@ -871,30 +1013,42 @@ window.__ModuleLoader__.load({
 
     // ── wire contribution + slots ───────────────────────────────────────────
 
+    /**
+     * The Client face of one endpoint. It mirrors the Host descriptor field for
+     * field — an id, a namespace, or a `wire` name that drifts breaks the RPC
+     * with no error on either side — and validates nothing: a Remote answers its
+     * `{ ok, value }` envelope, so a failed decode never surfaces here.
+     */
+    const encodable = (typeSymbol) => ({
+      mode: 'strict',
+      typeSymbol: `${REMOTE_PACKAGE}#${typeSymbol}`,
+      create: () => ({ parse: (value) => value }),
+    })
+
+    const remoteDescriptor = (method, parameters, resultType) => ({
+      id: `${REMOTE_PACKAGE}#${REMOTE_NAMESPACE}/${method}`,
+      service: REMOTE_SERVICE,
+      namespace: REMOTE_NAMESPACE,
+      method,
+      invocation: { kind: 'direct' },
+      parameters,
+      result: encodable(resultType),
+    })
+
+    const jsonParam = (name, typeSymbol, acceptsUndefined) => ({
+      name,
+      wire: name,
+      source: 'json',
+      codec: encodable(typeSymbol),
+      acceptsUndefined,
+    })
+
     const CONTRIBUTION = {
       package: REMOTE_PACKAGE,
       descriptors: [
-        {
-          id: `${REMOTE_PACKAGE}#${REMOTE_NAMESPACE}/summary`,
-          service: REMOTE_SERVICE,
-          namespace: REMOTE_NAMESPACE,
-          method: 'summary',
-          invocation: { kind: 'direct' },
-          parameters: [
-            {
-              name: 'filter',
-              wire: 'filter',
-              source: 'json',
-              codec: { mode: 'strict', typeSymbol: `${REMOTE_PACKAGE}#UsageFilter`, create: () => ({ parse: (value) => value }) },
-              acceptsUndefined: true,
-            },
-          ],
-          result: {
-            mode: 'strict',
-            typeSymbol: `${REMOTE_PACKAGE}#UsageSummary`,
-            create: () => ({ parse: (value) => value }),
-          },
-        },
+        remoteDescriptor('summary', [jsonParam('filter', 'UsageFilter', true)], 'UsageSummary'),
+        remoteDescriptor('config', [], 'UsageConfig'),
+        remoteDescriptor('setConfig', [jsonParam('patch', 'UsageConfigPatch', false)], 'UsageConfig'),
       ],
     }
 
@@ -928,6 +1082,7 @@ window.__ModuleLoader__.load({
             ctx.inject([`remote.${REMOTE_NAMESPACE}`], (namespaceCtx) => {
               namespace = namespaceCtx.remote[REMOTE_NAMESPACE]
               void load()
+              void loadConfig()
               namespaceCtx.effect(() => () => {
                 namespace = undefined
               }, 'dsh-token-usage: usage namespace')
@@ -953,6 +1108,11 @@ window.__ModuleLoader__.load({
 
       ctx.slots.inject('main', () =>
         ctx.slots.register({ name: 'main', key: PANEL_ID, inject: face }, Dashboard),
+      )
+      // Keyed by the bundle's package name: this is the plugin's own page in the
+      // Plugins manager, between its description and its component rows.
+      ctx.slots.inject('plugins.bundle.config', () =>
+        ctx.slots.register({ name: 'plugins.bundle.config', key: PANEL_ID }, ConfigForm),
       )
       ctx.inject(['layout'], (layoutCtx) => {
         layoutCtx.slots.inject('sidebar.footer.action', () =>

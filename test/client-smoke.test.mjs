@@ -142,9 +142,18 @@ function loadClient() {
 
 /** A fake Cordis context recording everything the plugin registers. */
 function fakeContext(options = {}) {
-  const record = { slots: [], effects: [], mounted: [], injected: [] }
+  const record = { slots: [], effects: [], mounted: [], injected: [], saved: [] }
   // A Remote resolves to its `{ ok, value }` envelope, never to the bare payload.
-  const namespace = { summary: options.summary ?? (async (filter) => ({ ok: true, value: summaryPayload(filter) })) }
+  const namespace = {
+    summary: options.summary ?? (async (filter) => ({ ok: true, value: summaryPayload(filter) })),
+    config: options.config ?? (async () => ({ ok: true, value: { hours: 6, days: 7, writable: true } })),
+    setConfig:
+      options.setConfig ??
+      (async (patch) => {
+        record.saved.push(patch)
+        return { ok: true, value: { ...patch, writable: true } }
+      }),
+  }
   const remote = {
     $mount: async (contribution) => {
       record.mounted.push(contribution)
@@ -251,12 +260,16 @@ test('the Client half requires only React and registers both slots', async () =>
   const registrations = record.slots.filter((entry) => entry.options)
   const main = registrations.find((entry) => entry.options.name === 'main')
   const footer = registrations.find((entry) => entry.options.name === 'sidebar.footer.action')
+  const config = registrations.find((entry) => entry.options.name === 'plugins.bundle.config')
   assert.ok(main, 'a main panel must be registered')
   assert.ok(footer, 'a sidebar footer entry must be registered')
+  assert.ok(config, 'the plugin must draw its own configuration card')
   assert.equal(main.options.key, 'dsh-token-usage')
   assert.equal(footer.options.id, 'dsh-token-usage')
+  assert.equal(config.options.key, 'dsh-token-usage', 'the card is keyed by the bundle package name')
   assert.equal(typeof main.component, 'function')
   assert.equal(typeof footer.component, 'function')
+  assert.equal(typeof config.component, 'function')
 
   // Styles are owned by the fiber and removed on unload.
   assert.equal(document.head.children.length, 1)
@@ -385,59 +398,152 @@ test('a malformed payload shows an error instead of a blank panel', async () => 
   assert.ok(text.trim().length > 0, 'the panel must never render nothing')
 })
 
+test('the configuration card renders the windows and saves them to the Host', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
+  const tree = render({ type: slot.component, props: { entryKey: 'dsh-token-usage', view: 'page' } })
+  const text = collect(tree).join(' ')
+  assert.match(text, /侧边栏卡片显示的时间跨度/)
+  assert.match(text, /当前：近 6 小时 \+ 近 7 天/)
+
+  const inputs = []
+  const find = (node, match) => {
+    if (!node || typeof node !== 'object') return null
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const hit = find(child, match)
+        if (hit) return hit
+      }
+      return null
+    }
+    if (match(node)) return node
+    return find(node.children, match)
+  }
+  const walk = (node, visit) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach((child) => walk(child, visit))
+    visit(node)
+    walk(node.children, visit)
+  }
+  walk(tree, (node) => {
+    if (node.tag === 'input') inputs.push(node)
+  })
+  assert.equal(inputs.length, 2, 'one field per window')
+  assert.deepEqual(inputs.map((input) => input.props.value), [6, 7])
+  assert.deepEqual(inputs.map((input) => input.props.max), [23, 30])
+  assert.equal(inputs[0].props.disabled, false)
+
+  const button = find(tree, (node) => node.tag === 'button' && node.props.className === 'dtu-save')
+  assert.ok(button, 'the card must have a save control')
+  button.props.onClick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.deepEqual(plain(record.saved), [{ hours: 6, days: 7 }], 'save must send both windows')
+})
+
+test('without a Host config editor the card is read-only and says so', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({
+    config: async () => ({ ok: true, value: { hours: 0, days: 0, writable: false } }),
+  })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
+  const tree = render({ type: slot.component, props: { entryKey: 'dsh-token-usage', view: 'page' } })
+  const text = collect(tree).join(' ')
+  assert.match(text, /当前：累计/, 'both windows off reads as the cumulative view')
+  assert.match(text, /没有提供配置编辑器/)
+
+  const inputs = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.tag === 'input') inputs.push(node)
+    walk(node.children)
+  }
+  walk(tree)
+  assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
+})
+
 test('the Host descriptor and the Client contribution agree', async () => {
   const registered = []
   const provided = []
+  const attached = []
+  const configEditor = {
+    configuration: () => [{ entry: { id: 'include:dsh-token-usage', options: { name: 'dsh-token-usage' } } }],
+    edit: async () => {},
+  }
   const hostCtx = {
     inject: (deps, callback) => {
       assert.deepEqual(deps, ['typert'])
-      callback({
+      const remoteCtx = {
         typert: { register: (contribution) => { registered.push(contribution); return () => {} } },
         reflect: { provide: (name, value, check) => { provided.push({ name, value, check }); return () => {} } },
         effect: () => {},
-      })
+        inject: (innerDeps, innerCallback) => {
+          assert.deepEqual(innerDeps, ['configEditor'])
+          innerCallback({ configEditor })
+          attached.push(true)
+        },
+      }
+      callback(remoteCtx)
     },
   }
   const host = await import('../index.js')
   assert.deepEqual(Object.keys(host).sort(), ['Config', 'apply'], 'the Host half exports only its Config and apply')
   host.apply(hostCtx)
+  assert.equal(attached.length, 1, 'the Loader config editor is picked up when the profile provides one')
 
   assert.equal(registered.length, 1, 'the Host must register exactly one contribution')
   const hostContribution = registered[0]
-  const hostDescriptor = hostContribution.invocations[0]
+  const hostDescriptor = (method) => hostContribution.invocations.find((item) => item.method === method)
 
   // The service and its binding are what `validateBinding` in the gateway checks.
   assert.equal(provided.length, 1)
   const service = provided[0].value
-  assert.equal(provided[0].name, hostDescriptor.service, 'the provided service key must match the descriptor')
-  assert.equal(typeof Object.getPrototypeOf(service).summary, 'function', 'the method belongs on the prototype')
+  assert.equal(provided[0].name, hostDescriptor('summary').service, 'the provided service key must match the descriptor')
+  for (const method of ['summary', 'config', 'setConfig']) {
+    assert.equal(typeof Object.getPrototypeOf(service)[method], 'function', `${method} belongs on the prototype`)
+  }
   assert.deepEqual(Object.keys(service.typertRemote).sort(), ['namespace', 'service', 'serviceKey'])
   assert.equal(service.typertRemote.service, service)
-  assert.equal(service.typertRemote.serviceKey, hostDescriptor.service)
-  assert.equal(service.typertRemote.namespace, hostDescriptor.namespace)
+  assert.equal(service.typertRemote.serviceKey, hostDescriptor('summary').service)
+  assert.equal(service.typertRemote.namespace, hostDescriptor('summary').namespace)
 
   const { plugin } = loadClient()
   const { ctx, record } = fakeContext()
   plugin.apply(ctx)
-  const clientDescriptor = record.mounted[0].descriptors[0]
+  const clientDescriptors = record.mounted[0].descriptors
 
   assert.equal(hostContribution.package, record.mounted[0].package)
-  for (const key of ['id', 'service', 'namespace', 'method']) {
-    assert.equal(clientDescriptor[key], hostDescriptor[key], `descriptor.${key} disagrees between the two halves`)
+  assert.equal(hostContribution.invocations.length, 3, 'summary, config and setConfig')
+  assert.equal(clientDescriptors.length, 3)
+  for (const clientDescriptor of clientDescriptors) {
+    const host = hostDescriptor(clientDescriptor.method)
+    assert.ok(host, `the Host must declare ${clientDescriptor.method}`)
+    for (const key of ['id', 'service', 'namespace', 'method']) {
+      assert.equal(clientDescriptor[key], host[key], `${clientDescriptor.method}.${key} disagrees between the halves`)
+    }
+    assert.deepEqual(plain(clientDescriptor.invocation), plain(host.invocation))
+    assert.equal(clientDescriptor.result.typeSymbol, host.result.typeSymbol)
+    assert.equal(clientDescriptor.parameters.length, host.parameters.length)
+    host.parameters.forEach((hostParam, index) => {
+      const clientParam = clientDescriptor.parameters[index]
+      assert.equal(clientParam.name, hostParam.name)
+      assert.equal(clientParam.wire, hostParam.wire)
+      assert.equal(clientParam.source, hostParam.source)
+      assert.equal(clientParam.acceptsUndefined, hostParam.acceptsUndefined)
+      assert.equal(clientParam.codec.typeSymbol, hostParam.codec.typeSymbol)
+    })
   }
-  assert.deepEqual(plain(clientDescriptor.invocation), plain(hostDescriptor.invocation))
-  assert.equal(clientDescriptor.result.typeSymbol, hostDescriptor.result.typeSymbol)
-
-  const hostParam = hostDescriptor.parameters[0]
-  const clientParam = clientDescriptor.parameters[0]
-  assert.equal(clientParam.name, hostParam.name)
-  assert.equal(clientParam.wire, hostParam.wire)
-  assert.equal(clientParam.source, hostParam.source)
-  assert.equal(clientParam.acceptsUndefined, hostParam.acceptsUndefined)
-  assert.equal(clientParam.codec.typeSymbol, hostParam.codec.typeSymbol)
 
   // The declared filter codec must survive the values the browser actually sends.
-  const parse = hostParam.codec.create().parse
+  const summary = hostDescriptor('summary')
+  const parse = summary.parameters[0].codec.create().parse
   assert.deepEqual(plain(parse({ sinceMs: 1_790_000_000_000, untilMs: null, sources: ['client'] })), {
     sinceMs: 1_790_000_000_000,
     untilMs: null,
@@ -452,5 +558,12 @@ test('the Host descriptor and the Client contribution agree', async () => {
   assert.throws(() => parse('nope'))
 
   // The result codec must accept what the Host's summarizer returns.
-  assert.ok(hostDescriptor.result.create().parse(summaryPayload()))
+  assert.ok(summary.result.create().parse(summaryPayload()))
+
+  // The write codec clamps rather than trusting the browser.
+  const patch = hostDescriptor('setConfig').parameters[0].codec.create().parse
+  assert.deepEqual(plain(patch({ hours: 99, days: -3 })), { hours: 23, days: 0 })
+  assert.deepEqual(plain(patch({ hours: 6, days: 7 })), { hours: 6, days: 7 })
+  assert.throws(() => patch('nope'))
+  assert.ok(hostDescriptor('config').result.create().parse({ hours: 6, days: 7, writable: true }))
 })

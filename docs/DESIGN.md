@@ -168,6 +168,40 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 
 这也解释了为什么本次交付里「配置卡生效」只能标注为**待重启后确认**。
 
+### 2.6 配置 UI 不是 schema 自动渲染的
+
+一个容易误判的点：`export const Config` **不会**让 DSH 自动生成设置界面。Plugin Manager 的说明写得很直白：
+
+> A plugin that carries its own configuration **renders it on this page** rather than in Settings, through three
+> slots the page declares: `plugins.item` … `plugins.bundle.config`（按包名寻址，显示在 bundle 页面的描述与组件行
+> 之间）… `plugins.row.config`（按 `<包名>#<行 id>` 寻址，给那一行一个 **Configure** 控件）。
+
+所以本插件把表单注册进 `plugins.bundle.config`（`key: 'dsh-token-usage'`），插件页中部才会出现那两个输入框。
+schema 的作用是：校验 `cordis.patch.yml` 里的 `config`、给 `Config.listConfigs` 投影 JSON Schema、
+在 `fiber.update()` 时填默认值。
+
+读写配置的通道：
+
+| 方向 | 机制 |
+|---|---|
+| 读 | 自建 Remote `dshUsage/config`；Host 从 `configEditor.configuration()` 里找出本插件的条目，返回生效值与 `writable` |
+| 写 | 自建 Remote `dshUsage/setConfig` → `configEditor.edit(entry, change)`，按官方路径持久化进 profile patch，**不**手写 profile 文件 |
+
+配套的状态语义（`dsh-tool-cordis/lib/types/config.js`）：
+
+```
+fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导出（旧模块代）
+!isNativeConfigSchema(config)  → 'unsupported'
+否则                            → 'schema'
+```
+
+`isNativeConfigSchema` 是鸭子类型（`Reflect.get(value, Symbol.for('schemastery')) === true`、`type` 是字符串、
+`meta` 是对象）；`Symbol.for` 是全局注册符号，所以本包自带那份 schemastery 建出的 schema 同样被认。
+如果它要求“同一个类实例”，这套方案就不成立——所以动手前先验了这个判定。
+
+**保存时的一个陷阱**：`setConfig` 会让 Loader 重启本插件的 fiber，调用可能在返回前被打断。
+因此客户端的保存流程是「调用 → 无论成败都重新读一次配置 → 刷新卡片」，以读到的值作为最终事实。
+
 ## 3. 为什么筛选放在 Host
 
 看板的筛选维度（时间范围 × 来源）如果放到浏览器算，就得把「按天 × 模型 × 来源」的求和逻辑写第二遍。

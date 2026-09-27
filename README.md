@@ -50,7 +50,20 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 
 ## 配置项
 
-在 **设置 → 插件 → Token 用量** 里编辑（等价于写进 profile 的 `cordis.patch.yml`）：
+在 **插件 → Token 用量** 页里编辑（侧边栏 `Plugins` 入口 → Token 用量）：页面中部会出现
+「侧边栏卡片显示的时间跨度」两个输入框与保存按钮。
+
+DSH **不会**从 `Config` schema 自动生成编辑器——自己带配置的插件必须把表单渲染到
+`plugins.bundle.config` 槽（按包名寻址）。本插件就是这么做的：保存时调用官方 `configEditor`，
+值最终落在 profile 的 `cordis.patch.yml` 里，所以也可以直接在那里写：
+
+```yaml
+- id: dsh-token-usage
+  disabled: false
+  config:
+    hours: 6
+    days: 7
+```
 
 | 键 | 默认 | 说明 |
 |---|---|---|
@@ -61,7 +74,7 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 「最近 6 小时」= 从 6 小时前的整点开始算。
 
 保存后**立即生效**：Cordis 的 `fiber.update()` 会重启这个插件的 fiber，`apply` 会带着新配置再跑一次
-（所以每次改值不需要重启 DSH）。卡片本身要到下一次刷新才体现——最迟 5 分钟，或点开看板按一次「刷新」。
+（所以每次改值不需要重启 DSH）；表单保存后会自动重新读取配置并刷新卡片。
 
 
 ## 数据口径
@@ -126,8 +139,9 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 **未完成 / 需要你确认**：
 
 1. 本环境无浏览器控制，看板的视觉与数字需要你肉眼确认；
-2. **配置卡的首次生效需要重启一次 DSH**：当前进程里加载的还是加 `Config` 之前的 Host 模块代
-   （`Config.listConfigs` 仍报 `absent` 即为证据）。重启后 设置 → 插件 → Token 用量 里会出现 `hours`/`days` 两项。
+2. **配置表单的首次生效需要重启一次 DSH**：DSH 缓存已导入的 JS 模块代，重新启用条目只重挂 fiber。
+   重启后 **插件 → Token 用量** 页面中部会出现那张配置卡（`Config.listConfigs` 的状态也会从
+   `absent` 变成 `schema`）。
 
 ### 出问题时先看哪里
 
