@@ -151,6 +151,10 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 天视图由 Host 从小时桶归并（图表用的 `days` 仍是 Host 算的，视图不合并）。代价是索引缓存版本从 1 升到 2
 （首次会重建一次）。`hours` 上限 23、`days` 上限 30，越界值在 `lib/session-usage.js` 里夹紧（有测试）。
 
+**改配置不需要重启**：Cordis 的 `fiber.update(config)` 对活动 fiber 会走
+`this._resolveConfig(config)` → `internal/update` → **`this.restart()`**，也就是带着新配置重新执行 `apply`；
+`resolveConfig` 会用本插件的 schema 校验并填默认值。所以设置里保存即生效，卡片在下一次调用时体现。
+
 ### 2.5 Host 模块代是缓存的：改 Host 半边必须重启
 
 实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代。
