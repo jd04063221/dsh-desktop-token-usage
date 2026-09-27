@@ -109,6 +109,9 @@ function parseSummary(value) {
   if (typeof value.card !== 'object' || value.card === null || !Array.isArray(value.card.blocks)) {
     throw new TypeError('dshUsage/summary result: missing card')
   }
+  if (typeof value.heatmap !== 'object' || value.heatmap === null || !Array.isArray(value.heatmap.days)) {
+    throw new TypeError('dshUsage/summary result: missing heatmap')
+  }
   return value
 }
 

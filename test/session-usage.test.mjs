@@ -159,6 +159,29 @@ test('millisecond ranges partition the total and source filters narrow it', { sk
   assert.equal(summarize({ sources: ['nope'] }).totals.totalTokens, 0)
 })
 
+test('the heatmap ignores the time range and partitions by source', { skip: !haveSessions }, () => {
+  clearIndexCache()
+  const all = summarize()
+  if (all.days.length === 0) return
+  assert.equal(all.heatmap.weeks, 53)
+  assert.ok(all.heatmap.days.length > 0)
+  for (const day of all.heatmap.days) {
+    assert.ok(Number.isFinite(day.tokens) && Number.isFinite(day.turns) && Number.isFinite(day.requests))
+  }
+
+  // A calendar narrowed to one day is what a heatmap is not for.
+  const last = all.days[all.days.length - 1].day
+  const narrow = summarize({ sinceMs: dayStart(last), untilMs: dayStart(last) + DAY_MS })
+  assert.deepEqual(narrow.heatmap.days, all.heatmap.days, 'the calendar must not follow the range filter')
+
+  // But it does follow the source filter, and the surfaces partition it exactly.
+  const heatTotal = all.heatmap.days.reduce((sum, day) => sum + day.tokens, 0)
+  const perSurface = ['client', 'cli', 'subagent', 'none'].map((source) =>
+    summarize({ sources: [source] }).heatmap.days.reduce((sum, day) => sum + day.tokens, 0),
+  )
+  assert.equal(perSurface.reduce((a, b) => a + b, 0), heatTotal)
+})
+
 test('the sidebar card follows the configured windows', { skip: !haveSessions }, () => {
   const both = cardRollup({ hours: 6, days: 7 })
   assert.deepEqual(both.blocks.map((block) => block.id), ['hours', 'days'])

@@ -236,6 +236,14 @@ function summaryPayload() {
       ],
       all: null,
     },
+    heatmap: {
+      weeks: 3,
+      days: [
+        { day: '2026-09-24', tokens: 0, turns: 2, requests: 2 },
+        { day: '2026-09-25', tokens: 5000, turns: 3, requests: 4 },
+        { day: '2026-09-26', tokens: 200, turns: 4, requests: 5 },
+      ],
+    },
   }
 }
 
@@ -334,6 +342,7 @@ test('a Host older than this Client still yields card numbers', async () => {
   const payload = summaryPayload()
   delete payload.card
   delete payload.totals.inputTokens
+  delete payload.heatmap
   const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
   plugin.apply(ctx)
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -344,6 +353,12 @@ test('a Host older than this Client still yields card numbers', async () => {
   assert.match(card, /输入 5,000 · 输出 200/, 'input/output are rebuilt from the buckets')
   assert.match(card, /缓存命中 80\.0%/)
   assert.ok(!card.includes('正在读取'), 'the card must not claim to be loading once data has arrived')
+
+  // The calendar has the same problem, and the same answer: fall back to the
+  // range's days rather than rendering an empty year.
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const panel = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.match(panel, /当前筛选共 2 天有活动/, `expected a filled calendar, got: ${panel.slice(0, 200)}`)
 })
 
 test('with both card windows off the card falls back to the all-time split', async () => {
@@ -467,6 +482,53 @@ test('without a Host config editor the card is read-only and says so', async () 
   }
   walk(tree)
   assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
+})
+
+test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const text = collect(tree).join(' ')
+
+  // The fixture has three days with turns but only two with tokens, so the
+  // default metric lands on the richer dimension instead of an empty grid.
+  assert.match(text, /近 3 周共 3 天有活动 · 合计 9 轮/, 'the calendar summarises its own window')
+  assert.match(text, /Tokens/)
+  assert.match(text, /轮次/)
+  assert.match(text, /较少/)
+  assert.match(text, /较多/)
+
+  const classes = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props && typeof node.props.className === 'string') classes.push(node.props.className)
+    walk(node.children)
+  }
+  walk(tree)
+  const cells = classes.filter((name) => name === 'dtu-cell').length
+  const weeks = classes.filter((name) => name === 'dtu-week').length
+  assert.equal(weeks, 3, 'one column per week')
+  // 7 days per week column, plus the four legend swatches.
+  assert.equal(cells, 3 * 7 + 4)
+  assert.ok(classes.includes('dtu-weekdays'), 'weekday labels exist')
+  assert.ok(classes.includes('dtu-heatMonths'), 'month labels exist')
+  assert.ok(classes.some((name) => name === 'dtu-monthCell'), 'the month axis is laid out')
+
+  // The weekday axis labels Monday, Wednesday and Friday down its column.
+  const weekday = []
+  const collectWeekdays = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectWeekdays)
+    if (node.props?.className === 'dtu-weekdays') weekday.push(...collect(node.children))
+    collectWeekdays(node.children)
+  }
+  collectWeekdays(tree)
+  assert.deepEqual(weekday, ['一', '', '三', '', '五', '', ''])
 })
 
 test('the Host descriptor and the Client contribution agree', async () => {

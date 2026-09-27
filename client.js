@@ -48,13 +48,6 @@ window.__ModuleLoader__.load({
       return `${date.getFullYear()}-${month}-${day}`
     }
 
-    const todayKey = () => dayKeyOf(new Date())
-
-    function shiftDays(key, delta) {
-      const [year, month, day] = key.split('-').map(Number)
-      return dayKeyOf(new Date(year, month - 1, day + delta))
-    }
-
     /** Local midnight of the day an instant falls in. */
     function dayStartMs(ms) {
       const date = new Date(ms)
@@ -259,9 +252,20 @@ window.__ModuleLoader__.load({
 .dtu-sectionTitle{font-weight:600}
 .dtu-legend{display:flex;flex-wrap:wrap;gap:12px;color:var(--dsw-alias-label-secondary);font-size:11.5px;align-items:center}
 .dtu-dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
-.dtu-heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);gap:3px;overflow-x:auto;padding-bottom:4px}
-.dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative}
-.dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary)}
+.dtu-heatHead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dtu-heatControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.dtu-heatScroll{overflow-x:auto;padding-bottom:4px}
+.dtu-heatInner{width:max-content}
+.dtu-heatMonths{display:flex;gap:3px;height:15px;margin-bottom:4px;color:var(--dsw-alias-label-secondary);font-size:10.5px}
+.dtu-monthSpace{width:22px;flex:none}
+.dtu-monthCell{width:11px;flex:none;white-space:nowrap;overflow:visible}
+.dtu-heatRows{display:flex;gap:3px}
+.dtu-weekdays{display:flex;flex-direction:column;gap:3px;width:22px;flex:none;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:11px}
+.dtu-weekdays span{height:11px}
+.dtu-heat{display:flex;gap:3px}
+.dtu-week{display:flex;flex-direction:column;gap:3px}
+.dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
+.dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary);display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-chart{position:relative;height:260px;margin-top:4px}
 .dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
@@ -605,63 +609,163 @@ window.__ModuleLoader__.load({
 
     // ── charts ──────────────────────────────────────────────────────────────
 
-    const HEAT_WEEKS = 53
+    const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
+    const HEAT_LEVEL_OPACITY = [0, 0.3, 0.5, 0.75, 1]
+    const HEAT_METRICS = [
+      { id: 'tokens', label: 'Tokens' },
+      { id: 'turns', label: '轮次' },
+    ]
 
-    function Heatmap({ days, first, last }) {
-      const byDay = new Map(days.map((day) => [day.day, day]))
-      const max = days.reduce((peak, day) => Math.max(peak, totalOf(day.buckets)), 0)
-      const end = todayKey()
-      const total = HEAT_WEEKS * 7
-      const cells = []
-      for (let index = 0; index < total; index += 1) {
-        const key = shiftDays(end, index - total + 1)
-        const day = byDay.get(key)
-        const tokens = day ? totalOf(day.buckets) : 0
-        const turns = day ? day.turns : 0
-        let level = 0
-        if (tokens > 0 || turns > 0) {
-          level = 1
-          if (max > 0) {
-            const ratio = tokens / max
-            if (ratio >= 0.85) level = 4
-            else if (ratio >= 0.45) level = 3
-            else if (ratio >= 0.15) level = 2
+    /** Local midnight of the Monday starting the week that contains an instant. */
+    function weekStartOf(ms) {
+      const day = (new Date(ms).getDay() + 6) % 7 // 0 = Monday
+      return dayStartMs(ms) - day * DAY_MS
+    }
+
+    /**
+     * A calendar, not a bar chart: whole weeks aligned to Monday, a month header,
+     * weekday labels, and square cells (flex, so nothing stretches them to the
+     * panel width). Levels come from quartiles of the non-zero days, because a
+     * maximum-relative scale flattens every day onto one shade whenever a single
+     * day dwarfs the rest.
+     */
+    function Heatmap({ heatmap, days }) {
+      const [chosen, setMetric] = React.useState(null)
+      // A Host older than this Client answers without `heatmap`; the requested
+      // range's days still fill the calendar rather than leaving it blank.
+      const entries = heatmap
+        ? heatmap.days
+        : (days ?? []).map((day) => ({
+            day: day.day,
+            tokens: totalOf(day.buckets),
+            turns: day.turns,
+            requests: day.requests,
+          }))
+      const byDay = new Map(entries.map((day) => [day.day, day]))
+      const weeks = heatmap && heatmap.weeks ? heatmap.weeks : 53
+      const scope = heatmap ? `近 ${weeks} 周` : '当前筛选'
+      const today = Date.now()
+      const firstWeek = weekStartOf(today - (weeks - 1) * 7 * DAY_MS)
+      // Days that carry a figure for each metric. Tokens are sparse on a machine
+      // whose history is mostly imported sessions, so defaulting to the richer
+      // dimension is what keeps the calendar from rendering as an empty grid.
+      const tokenDays = entries.filter((day) => (day.tokens ?? 0) > 0).length
+      const turnDays = entries.filter((day) => (day.turns ?? 0) > 0).length
+      const metric = chosen ?? (tokenDays >= turnDays ? 'tokens' : 'turns')
+
+      const columns = []
+      let previousMonth = -1
+      for (let week = 0; week < weeks; week += 1) {
+        const days = []
+        let monthLabel = null
+        for (let offset = 0; offset < 7; offset += 1) {
+          const ms = firstWeek + (week * 7 + offset) * DAY_MS
+          const key = dayKeyOf(new Date(ms))
+          const entry = byDay.get(key)
+          days.push({ key, value: entry ? entry[metric] ?? 0 : 0, entry, future: ms > today })
+          if (offset === 0) {
+            const month = new Date(ms).getMonth()
+            if (month !== previousMonth) {
+              monthLabel = `${month + 1}月`
+              previousMonth = month
+            }
           }
         }
-        cells.push(
-          h(
-            'div',
-            {
-              key,
-              className: 'dtu-cell',
-              title: `${key} · ${tokens ? grouped(tokens) : 0} tokens · ${turns} 轮`,
-            },
-            level > 0 ? h('div', { className: 'dtu-cellFill', style: { opacity: [0, 0.28, 0.5, 0.75, 1][level] } }) : null,
-          ),
-        )
+        columns.push({ key: `w${week}`, days, monthLabel })
       }
+
+      const values = entries
+        .map((day) => day[metric] ?? 0)
+        .filter((value) => value > 0)
+        .sort((a, b) => a - b)
+      const quantile = (p) => (values.length > 0 ? values[Math.min(values.length - 1, Math.floor(p * values.length))] : 0)
+      const low = quantile(0.25)
+      const mid = quantile(0.5)
+      const high = quantile(0.75)
+      const levelOf = (value) => (value <= 0 ? 0 : value <= low ? 1 : value <= mid ? 2 : value <= high ? 3 : 4)
+      const total = values.reduce((sum, value) => sum + value, 0)
+      const metricLabel = metric === 'tokens' ? 'tokens' : '轮'
+
       return h(
         'div',
         null,
         h(
           'div',
-          { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } },
-          h('div', { className: 'dtu-legend' }, first && last ? h('span', null, `${first} ~ ${last}`) : null),
+          { className: 'dtu-heatHead' },
           h(
             'div',
-            { className: 'dtu-heatScale' },
-            h('span', null, '较少'),
-            [1, 2, 3, 4].map((level) =>
-              h(
-                'span',
-                { key: level, className: 'dtu-cell', style: { position: 'relative', display: 'inline-block' } },
-                h('span', { className: 'dtu-cellFill', style: { opacity: [0, 0.28, 0.5, 0.75, 1][level] } }),
+            { className: 'dtu-legend' },
+            h('span', null, `${scope}共 ${values.length} 天有活动 · 合计 ${metric === 'tokens' ? compact(total) : grouped(total)} ${metricLabel}`),
+          ),
+          h(
+            'div',
+            { className: 'dtu-heatControls' },
+            h(ChipGroup, { items: HEAT_METRICS, value: metric, onSelect: setMetric, label: '热力图指标' }),
+            h(
+              'div',
+              { className: 'dtu-heatScale' },
+              h('span', null, '较少'),
+              [1, 2, 3, 4].map((level) =>
+                h(
+                  'span',
+                  { key: level, className: 'dtu-cell' },
+                  h('span', { className: 'dtu-cellFill', style: { opacity: HEAT_LEVEL_OPACITY[level] } }),
+                ),
               ),
+              h('span', null, '较多'),
             ),
-            h('span', null, '较多'),
           ),
         ),
-        h('div', { className: 'dtu-heat' }, cells),
+        h(
+          'div',
+          { className: 'dtu-heatScroll' },
+          h(
+            'div',
+            { className: 'dtu-heatInner' },
+            h(
+              'div',
+              { className: 'dtu-heatMonths' },
+              h('div', { className: 'dtu-monthSpace' }),
+              columns.map((column) => h('div', { key: column.key, className: 'dtu-monthCell' }, column.monthLabel)),
+            ),
+            h(
+              'div',
+              { className: 'dtu-heatRows' },
+              h(
+                'div',
+                { className: 'dtu-weekdays' },
+                WEEKDAY_LABELS.map((label, index) => h('span', { key: label }, index % 2 === 0 && index < 5 ? label : '')),
+              ),
+              h(
+                'div',
+                { className: 'dtu-heat' },
+                columns.map((column) =>
+                  h(
+                    'div',
+                    { key: column.key, className: 'dtu-week' },
+                    column.days.map((day) => {
+                      const entry = day.entry
+                      const value = day.value
+                      return h(
+                        'div',
+                        {
+                          key: day.key,
+                          className: 'dtu-cell',
+                          title: entry
+                            ? `${day.key} · ${grouped(entry.tokens)} tokens · ${entry.turns} 轮 · ${entry.requests} 次请求`
+                            : day.key,
+                        },
+                        levelOf(value) > 0
+                          ? h('span', { className: 'dtu-cellFill', style: { opacity: HEAT_LEVEL_OPACITY[levelOf(value)] } })
+                          : null,
+                      )
+                    }),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       )
     }
 
@@ -858,7 +962,6 @@ window.__ModuleLoader__.load({
       const filter = state.filter
       const custom = filter.range === 'custom'
       const totals = data ? data.totals : null
-      const days = data ? data.days : []
       const buckets = totals ? totals.buckets : [0, 0, 0, 0, 0]
       const topShare = totals && totals.totalTokens > 0 && data.models.length > 0 ? data.models[0].totalTokens / totals.totalTokens : 0
 
@@ -936,7 +1039,11 @@ window.__ModuleLoader__.load({
               title: totals.topModel ?? undefined,
             }),
           ),
-          h(Section, { title: '活跃热力图' }, h(Heatmap, { days: data.days, first: days[0] ? days[0].day : null, last: days[days.length - 1] ? days[days.length - 1].day : null })),
+          h(
+            Section,
+            { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
+            h(Heatmap, { heatmap: data.heatmap, days: data.days }),
+          ),
           h(Section, { title: '按天 Token 趋势' }, h(TrendChart, { days: data.days, models: data.models })),
           h(
             Section,
@@ -986,7 +1093,7 @@ window.__ModuleLoader__.load({
               'span',
               null,
               data && data.card
-                ? `侧边栏卡片：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 设置 → 插件 → Token 用量 里调整）`
+                ? `侧边栏卡片：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 插件 → Token 用量 里调整）`
                 : null,
             ),
             h(
