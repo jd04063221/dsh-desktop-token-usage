@@ -1,0 +1,10 @@
+# 缓存与临时产物
+node_modules/
+docs/research/.cache/
+*.log
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
