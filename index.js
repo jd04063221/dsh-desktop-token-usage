@@ -31,18 +31,23 @@ const REMOTE_NAMESPACE = 'dshUsage'
  * browser reach the Host at all — without needing the page console.
  */
 const CALL_LOG = path.join(DSH_HOME, 'cache', 'dsh-token-usage', 'calls.json')
+const BOOT_LOG = path.join(DSH_HOME, 'cache', 'dsh-token-usage', 'boot.json')
 const CALL_LOG_LIMIT = 20
 const calls = []
+
+function writeJson(file, value) {
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify(value))
+  } catch {
+    // Diagnostics must never fail a call.
+  }
+}
 
 function recordCall(entry) {
   calls.push(entry)
   if (calls.length > CALL_LOG_LIMIT) calls.shift()
-  try {
-    fs.mkdirSync(path.dirname(CALL_LOG), { recursive: true })
-    fs.writeFileSync(CALL_LOG, JSON.stringify({ updatedAt: Date.now(), calls }))
-  } catch {
-    // Diagnostics must never fail a call.
-  }
+  writeJson(CALL_LOG, { updatedAt: Date.now(), calls })
 }
 
 const SURFACES = ['client', 'cli', 'subagent', 'none']
@@ -142,18 +147,28 @@ class UsageService {
  * fiber's lifetime, so unloading the plugin withdraws the endpoint.
  */
 export function apply(ctx) {
+  const boot = { appliedAt: Date.now() }
+  writeJson(BOOT_LOG, boot)
   ctx.inject(['typert'], (remoteCtx) => {
-    const service = new UsageService()
-    service.typertRemote = Object.freeze({ service, serviceKey: REMOTE_SERVICE, namespace: REMOTE_NAMESPACE })
-    remoteCtx.reflect.provide(REMOTE_SERVICE, service)
+    boot.injectedAt = Date.now()
+    try {
+      const service = new UsageService()
+      service.typertRemote = Object.freeze({ service, serviceKey: REMOTE_SERVICE, namespace: REMOTE_NAMESPACE })
+      remoteCtx.reflect.provide(REMOTE_SERVICE, service)
+      boot.providedAt = Date.now()
 
-    const unregister = remoteCtx.typert.register({
-      package: REMOTE_PACKAGE,
-      face: 'host',
-      schemas: [],
-      model: { services: [], events: [], objects: [] },
-      invocations: [SUMMARY_DESCRIPTOR],
-    })
-    remoteCtx.effect(() => () => void unregister(), 'dsh-token-usage: usage remote')
+      const unregister = remoteCtx.typert.register({
+        package: REMOTE_PACKAGE,
+        face: 'host',
+        schemas: [],
+        model: { services: [], events: [], objects: [] },
+        invocations: [SUMMARY_DESCRIPTOR],
+      })
+      boot.registeredAt = Date.now()
+      remoteCtx.effect(() => () => void unregister(), 'dsh-token-usage: usage remote')
+    } catch (error) {
+      boot.error = error?.message ?? String(error)
+    }
+    writeJson(BOOT_LOG, boot)
   })
 }

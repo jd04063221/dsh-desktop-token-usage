@@ -107,6 +107,26 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 任何不一致都会让 RPC 静默失败。因此 `test/client-smoke.test.mjs` 把两半的描述符**逐字段对拍**
 （`id / service / namespace / method / invocation.kind / result.typeSymbol / parameters[*].{name,wire,source,acceptsUndefined,codec.typeSymbol}`）。
 
+### 2.3 Remote 方法返回的是 `{ ok, value }` 信封，失败也不抛异常
+
+最容易踩、且症状极具误导性的一个坑。客户端 `namespace.summary(args)` 的返回值**不是** payload，而是：
+
+```js
+{ ok: true,  value: <业务结果> }
+{ ok: false, error: { code, message } }
+```
+
+依据：客户端网关 `dsh-api-gateway/lib/client.js` 的 `invoke()` 返回 `{ok,value}` / `{ok:false,error}`，而
+`RemoteNamespaceService.install()` 的 getter 原样返回它（**不拆包**）；可工作插件 commandcode 的客户端也是
+这么用的（`const response = await this.remote.report(); if (response.ok) … response.value … else … response.error.message`）。
+
+把信封当 payload 的后果（本插件第一版就是这样）：`data.totals` 是 `undefined` → 视图在
+`totals.totalTokens` 处抛错 → **整个面板空白**、侧边栏卡片只剩一个 `0`。而 Host 侧一切正常，
+`calls.json` 里也看不到错误——因为错误发生在浏览器里。
+
+教训：**测试里的假实现必须复刻真实信封形状**，否则测试会替你把 bug 藏起来（本仓库的假实现已改成
+返回 `{ok:true,value}`，并新增 `ok:false` 用例）。
+
 ## 3. 为什么筛选放在 Host
 
 看板的筛选维度（时间范围 × 来源）如果放到浏览器算，就得把「按天 × 模型 × 来源」的求和逻辑写第二遍。
@@ -172,8 +192,22 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 | 两半 wire 契约 | 描述符逐字段对拍 + 参数 codec 喂真实取值 | 通过 |
 | 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片与看板、断言样式注入与卸载 | 通过（10/10 测试） |
 | 实际激活 | `plugin_manager list_plugins` → `include:dsh-token-usage` | `fiberPhase: active` |
-| 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` occupants | `dsh-token-usage`（`order: 5`, `active: true`） |
+| Host 注册链路 | `$DSH_HOME/cache/dsh-token-usage/boot.json` | `{appliedAt, injectedAt, providedAt, registeredAt}`，无 `error`（即 typert 注入触发、服务已提供、严格描述符已注册） |
+| 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` / `main` | `dsh-token-usage`（`active: true`），两处都在 |
 | **视觉与数字** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
+
+### 5.1 看板没数据时先看这两个文件
+
+Host 会把自诊断写到 `$DSH_HOME/cache/dsh-token-usage/`：
+
+| 文件 | 内容 | 怎么用 |
+|---|---|---|
+| `boot.json` | Host 激活链路的四个时间戳与可选 `error` | 缺 `injectedAt` 说明 `typert` 服务没注入；有 `error` 说明注册被拒 |
+| `calls.json` | 最近 20 次 `summary` 调用（筛选条件、会话数、总 token、耗时） | 浏览器**从没**请求过 → 问题在客户端 mount/模块加载；有记录但数字不对 → 问题在聚合口径 |
+
+注意 `calls.json` 只在 Host 方法**被真正执行**时写入：若请求被网关在 `prepareInvocation` 阶段拒绝
+（描述符没注册、绑定不合法），不会有记录——所以它在，说明链接通；它不在，不能单独证明链接不通，
+要结合 `boot.json` 一起看。
 
 ## 6. 后续可做
 

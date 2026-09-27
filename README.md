@@ -83,10 +83,20 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 - 日与模型两个维度的汇总都能重新加总回总量，逐日筛选能精确划分总量；
 - Host 描述符与 Client contribution 在测试里**逐字段对拍**，参数编解码器接受浏览器实际会发的值；
 - 客户端两半在无浏览器环境下用假 React/DOM 渲染通过，样式注入与卸载有断言；
-- 安装后 `include:dsh-token-usage` 的 `fiberPhase` 为 `active`，`sidebar.footer.action` 里出现
-  `dsh-token-usage`（`active: true`）——即 Host 导入成功、客户端 bundle 已被页面加载。
+- 安装后 `include:dsh-token-usage` 的 `fiberPhase` 为 `active`，`sidebar.footer.action` 与 `main` 里都出现
+  `dsh-token-usage`（`active: true`）——即 Host 导入成功、客户端 bundle 已被页面加载；
+- Host 激活链路留痕于 `$DSH_HOME/cache/dsh-token-usage/boot.json`（typert 注入、服务提供、描述符注册四个时间戳，无 error）。
 
 **未完成**：无法在本环境直接读取渲染后的像素或浏览器控制台，所以"看板长什么样、数字对不对"需要你肉眼确认一次。
+
+### 出问题时先看哪里
+
+`$DSH_HOME/cache/dsh-token-usage/` 下有两个自诊断文件：
+
+- `boot.json`：Host 是否成功注册（缺字段/有 `error` 就说明卡在哪一步）；
+- `calls.json`：最近 20 次看板请求（筛选条件、会话数、总 token、耗时）。若浏览器从未请求过，
+  说明是客户端模块没加载或没重载 —— **硬刷新页面**（Ctrl/Cmd+Shift+R）即可让页面重新取用最新的
+  `client.js`；改完 Host 半边后还需重新启用一次插件（或重启 DSH）以加载新的模块代。
 
 ## 开发
 
