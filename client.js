@@ -386,11 +386,33 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /**
+     * The all-time block, rebuilt from `totals` when the Host answered without a
+     * `card`. A Client newer than its Host is a normal upgrade state, and the
+     * card must still show figures rather than wait for a field that will only
+     * appear after the Host module generation is reloaded.
+     */
+    function cumulativeBlock(totals) {
+      if (!totals || !Array.isArray(totals.buckets)) return null
+      const buckets = totals.buckets
+      return {
+        id: 'all',
+        label: '累计',
+        buckets,
+        totalTokens: typeof totals.totalTokens === 'number' ? totals.totalTokens : totalOf(buckets),
+        inputTokens: typeof totals.inputTokens === 'number' ? totals.inputTokens : buckets[0] + buckets[2],
+        outputTokens: buckets[1],
+        cacheHitRate: totals.cacheHitRate,
+        turns: totals.turns,
+        requests: totals.requests,
+      }
+    }
+
     function SidebarEntry(props) {
       const state = useStore()
       const card = state.data ? state.data.card : null
       const blocks = card ? card.blocks : []
-      const all = card ? card.all : null
+      const all = card ? card.all : state.data ? cumulativeBlock(state.data.totals) : null
       const headline = blocks.length > 0 ? blocks[0].inputTokens + blocks[0].outputTokens : all ? all.totalTokens : 0
       if (props.wide === false) {
         const label = `Token 用量 · ${compact(headline)}`
@@ -403,11 +425,13 @@ window.__ModuleLoader__.load({
       let body
       if (state.status === 'error') {
         body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
-      } else if (!card) {
+      } else if (!state.data) {
         body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
       } else if (blocks.length > 0) {
         body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
-      } else if (all) {
+      } else if (!all) {
+        body = h('div', { className: 'dtu-windowMeta' }, '该筛选条件下没有用量记录。')
+      } else {
         body = [
           h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
           h(

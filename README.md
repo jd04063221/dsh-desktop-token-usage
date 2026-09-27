@@ -138,6 +138,11 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 - `calls.json`：最近 20 次看板请求（筛选条件、窗口、会话数、总 token、耗时）。若浏览器从未请求过，
   说明是客户端模块没加载或没重载 —— **硬刷新页面**（Ctrl/Cmd+Shift+R）；Host 侧改动只能靠重启。
 
+另外，`Config.listConfigs` 的 `status` 直接告诉你 Host 模块代是否包含本插件的配置：
+`absent` = 当前 fiber 的模块没有 `Config` 导出（旧模块代，设置里不会有选项）；
+`schema` = 已识别到 schemastery schema，设置里会出现 `hours` / `days`。
+客户端旧于 Host 也会出问题——所以客户端在拿不到 `card` 字段时会**回退到累计值**，不会停在"正在读取"。
+
 ## 开发
 
 ```

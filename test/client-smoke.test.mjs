@@ -313,6 +313,26 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
 })
 
+test('a Host older than this Client still yields card numbers', async () => {
+  const { plugin } = loadClient()
+  // The upgrade state that actually happened: a current Client half talking to a
+  // Host module generation that predates `card`. The card must not sit on
+  // "loading" forever — it falls back to the all-time figures.
+  const payload = summaryPayload()
+  delete payload.card
+  delete payload.totals.inputTokens
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
+  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  assert.match(card, /5,200/, `expected the cumulative total, got: ${card}`)
+  assert.match(card, /输入 5,000 · 输出 200/, 'input/output are rebuilt from the buckets')
+  assert.match(card, /缓存命中 80\.0%/)
+  assert.ok(!card.includes('正在读取'), 'the card must not claim to be loading once data has arrived')
+})
+
 test('with both card windows off the card falls back to the all-time split', async () => {
   const { plugin } = loadClient()
   const payload = summaryPayload()
