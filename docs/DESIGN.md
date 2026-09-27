@@ -75,6 +75,14 @@ ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imp
 `@deepseek-ai/dsh-timeout` 失败），只有它的**客户端**半边在工作——所以列表里能看到它的卡片，但它的 host 服务
 `commandcodeUsage` 并不存在。
 
+**这条约束的边界**：`install_bundle` 对本地目录采用 `link:` 安装，pnpm **不会为被链接的包装依赖**，
+所以「声明成真依赖」只在包被真正装进 profile（而非 link）时才自动生效；link 场景下依赖必须由本仓库自己
+`npm install` 提供（见 README）。这也是为什么本包只留了**唯一一个** `@deepseek-ai/*` import —— 官方 Config
+卡片必需的 `@deepseek-ai/schemastery`；它在 `dependencies` 里，且安装后 `node -e "import(...)"` 可解析。
+schemastery 的 schema 用 Standard Schema（`~standard`）暴露校验，`resolveConfig` 只调
+`Config['~standard'].validate()`，loader 的 `isSchemastery` 只看 `~standard.vendor === 'schemastery'`，
+所以即使 profile 里存在另一份 schemastery 副本也不会互不认。
+
 ### 2.1 于是自己搭最小服务
 
 `TypertRemoteService` 基类只做两件公开的事，读完 `@deepseek-ai/cordis` 与 `dsh-api-gateway` 的源码后可以照做：
@@ -126,6 +134,35 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 
 教训：**测试里的假实现必须复刻真实信封形状**，否则测试会替你把 bug 藏起来（本仓库的假实现已改成
 返回 `{ok:true,value}`，并新增 `ok:false` 用例）。
+
+### 2.4 配置：侧边栏卡片的两个窗口
+
+需求是「卡片显示哪一段时间的用量可选（近几小时 / 近几天）」。做法：
+
+- `index.js` 导出官方 `Config`（`Schema.object({ hours, days })`，`0` 表示关闭），卡片窗口因此可以在
+  **设置 → 插件** 里改，也能写进 profile 的 `cordis.patch.yml`；
+- **窗口由 Host 解析**，随每次 `summary` 响应一起返回 `card: { hours, days, blocks, all }`，浏览器不需要知道
+  配置值，也不需要二次请求；两个窗口都关时返回 `all`（累计），与没有这个功能时完全一致；
+- 每个 block 自带 `inputTokens = 未缓存输入 + 缓存读取`、`outputTokens`、`cacheHitRate`，视图只负责排版
+  （`输入 x · 输出 y` 与缓存命中率），不做任何口径推导。
+
+**为什么把内部桶从「天」换成「小时」**：`logs` 里没有任何分钟级标记，按天分桶根本表达不了「最近 6 小时」。
+现在索引按**本地小时**（`YYYY-MM-DDTHH`）存桶，`summarize({sinceMs, untilMs})` 以「小时与区间相交」判定包含关系，
+天视图由 Host 从小时桶归并（图表用的 `days` 仍是 Host 算的，视图不合并）。代价是索引缓存版本从 1 升到 2
+（首次会重建一次）。`hours` 上限 23、`days` 上限 30，越界值在 `lib/session-usage.js` 里夹紧（有测试）。
+
+### 2.5 Host 模块代是缓存的：改 Host 半边必须重启
+
+实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代。
+所以反复「重新启用」看到的一直是第一版 host 代码：`Config.listConfigs` 持续报 `absent`、
+诊断文件不更新、`apply` 收到的仍是旧 config。判断当前跑的是哪一版，看 `boot.json` 是否存在即可。
+
+| 改动的半边 | 生效方式 |
+|---|---|
+| `client.js` | 客户端模块快照按 mtime/size 变更，HMR 推给页面；必要时硬刷新 |
+| `index.js` / `lib/*` | **重启 DSH**（`remove_bundle` + 重新 `install_bundle` 也不够，specifier 未变） |
+
+这也解释了为什么本次交付里「配置卡生效」只能标注为**待重启后确认**。
 
 ## 3. 为什么筛选放在 Host
 
@@ -188,13 +225,17 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 |---|---|---|
 | 多帧 zstd 读取 | 对 2.7 MB / 4779 帧的真实文件扫描并解析 | 4779 条记录，首条为会话头 |
 | 折叠正确性 | 与 DSH 自己的投影缓存 `session-5964a5d3-*.json` 的 `rows.tokenUsage.val.totals` 对拍 | `[286650, 182633, 43826560, 0]` 完全一致 |
-| 汇总自洽 | 日汇总、模型汇总都能重新加总回总量；逐日区间能精确划分总量；来源筛选只能收窄 | 通过 |
-| 两半 wire 契约 | 描述符逐字段对拍 + 参数 codec 喂真实取值 | 通过 |
-| 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片与看板、断言样式注入与卸载 | 通过（10/10 测试） |
+| 汇总自洽 | 日汇总、模型汇总都能重新加总回总量；按天/按小时的毫秒区间能精确划分总量；来源筛选只能收窄 | 通过 |
+| 卡片窗口 | 每个窗口 ≤ 累计值；输入/输出拆分恒等式；`hours=99`/`days=-3` 被夹紧；两窗口都关时回退到 `all` | 通过 |
+| Config schema | Standard Schema `~standard.validate`：默认 `0/0`，`hours=24`/`days=31` 被拒 | 通过 |
+| 两半 wire 契约 | 描述符逐字段对拍 + 参数 codec 喂真实取值（含越界与非法类型） | 通过 |
+| 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片（窗口行 / 累计回退）与看板、断言样式注入与卸载、刷新定时器已挂 | 通过（16/16 测试） |
 | 实际激活 | `plugin_manager list_plugins` → `include:dsh-token-usage` | `fiberPhase: active` |
-| Host 注册链路 | `$DSH_HOME/cache/dsh-token-usage/boot.json` | `{appliedAt, injectedAt, providedAt, registeredAt}`，无 `error`（即 typert 注入触发、服务已提供、严格描述符已注册） |
 | 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` / `main` | `dsh-token-usage`（`active: true`），两处都在 |
+| 浏览器 → Host RPC | 页面调用后 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json` 被重写 | 打通 |
+| **配置卡生效** | 需要重启 DSH 后 `Config.listConfigs` 报 `schema` | **待重启确认** |
 | **视觉与数字** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
+
 
 ### 5.1 看板没数据时先看这两个文件
 

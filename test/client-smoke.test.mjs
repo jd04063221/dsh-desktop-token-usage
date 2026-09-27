@@ -126,6 +126,9 @@ function loadClient() {
     window: { __ModuleLoader__: { load: (value) => { registration = value } } },
     document,
     console,
+    // The page's timers: the plugin only arms one quiet refresh.
+    setInterval: () => 1,
+    clearInterval: () => {},
   }
   vm.runInNewContext(source, sandbox, { filename: 'client.js' })
   assert.ok(registration, 'client.js must register a module factory')
@@ -174,16 +177,32 @@ function fakeContext(options = {}) {
   return { ctx: make(), record }
 }
 
+/** One card row, shaped exactly as `cardRollup` in the Host half emits it. */
+function cardBlock(id, label, buckets, cacheHitRate, turns) {
+  return {
+    id,
+    label,
+    buckets,
+    totalTokens: buckets[0] + buckets[1] + buckets[2] + buckets[3],
+    inputTokens: buckets[0] + buckets[2],
+    outputTokens: buckets[1],
+    cacheHitRate,
+    turns,
+    requests: turns,
+  }
+}
+
 function summaryPayload() {
   return {
-    version: 1,
+    version: 2,
     generatedAt: Date.now(),
     elapsedMs: 1,
-    filter: { sinceDay: null, untilDay: null, sources: null },
+    filter: { sinceMs: null, untilMs: null, sources: null },
     coverage: { files: 2, skipped: 0, firstTime: 1, lastTime: 2, surfaces: { client: 2, cli: 0, subagent: 0, none: 0 } },
     totals: {
       buckets: [1000, 200, 4000, 0, 50],
       totalTokens: 5200,
+      inputTokens: 5000,
       cacheHitRate: 0.8,
       sessions: 2,
       turns: 7,
@@ -199,6 +218,15 @@ function summaryPayload() {
       { route: 'p/a', provider: 'p', model: 'a', buckets: [800, 160, 3000, 0, 40], totalTokens: 3960 },
       { route: 'q/b', provider: 'q', model: 'b', buckets: [200, 40, 1000, 0, 10], totalTokens: 1240 },
     ],
+    card: {
+      hours: 6,
+      days: 7,
+      blocks: [
+        cardBlock('hours', '近 6 小时', [400, 80, 1600, 0, 20], 0.8, 2),
+        cardBlock('days', '近 7 天', [1000, 200, 4000, 0, 50], 0.8, 7),
+      ],
+      all: null,
+    },
   }
 }
 
@@ -233,6 +261,10 @@ test('the Client half requires only React and registers both slots', async () =>
   // Styles are owned by the fiber and removed on unload.
   assert.equal(document.head.children.length, 1)
   assert.equal(document.head.children[0].dataset.plugin, 'dsh-token-usage')
+  assert.ok(
+    record.effects.some((effect) => effect.label.includes('refresh timer')),
+    'the plugin must arm its quiet refresh so hour windows stay current',
+  )
   for (const effect of record.effects) if (typeof effect.cleanup === 'function') effect.cleanup()
   assert.equal(document.head.children.length, 0, 'disposal must remove the injected styles')
 })
@@ -248,7 +280,12 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
 
   const wide = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
   assert.match(wide, /Token 用量/)
-  assert.match(wide, /5\.2万|5,200/, `expected a compact total, got: ${wide}`)
+  // Every configured window is its own row, split into input and output.
+  assert.match(wide, /近 6 小时/)
+  assert.match(wide, /近 7 天/)
+  assert.match(wide, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${wide}`)
+  assert.match(wide, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${wide}`)
+  assert.match(wide, /缓存命中 80\.0%/)
 
   const rail = render({ type: entry.component, props: { ...entry.options.inject(), wide: false } })
   assert.equal(rail.tag, 'button')
@@ -274,6 +311,27 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   }
   // The source tabs must stay honest about what is derivable offline.
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
+})
+
+test('with both card windows off the card falls back to the all-time split', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  payload.card = {
+    hours: 0,
+    days: 0,
+    blocks: [],
+    all: cardBlock('all', '累计', [1000, 200, 4000, 0, 50], 0.9, 7),
+  }
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
+  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  assert.match(card, /5,200/, `expected the all-time total, got: ${card}`)
+  assert.match(card, /输入 5,000 · 输出 200/)
+  assert.match(card, /缓存命中 90\.0%/)
+  assert.ok(!card.includes('近 6 小时'), 'a disabled window must not render')
 })
 
 test('a failed Remote result shows its message instead of blanking the panel', async () => {
@@ -321,7 +379,7 @@ test('the Host descriptor and the Client contribution agree', async () => {
     },
   }
   const host = await import('../index.js')
-  assert.deepEqual(Object.keys(host), ['apply'], 'the Host half must stay dependency-free and export only apply')
+  assert.deepEqual(Object.keys(host).sort(), ['Config', 'apply'], 'the Host half exports only its Config and apply')
   host.apply(hostCtx)
 
   assert.equal(registered.length, 1, 'the Host must register exactly one contribution')
@@ -360,12 +418,16 @@ test('the Host descriptor and the Client contribution agree', async () => {
 
   // The declared filter codec must survive the values the browser actually sends.
   const parse = hostParam.codec.create().parse
-  assert.deepEqual(plain(parse({ sinceDay: '2026-09-01', untilDay: null, sources: ['client'] })), {
-    sinceDay: '2026-09-01',
-    untilDay: null,
+  assert.deepEqual(plain(parse({ sinceMs: 1_790_000_000_000, untilMs: null, sources: ['client'] })), {
+    sinceMs: 1_790_000_000_000,
+    untilMs: null,
     sources: ['client'],
   })
-  assert.equal(parse({ sinceDay: 'nonsense', sources: ['bogus'] }).sinceDay, null)
+  assert.deepEqual(plain(parse({ sinceMs: 'nonsense', sources: ['bogus'] })), {
+    sinceMs: null,
+    untilMs: null,
+    sources: null,
+  })
   assert.equal(parse(undefined), undefined)
   assert.throws(() => parse('nope'))
 

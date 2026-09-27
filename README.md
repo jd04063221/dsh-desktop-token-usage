@@ -3,36 +3,63 @@
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
 - **Host 半边**扫描 `$DSH_HOME/sessions/**/session.vN.jsonl.zstd`，折叠出真实的 token 用量；
-- **Client 半边**在左侧栏底部（Settings 上方）挂一张紧凑卡片，点开后在中央面板打开看板：
+- **Client 半边**在左侧栏底部（Settings 上方）挂一张卡片，点开后在中央面板打开看板：
   时间范围与来源筛选、6 张统计卡、活跃热力图、按天 Token 趋势（按模型堆叠 + 缓存命中率折线）、模型用量环形图与列表。
+
+侧边栏卡片显示哪一段时间的用量由**插件配置**决定（默认关闭两个窗口，卡片显示累计值）：
+在 **设置 → 插件 → Token 用量** 里可以分别打开「最近 N 小时」（0-23）与「最近 N 天」（1-30）两个窗口；
+两个都关掉就回到累计视图。每个窗口各自显示**输入量、输出量与缓存命中率**。
 
 不联网、不上报、不调用任何 API：所有数字都来自本机已有的会话日志。
 
 ## 安装
 
 本仓库是一个 DSH bundle（`package.json` 声明了 `dsh.bundle.patch` 与 `dsh.client`）。用官方入口安装即可，
-不需要手改 profile 文件、也不需要跑 pnpm：
+不需要手改 profile 文件：
 
 ```
 plugin_manager  action: install_bundle  target: <本目录的绝对路径>
 ```
 
-安装后：
+因为本包依赖 `@deepseek-ai/schemastery`（官方 Config 卡片需要的 schema 库），而 `install_bundle` 对本地目录
+采用 `link:` 安装、**不会**为被链接的包装依赖，所以先在本仓库里装一次：
 
-- Host 半边随 bundle 激活（无需重启，`patchReload: live`）；
-- Client 半边由 `dsh-client-modules` 扫描进浏览器启动图，HMR 会把它推给已打开的页面；
-  若卡片没出现，硬刷新页面（Ctrl/Cmd+Shift+R）一次即可。
+```
+npm install            # 只装 dev/运行依赖，不联网获取任何数据
+```
+
+### 改完代码后：客户端热更新，Host 需要重启
+
+| 改了哪半边 | 怎么生效 |
+|---|---|
+| `client.js`（界面） | 浏览器端的模块快照按 mtime/size 变更后由 HMR 推给页面；没生效就硬刷新一次页面（Ctrl/Cmd+Shift+R） |
+| `index.js` / `lib/*`（Host） | **必须重启 DSH**：重新启用条目只会重挂 fiber，不会重新导入已缓存的 JS 模块代。同理，新增/修改 `Config` 字段也要重启才会出现在设置里 |
+
+判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-token-usage/boot.json` 是否存在、`windows` 是否符合预期。
 
 卸载：`plugin_manager action: remove_bundle target: dsh-token-usage`。
 
 ## 使用
 
-1. 看**左侧栏底部**、Settings 上方那张卡片：显示总 token 数与缓存命中率；
+1. 看**左侧栏底部**、Settings 上方那张卡片：按配置显示各窗口的输入/输出量与缓存命中率；
 2. 点它 → 中央面板打开看板；
 3. 看板顶部可按**时间范围**（最近 7/14/30/90 天、全部、自定义）与**来源**筛选，右下角有刷新按钮。
 
-筛选在后端完成：每次改动都会重新向 Host 请求一次聚合结果（Host 侧有按文件 mtime+size 的索引缓存，
-热调用在百毫秒级）。
+筛选与汇总都在 Host 完成：每次改动都会重新向 Host 请求一次聚合结果（Host 侧有按文件 mtime+size 的索引缓存，
+热调用在百毫秒级）。卡片每 5 分钟静默刷新一次——小时窗口本来就随时间滑动，即使没有新的用量也应该更新。
+
+## 配置项
+
+在 **设置 → 插件 → Token 用量** 里编辑（等价于写进 profile 的 `cordis.patch.yml`），改动在重启后生效：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `hours` | `0` | 侧边栏卡片显示最近多少小时的用量（0-23）。`0` = 关闭这个窗口 |
+| `days` | `0` | 侧边栏卡片显示最近多少天的用量（1-30）。`0` = 关闭这个窗口 |
+
+两个都关（默认）时卡片显示累计值，与没有这两个参数之前一样。窗口按**本地时间**取整到小时：
+「最近 6 小时」= 从 6 小时前的整点开始算。
+
 
 ## 数据口径
 
@@ -41,9 +68,10 @@ plugin_manager  action: install_bundle  target: <本目录的绝对路径>
 | 指标 | 口径 |
 |---|---|
 | Tokens 用量 | `未缓存输入 + 输出 + 缓存读取 + 缓存写入` |
+| **输入量**（卡片） | `未缓存输入 + 缓存读取`——即 provider 实际收到的全部提示词 token |
+| **输出量**（卡片） | `usage.outputTokens`（`reasoningTokens` 是它的**子集**，绝不重复计入） |
 | 未缓存输入 | `usage.inputTokens`——**provider 原生字段里它就是「未命中缓存」的那部分**，DSH 自己的投影把它重命名为 `uncachedInputTokens` |
 | 缓存读取 / 写入 | `usage.cacheReadTokens` / `usage.cacheWriteTokens` |
-| 输出 | `usage.outputTokens`（`reasoningTokens` 是它的**子集**，绝不重复计入） |
 | 平均缓存命中率 | `缓存读取 ÷ (缓存读取 + 未缓存输入)` |
 | 请求数量 | 结算后的模型调用次数（见下面的「折叠」） |
 | 完成轮次 | `turn/end` 事件数 |
@@ -74,44 +102,54 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 - **导入的历史会话可能用量为 0**：如果历史会话是导入的（例如 reasonix 迁移），其 usage 字段确实全为 0，
   这是有效数据，不是缺失，本插件不会回退去估算。
 - **界面文案为中文硬编码**：没有接 Client locale 服务，避免多引入一条会随版本变化的依赖。
+- **窗口取整到小时**：日志里没有分钟级分桶，所以「最近 1 小时」按整点对齐。
+- **卡片刷新有延迟**：没有 Host→Client 的推送通道，卡片靠 5 分钟定时静默刷新；刚改完配置或刚想立刻更新时，
+  点一下卡片打开看板再点「刷新」即可。
 
 ## 验证状态
 
 已完成的验证（详见 `docs/DESIGN.md` 的「验证证据」一节）：
 
 - 折叠结果与 **DSH 自己的投影缓存**逐字段一致（`session-5964a5d3-*`：`286650 / 182633 / 43826560 / 0`）；
-- 日与模型两个维度的汇总都能重新加总回总量，逐日筛选能精确划分总量；
+- 日与模型两个维度的汇总都能重新加总回总量，按天/按小时的毫秒区间能精确划分总量；
+- 卡片窗口汇总：每个窗口只能小于等于累计值、输入输出拆分的恒等式、参数越界（`hours=99`/`days=-3`）被夹紧；
+- `Config` schema 用 Standard Schema 接口验证：默认 0/0，`hours=24`、`days=31` 被拒；
 - Host 描述符与 Client contribution 在测试里**逐字段对拍**，参数编解码器接受浏览器实际会发的值；
-- 客户端两半在无浏览器环境下用假 React/DOM 渲染通过，样式注入与卸载有断言；
+- 客户端两半在无浏览器环境下用假 React/DOM 渲染通过（含卡片窗口行与累计回退两种形态），样式注入与卸载有断言；
 - 安装后 `include:dsh-token-usage` 的 `fiberPhase` 为 `active`，`sidebar.footer.action` 与 `main` 里都出现
-  `dsh-token-usage`（`active: true`）——即 Host 导入成功、客户端 bundle 已被页面加载；
-- Host 激活链路留痕于 `$DSH_HOME/cache/dsh-token-usage/boot.json`（typert 注入、服务提供、描述符注册四个时间戳，无 error）。
+  `dsh-token-usage`（`active: true`）；
+- 浏览器 → Host 的 RPC 已被证明打通（Host 侧索引在页面调用后被重写）。
 
-**未完成**：无法在本环境直接读取渲染后的像素或浏览器控制台，所以"看板长什么样、数字对不对"需要你肉眼确认一次。
+**未完成 / 需要你确认**：
+
+1. 本环境无浏览器控制，看板的视觉与数字需要你肉眼确认；
+2. **配置卡的首次生效需要重启一次 DSH**：当前进程里加载的还是加 `Config` 之前的 Host 模块代
+   （`Config.listConfigs` 仍报 `absent` 即为证据）。重启后 设置 → 插件 → Token 用量 里会出现 `hours`/`days` 两项。
 
 ### 出问题时先看哪里
 
 `$DSH_HOME/cache/dsh-token-usage/` 下有两个自诊断文件：
 
-- `boot.json`：Host 是否成功注册（缺字段/有 `error` 就说明卡在哪一步）；
-- `calls.json`：最近 20 次看板请求（筛选条件、会话数、总 token、耗时）。若浏览器从未请求过，
-  说明是客户端模块没加载或没重载 —— **硬刷新页面**（Ctrl/Cmd+Shift+R）即可让页面重新取用最新的
-  `client.js`；改完 Host 半边后还需重新启用一次插件（或重启 DSH）以加载新的模块代。
+- `boot.json`：Host 激活链路（`appliedAt`/`injectedAt`/`providedAt`/`registeredAt`）与生效的 `windows`，
+  有 `error` 就说明卡在哪一步；**文件不存在说明当前跑的是更早的 Host 模块代，需要重启**；
+- `calls.json`：最近 20 次看板请求（筛选条件、窗口、会话数、总 token、耗时）。若浏览器从未请求过，
+  说明是客户端模块没加载或没重载 —— **硬刷新页面**（Ctrl/Cmd+Shift+R）；Host 侧改动只能靠重启。
 
 ## 开发
 
 ```
-npm test        # node --test：聚合黄金对拍 + 客户端无浏览器冒烟测试
+npm install     # 装 @deepseek-ai/schemastery（link 安装不会为被链接的包装依赖）
+npm test        # node --test：聚合黄金对拍 + 窗口汇总 + 客户端无浏览器冒烟测试
 ```
 
 目录：
 
 ```
-index.js                     Host 半边：注册 Remote 服务（零 import，见 docs/DESIGN.md）
+index.js                     Host 半边：Config（schemastery）+ 注册用量 Remote 服务
 client.js                    Client 半边：窗口 __ModuleLoader__ 工厂 + 看板与侧边栏卡片
-lib/session-usage.js         纯 Node 聚合：多帧 zstd 读取、折叠、按天/模型汇总、索引缓存
-test/session-usage.test.mjs  聚合与黄金对拍
-test/client-smoke.test.mjs   客户端工厂 / 槽位注册 / 两半 wire 契约对拍
+lib/session-usage.js         纯 Node 聚合：多帧 zstd 读取、折叠、按小时分桶、窗口汇总、索引缓存
+test/session-usage.test.mjs  聚合、毫秒区间、卡片窗口、Config schema、Remote 服务
+test/client-smoke.test.mjs   客户端工厂 / 槽位注册 / 两半 wire 契约对拍 / 渲染
 docs/DESIGN.md               设计、数据契约、踩过的坑与验证证据
 docs/research/               前期调研记录与可复用的会话日志探针脚本
 ```

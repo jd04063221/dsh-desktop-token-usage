@@ -21,6 +21,8 @@ window.__ModuleLoader__.load({
 
     const SERIES = ['#4c8dff', '#3fb950', '#d29922', '#a371f7', '#ec6a5e', '#39c5cf']
     const OTHER = '#6e7681'
+    /** Quiet refresh period; keeps hour windows honest without polling hard. */
+    const REFRESH_MS = 5 * 60_000
 
     // ── filter model ────────────────────────────────────────────────────────
 
@@ -53,19 +55,36 @@ window.__ModuleLoader__.load({
       return dayKeyOf(new Date(year, month - 1, day + delta))
     }
 
+    /** Local midnight of the day an instant falls in. */
+    function dayStartMs(ms) {
+      const date = new Date(ms)
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+    }
+
+    /** Local midnight of a `YYYY-MM-DD` key. */
+    function dayKeyStartMs(key) {
+      const [year, month, day] = key.split('-').map(Number)
+      return new Date(year, month - 1, day).getTime()
+    }
+
+    const DAY_MS = 86_400_000
+
+    /**
+     * Translate the panel's range chips into the wire's absolute milliseconds.
+     * Picking a human range is the view's job; the rollup itself is the Host's.
+     */
     function wireFilterOf(filter) {
       const preset = RANGES.find((range) => range.id === filter.range)
-      let sinceDay = null
-      let untilDay = null
+      let sinceMs = null
+      let untilMs = null
       if (preset && preset.days) {
-        untilDay = todayKey()
-        sinceDay = shiftDays(untilDay, -(preset.days - 1))
+        sinceMs = dayStartMs(Date.now() - (preset.days - 1) * DAY_MS)
       } else if (filter.range === 'custom') {
-        sinceDay = filter.since || null
-        untilDay = filter.until || null
+        if (filter.since) sinceMs = dayKeyStartMs(filter.since)
+        if (filter.until) untilMs = dayKeyStartMs(filter.until) + DAY_MS
       }
       const source = SOURCES.find((item) => item.id === filter.source)
-      return { sinceDay, untilDay, sources: source ? source.wire : null }
+      return { sinceMs, untilMs, sources: source ? source.wire : null }
     }
 
     // ── store ───────────────────────────────────────────────────────────────
@@ -233,6 +252,11 @@ window.__ModuleLoader__.load({
 .dtu-footTop{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-footValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
 .dtu-footRow{display:flex;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.dtu-window{display:flex;flex-direction:column;gap:1px;padding:4px 0 5px;border-top:1px solid var(--dsw-alias-border-l1)}
+.dtu-window:first-of-type{border-top:0;padding-top:2px}
+.dtu-windowLabel{color:var(--dsw-alias-label-secondary);font-size:11.5px;font-weight:600}
+.dtu-windowValue{color:var(--dsw-alias-label-primary);font-size:12.5px;font-variant-numeric:tabular-nums}
+.dtu-windowMeta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
 .dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
 .dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
@@ -338,17 +362,66 @@ window.__ModuleLoader__.load({
 
     // ── sidebar entry ───────────────────────────────────────────────────────
 
+    /**
+     * One card row: the configured window's own label, its input/output split
+     * and its cache hit rate. Input counts everything the provider was sent —
+     * the cache-missing part plus the cached reads — so the pair reads the way a
+     * user thinks about a request.
+     */
+    function CardWindow({ block }) {
+      return h(
+        'div',
+        { className: 'dtu-window' },
+        h('div', { className: 'dtu-windowLabel' }, block.label),
+        h(
+          'div',
+          { className: 'dtu-windowValue' },
+          `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)}`,
+        ),
+        h(
+          'div',
+          { className: 'dtu-windowMeta' },
+          `缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
+        ),
+      )
+    }
+
     function SidebarEntry(props) {
       const state = useStore()
-      const totals = state.data && state.data.totals
-      const total = totals ? totals.totalTokens : 0
-      const label = totals ? `${compact(total)} tokens` : 'Token 用量'
+      const card = state.data ? state.data.card : null
+      const blocks = card ? card.blocks : []
+      const all = card ? card.all : null
+      const headline = blocks.length > 0 ? blocks[0].inputTokens + blocks[0].outputTokens : all ? all.totalTokens : 0
       if (props.wide === false) {
+        const label = `Token 用量 · ${compact(headline)}`
         return h(
           'button',
-          { type: 'button', className: 'dtu-rail', title: `Token 用量 · ${label}`, 'aria-label': `Token 用量 · ${label}`, onClick: props.open },
+          { type: 'button', className: 'dtu-rail', title: label, 'aria-label': label, onClick: props.open },
           h(Icon, { size: 16 }),
         )
+      }
+      let body
+      if (state.status === 'error') {
+        body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
+      } else if (!card) {
+        body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
+      } else if (blocks.length > 0) {
+        body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
+      } else if (all) {
+        body = [
+          h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
+          h(
+            'div',
+            { key: 'split', className: 'dtu-footRow' },
+            h('span', null, `输入 ${compact(all.inputTokens)} · 输出 ${compact(all.outputTokens)}`),
+          ),
+          h(
+            'div',
+            { key: 'meta', className: 'dtu-footRow' },
+            h('span', null, `缓存命中 ${percent(all.cacheHitRate)}`),
+            h('span', null, `${all.turns} 轮`),
+          ),
+        ]
       }
       return h(
         'button',
@@ -360,15 +433,7 @@ window.__ModuleLoader__.load({
           h('span', null, 'Token 用量'),
           h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
         ),
-        h('div', { className: 'dtu-footValue' }, compact(total)),
-        totals
-          ? h(
-              'div',
-              { className: 'dtu-footRow' },
-              h('span', null, `缓存命中 ${percent(totals.cacheHitRate)}`),
-              h('span', null, `${totals.turns} 轮`),
-            )
-          : h('div', { className: 'dtu-footRow' }, h('span', null, '点击查看')),
+        body,
       )
     }
 
@@ -753,6 +818,13 @@ window.__ModuleLoader__.load({
             h('span', null, `数据源：本地会话日志（${data ? data.coverage.files : 0} 个文件，未联网）`),
             h(
               'span',
+              null,
+              data && data.card
+                ? `侧边栏卡片：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 设置 → 插件 → Token 用量 里调整）`
+                : null,
+            ),
+            h(
+              'span',
               { className: 'dtu-footEntry' },
               '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归「桌面·网页」；「命令行·机器人」指无客户端的会话。',
             ),
@@ -845,6 +917,15 @@ window.__ModuleLoader__.load({
           if (unmount) unmount()
         }
       }, 'dsh-token-usage: usage remote')
+
+      // A window like "last 6 hours" slides even while nothing new is logged, and
+      // a Config edit only reaches this half on the next call: refresh quietly.
+      ctx.effect(() => {
+        const timer = setInterval(() => {
+          if (namespace) void load(snapshot.filter, { silent: true })
+        }, REFRESH_MS)
+        return () => clearInterval(timer)
+      }, 'dsh-token-usage: refresh timer')
 
       ctx.slots.inject('main', () =>
         ctx.slots.register({ name: 'main', key: PANEL_ID, inject: face }, Dashboard),

@@ -15,16 +15,27 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  DAY_MS,
+  HOUR_MS,
   buildIndex,
+  cardRollup,
   clearIndexCache,
   dayKey,
   enumerateSessionFiles,
   foldUsage,
+  localDayStart,
   readSessionRecords,
   scanZstdFrames,
   summarize,
   totalOf,
 } from '../lib/session-usage.js'
+
+/** Local midnight of a `YYYY-MM-DD` key. */
+const dayKeyParts = (key) => key.split('-').map(Number)
+const dayStart = (key) => {
+  const [year, month, day] = dayKeyParts(key)
+  return new Date(year, month - 1, day).getTime()
+}
 
 const GOLDEN_SESSION = 'session-5964a5d3-...'
 const PROJECTION_CACHE = path.join(
@@ -118,26 +129,58 @@ test('the rollup is internally consistent', { skip: !haveSessions }, () => {
   assert.ok(payload.models.length > 0)
 })
 
-test('day filters partition the total and source filters narrow it', { skip: !haveSessions }, () => {
+test('millisecond ranges partition the total and source filters narrow it', { skip: !haveSessions }, () => {
   clearIndexCache()
   const all = summarize()
   if (all.days.length === 0) return
 
-  // One-day ranges must partition the grand total exactly.
+  // One-day ranges must partition the grand total exactly. Windows are aligned
+  // to whole hours, so a local-midnight boundary is exact.
   let partitioned = 0
   let turns = 0
   for (const day of all.days) {
-    const single = summarize({ sinceDay: day.day, untilDay: day.day })
+    const start = dayStart(day.day)
+    const single = summarize({ sinceMs: start, untilMs: start + DAY_MS })
     partitioned += single.totals.totalTokens
     turns += single.totals.turns
   }
   assert.equal(partitioned, all.totals.totalTokens, 'per-day ranges must partition the total')
   assert.equal(turns, all.totals.turns)
 
+  // An hour window can only be a subset of the day that contains it.
+  const day = all.days[all.days.length - 1]
+  const hourStartMs = new Date(...dayKeyParts(day.day), 12).getTime()
+  const oneHour = summarize({ sinceMs: hourStartMs, untilMs: hourStartMs + HOUR_MS })
+  assert.ok(oneHour.totals.totalTokens <= summarize({ sinceMs: dayStart(day.day), untilMs: dayStart(day.day) + DAY_MS }).totals.totalTokens)
+
   // A source filter can only narrow, and an unknown source yields nothing.
   const clients = summarize({ sources: ['client'] })
   assert.ok(clients.totals.totalTokens <= all.totals.totalTokens)
   assert.equal(summarize({ sources: ['nope'] }).totals.totalTokens, 0)
+})
+
+test('the sidebar card follows the configured windows', { skip: !haveSessions }, () => {
+  const both = cardRollup({ hours: 6, days: 7 })
+  assert.deepEqual(both.blocks.map((block) => block.id), ['hours', 'days'])
+  assert.equal(both.all, null, 'enabled windows replace the all-time fallback')
+
+  const off = cardRollup({ hours: 0, days: 0 })
+  assert.deepEqual(off.blocks, [])
+  assert.ok(off.all, 'with both windows off the card falls back to the all-time figures')
+
+  // A window cannot exceed the all-time total, and the split is by construction.
+  for (const block of both.blocks) {
+    assert.ok(block.totalTokens <= off.all.totalTokens, `${block.id} exceeds the all-time total`)
+    assert.equal(block.inputTokens, block.buckets[0] + block.buckets[2])
+    assert.equal(block.outputTokens, block.buckets[1])
+    assert.equal(block.totalTokens, block.inputTokens + block.outputTokens + block.buckets[3])
+  }
+  assert.ok(both.blocks[0].totalTokens <= both.blocks[1].totalTokens, '6 hours cannot exceed 7 days')
+
+  // Clamping belongs to this module, not to the caller.
+  const clamped = cardRollup({ hours: 99, days: -3 })
+  assert.deepEqual([clamped.hours, clamped.days], [23, 0])
+  assert.deepEqual(clamped.blocks.map((block) => block.id), ['hours'])
 })
 
 test('an unchanged log set reuses the in-process index', { skip: !haveSessions }, () => {
@@ -155,28 +198,49 @@ test('dayKey buckets in local time, not UTC', () => {
 
 test('the Remote service answers a filter and records the call', { skip: !haveSessions }, async () => {
   const provided = []
-  const { apply } = await import('../index.js')
-  apply({
-    inject: (deps, callback) => {
-      assert.deepEqual(deps, ['typert'])
-      callback({
-        typert: { register: () => () => {} },
-        reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
-        effect: () => {},
-      })
+  const { apply, Config } = await import('../index.js')
+
+  // The Config schema is what the Settings → Plugins card renders.
+  const standard = Config['~standard']
+  assert.equal(standard.vendor, 'schemastery')
+  const defaults = standard.validate({})
+  assert.deepEqual([defaults.value.hours, defaults.value.days], [0, 0])
+  assert.deepEqual([standard.validate({ hours: 23, days: 30 }).value.hours, standard.validate({ hours: 23, days: 30 }).value.days], [23, 30])
+  assert.ok(standard.validate({ hours: 24 }).issues, 'hours above 23 must be refused')
+  assert.ok(standard.validate({ days: 31 }).issues, 'days above 30 must be refused')
+
+  apply(
+    {
+      inject: (deps, callback) => {
+        assert.deepEqual(deps, ['typert'])
+        callback({
+          typert: { register: () => () => {} },
+          reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
+          effect: () => {},
+        })
+      },
     },
-  })
+    { hours: 6, days: 7 },
+  )
   assert.equal(provided.length, 1)
 
-  const payload = await provided[0].value.summary({ sinceDay: null, untilDay: null, sources: ['client'] })
+  const payload = await provided[0].value.summary({ sinceMs: null, untilMs: null, sources: ['client'] })
   assert.equal(payload.totals.buckets.length, 5)
   assert.ok(payload.totals.sessions > 0)
   assert.ok(payload.days.length > 0)
+  assert.deepEqual(payload.card.blocks.map((block) => block.id), ['hours', 'days'])
+  assert.equal(payload.card.all, null)
 
   // The same call must leave a diagnostic trail the shell can read back.
   const logPath = path.join(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'), 'cache', 'dsh-token-usage', 'calls.json')
   const log = JSON.parse(fs.readFileSync(logPath, 'utf8'))
   const last = log.calls[log.calls.length - 1]
   assert.equal(last.sessions, payload.totals.sessions)
-  assert.deepEqual(last.filter, { sinceDay: null, untilDay: null, sources: ['client'] })
+  assert.deepEqual(last.filter, { sinceMs: null, untilMs: null, sources: ['client'] })
+  assert.deepEqual(last.cardBlocks, ['hours', 'days'])
+})
+
+test('localDayStart snaps to local midnight', () => {
+  const noon = new Date(2026, 8, 27, 12, 34, 56).getTime()
+  assert.equal(localDayStart(noon), new Date(2026, 8, 27).getTime())
 })
