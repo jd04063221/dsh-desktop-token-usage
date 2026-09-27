@@ -152,3 +152,31 @@ test('dayKey buckets in local time, not UTC', () => {
   // 2026-01-01T00:30 local is 2025-12-31 in UTC for UTC+8.
   assert.equal(dayKey(new Date(2026, 0, 1, 0, 30, 0).getTime()), '2026-01-01')
 })
+
+test('the Remote service answers a filter and records the call', { skip: !haveSessions }, async () => {
+  const provided = []
+  const { apply } = await import('../index.js')
+  apply({
+    inject: (deps, callback) => {
+      assert.deepEqual(deps, ['typert'])
+      callback({
+        typert: { register: () => () => {} },
+        reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
+        effect: () => {},
+      })
+    },
+  })
+  assert.equal(provided.length, 1)
+
+  const payload = await provided[0].value.summary({ sinceDay: null, untilDay: null, sources: ['client'] })
+  assert.equal(payload.totals.buckets.length, 5)
+  assert.ok(payload.totals.sessions > 0)
+  assert.ok(payload.days.length > 0)
+
+  // The same call must leave a diagnostic trail the shell can read back.
+  const logPath = path.join(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'), 'cache', 'dsh-token-usage', 'calls.json')
+  const log = JSON.parse(fs.readFileSync(logPath, 'utf8'))
+  const last = log.calls[log.calls.length - 1]
+  assert.equal(last.sessions, payload.totals.sessions)
+  assert.deepEqual(last.filter, { sinceDay: null, untilDay: null, sources: ['client'] })
+})

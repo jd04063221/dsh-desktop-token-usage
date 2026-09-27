@@ -26,7 +26,14 @@ const root = path.dirname(here)
 let hooks = []
 let hookIndex = 0
 
+class Component {
+  constructor(props) {
+    this.props = props ?? {}
+  }
+}
+
 const React = {
+  Component,
   Fragment: Symbol('Fragment'),
   createElement(type, props, ...children) {
     return { type, props: { ...(props ?? {}), children: children.length <= 1 ? children[0] : children } }
@@ -61,7 +68,7 @@ function createElement(tag) {
 
 const document = { head: createElement('head'), createElement }
 
-/** Render an element tree by invoking function components, as React would. */
+/** Render an element tree by invoking components, as React would. */
 function render(node) {
   if (node === null || node === undefined || typeof node === 'boolean') return null
   if (Array.isArray(node)) return node.map(render).filter((child) => child !== null)
@@ -75,7 +82,21 @@ function render(node) {
   if (typeof node.type === 'function') {
     hooks = []
     hookIndex = 0
-    return render(node.type(node.props))
+    const isClass = node.type.prototype instanceof Component || typeof node.type.prototype?.render === 'function'
+    if (!isClass) return render(node.type(node.props))
+    const instance = new node.type(node.props)
+    instance.props = node.props
+    instance.state = instance.state ?? {}
+    try {
+      return render(instance.render())
+    } catch (error) {
+      // Route a child failure to the boundary the way React does.
+      const derive = node.type.getDerivedStateFromError
+      if (typeof derive !== 'function') throw error
+      instance.state = { ...instance.state, ...derive(error) }
+      if (typeof instance.componentDidCatch === 'function') instance.componentDidCatch(error, {})
+      return render(instance.render())
+    }
   }
   return { tag: node.type, props: node.props, children: render(node.props.children) }
 }
@@ -117,9 +138,10 @@ function loadClient() {
 }
 
 /** A fake Cordis context recording everything the plugin registers. */
-function fakeContext() {
+function fakeContext(options = {}) {
   const record = { slots: [], effects: [], mounted: [], injected: [] }
-  const namespace = { summary: async () => summaryPayload() }
+  // A Remote resolves to its `{ ok, value }` envelope, never to the bare payload.
+  const namespace = { summary: options.summary ?? (async (filter) => ({ ok: true, value: summaryPayload(filter) })) }
   const remote = {
     $mount: async (contribution) => {
       record.mounted.push(contribution)
@@ -252,6 +274,37 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   }
   // The source tabs must stay honest about what is derivable offline.
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
+})
+
+test('a failed Remote result shows its message instead of blanking the panel', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({
+    summary: async () => ({ ok: false, error: { code: 'gateway/service-unavailable', message: 'active Service "dshTokenUsage" is unavailable' } }),
+  })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const text = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.match(text, /读取失败/)
+  assert.match(text, /is unavailable/)
+
+  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
+  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  assert.match(card, /读取失败/, 'the card must report the failure too')
+})
+
+test('a malformed payload shows an error instead of a blank panel', async () => {
+  const { plugin } = loadClient()
+  // A Host that answers with a shape the view cannot walk must not blank the seat.
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: { ...summaryPayload(), days: null } }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const text = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.match(text, /渲染失败/, `expected a visible failure, got: ${text}`)
+  assert.ok(text.trim().length > 0, 'the panel must never render nothing')
 })
 
 test('the Host descriptor and the Client contribution agree', async () => {

@@ -109,9 +109,19 @@ window.__ModuleLoader__.load({
       if (!silent) patch({ status: snapshot.data ? 'ready' : 'loading', filter, error: null })
       else patch({ filter })
       try {
-        const data = await namespace.summary(wireFilterOf(filter))
+        const response = await namespace.summary(wireFilterOf(filter))
         if (mine !== ticket) return
-        patch({ status: 'ready', data, error: null })
+        // A Remote returns its `{ ok, value }` envelope as-is: a failure is a
+        // value, not a throw, so the branch must be read before trusting it.
+        if (!response || response.ok !== true) {
+          const failure = response && response.error
+          patch({
+            status: 'error',
+            error: (failure && (failure.message ?? failure.code)) || '用量服务返回了无法识别的响应',
+          })
+          return
+        }
+        patch({ status: 'ready', data: response.value, error: null })
       } catch (error) {
         if (mine !== ticket) return
         patch({ status: 'error', error: error && error.message ? error.message : String(error) })
@@ -124,8 +134,16 @@ window.__ModuleLoader__.load({
     }
     const reload = () => void load(snapshot.filter, { silent: true })
 
+    /**
+     * Subscribe through the two hooks every React since 16.8 exports. The shell's
+     * frozen module table decides what `react` re-exports, and a curated subset
+     * can omit the late additions — a missing export here would throw during
+     * render and blank both seats.
+     */
     function useStore() {
-      return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+      const [value, setValue] = React.useState(getSnapshot)
+      React.useEffect(() => subscribe(() => setValue(getSnapshot())), [])
+      return value
     }
 
     // ── formatting ──────────────────────────────────────────────────────────
@@ -153,8 +171,8 @@ window.__ModuleLoader__.load({
     // ── styles ──────────────────────────────────────────────────────────────
 
     const CSS = `
-.dtu-root{display:flex;flex-direction:column;height:100%;min-height:0;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}
-.dtu-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+.dtu-root{display:block;height:100%;overflow:auto;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}
+.dtu-head{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--dsw-alias-bg-base);border-bottom:1px solid var(--dsw-alias-border-l1)}
 .dtu-title{font-size:15px;font-weight:600}
 .dtu-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dtu-group{display:flex;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}
@@ -165,7 +183,7 @@ window.__ModuleLoader__.load({
 .dtu-refresh{appearance:none;border:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;padding:5px 12px;border-radius:8px;cursor:pointer}
 .dtu-refresh:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .dtu-date{background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary);border-radius:6px;padding:4px 6px;font:inherit}
-.dtu-body{flex:1;min-height:0;overflow:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:16px}
+.dtu-body{display:flex;flex-direction:column;gap:16px;padding:16px 18px 28px}
 .dtu-note{padding:10px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
 .dtu-note[data-tone="error"]{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
 .dtu-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
@@ -283,6 +301,39 @@ window.__ModuleLoader__.load({
         h('div', { className: 'dtu-sectionHead' }, h('div', { className: 'dtu-sectionTitle' }, title), extra ?? null),
         children,
       )
+    }
+
+    /**
+     * A crash inside a slot entry blanks the panel with no explanation, and the
+     * page console is not always at hand. Catching it here turns any render
+     * failure into visible text naming the component and the message.
+     */
+    class Boundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { error: null }
+      }
+
+      static getDerivedStateFromError(error) {
+        return { error }
+      }
+
+      componentDidCatch(error, info) {
+        console.error('[dsh-token-usage] render failed:', error, info)
+      }
+
+      render() {
+        const error = this.state.error
+        if (error) {
+          const message = error && error.message ? error.message : String(error)
+          return h(
+            'div',
+            { className: 'dtu-note', 'data-tone': 'error' },
+            `dsh-token-usage 渲染失败（${this.props.label}）：${message}`,
+          )
+        }
+        return this.props.children
+      }
     }
 
     // ── sidebar entry ───────────────────────────────────────────────────────
@@ -568,7 +619,7 @@ window.__ModuleLoader__.load({
 
     // ── dashboard ───────────────────────────────────────────────────────────
 
-    function Dashboard() {
+    function DashboardBody() {
       const state = useStore()
       const [hovered, setHovered] = React.useState(null)
 
@@ -576,6 +627,7 @@ window.__ModuleLoader__.load({
       const filter = state.filter
       const custom = filter.range === 'custom'
       const totals = data ? data.totals : null
+      const days = data ? data.days : []
       const buckets = totals ? totals.buckets : [0, 0, 0, 0, 0]
       const topShare = totals && totals.totalTokens > 0 && data.models.length > 0 ? data.models[0].totalTokens / totals.totalTokens : 0
 
@@ -616,6 +668,12 @@ window.__ModuleLoader__.load({
       let body
       if (state.status === 'error') {
         body = h('div', { className: 'dtu-note', 'data-tone': 'error' }, `读取失败：${state.error}`)
+      } else if (state.status === 'waiting') {
+        body = h(
+          'div',
+          { className: 'dtu-note' },
+          '等待 Host 用量服务…（若长时间不变，按 Ctrl+Shift+I 看控制台报错）',
+        )
       } else if (!data) {
         body = h('div', { className: 'dtu-note' }, '正在读取本地会话日志…')
       } else if (totals.totalTokens === 0 && totals.turns === 0) {
@@ -647,7 +705,7 @@ window.__ModuleLoader__.load({
               title: totals.topModel ?? undefined,
             }),
           ),
-          h(Section, { title: '活跃热力图' }, h(Heatmap, { days: data.days, first: data.days[0].day, last: data.days[data.days.length - 1].day })),
+          h(Section, { title: '活跃热力图' }, h(Heatmap, { days: data.days, first: days[0] ? days[0].day : null, last: days[days.length - 1] ? days[days.length - 1].day : null })),
           h(Section, { title: '按天 Token 趋势' }, h(TrendChart, { days: data.days, models: data.models })),
           h(
             Section,
@@ -701,6 +759,18 @@ window.__ModuleLoader__.load({
           ),
         ),
       )
+    }
+
+    // ── slot entries (each guarded) ─────────────────────────────────────────
+
+    /** Central panel: a render failure must show text, never a blank seat. */
+    function Dashboard(props) {
+      return h(Boundary, { label: '中央看板' }, h(DashboardBody, props))
+    }
+
+    /** Sidebar footer card, guarded for the same reason. */
+    function UsageEntry(props) {
+      return h(Boundary, { label: '侧边栏卡片' }, h(SidebarEntry, props))
     }
 
     // ── wire contribution + slots ───────────────────────────────────────────
@@ -781,7 +851,7 @@ window.__ModuleLoader__.load({
       )
       ctx.inject(['layout'], (layoutCtx) => {
         layoutCtx.slots.inject('sidebar.footer.action', () =>
-          layoutCtx.slots.register({ name: 'sidebar.footer.action', id: PANEL_ID, order: 5, inject: face }, SidebarEntry),
+          layoutCtx.slots.register({ name: 'sidebar.footer.action', id: PANEL_ID, order: 5, inject: face }, UsageEntry),
         )
       })
     }
