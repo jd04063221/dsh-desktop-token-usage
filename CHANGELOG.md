@@ -12,6 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > reports `schema` or `absent` for this plugin, together with whether the process has been restarted since your change; `boot.json`
 > is rewritten by every `apply`, so its existence only tells you when the fiber was last remounted.
 
+## [0.1.3] - 2026-09-28
+
+### Changed
+
+- **CI now publishes through Trusted Publishing (OIDC); the repository no longer stores an npm token.** The
+  workflow drops `NODE_AUTH_TOKEN`, adds `id-token: write`, and upgrades npm on the runner (Node 22 ships an npm
+  older than the 11.5.1 that trusted publishing requires). Provenance attestations are generated automatically,
+  and the `NPM_TOKEN` repository secret is no longer referenced.
+
 ## [0.1.2] - 2026-09-28
 
 ### Changed

@@ -11,6 +11,14 @@
 > 判断当前跑的是哪一代：看 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`，再叠加
 > 「本次改动之后是否重启过」；`boot.json` 每次 `apply` 都会重写，只能说明 fiber 最近一次重挂的时间。
 
+## [0.1.3] - 2026-09-28
+
+### 变更
+
+- **CI 发布改用 Trusted Publishing（OIDC），仓库里不再保存任何 npm token。** workflow 去掉
+  `NODE_AUTH_TOKEN`、加上 `id-token: write`，并在 runner 上升级 npm（Node 22 自带的 npm 低于
+  trusted publishing 要求的 11.5.1）。provenance 证明会自动生成，仓库密钥 `NPM_TOKEN` 已不再被引用。
+
 ## [0.1.2] - 2026-09-28
 
 ### 变更
