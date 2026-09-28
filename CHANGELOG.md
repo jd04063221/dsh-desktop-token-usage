@@ -109,7 +109,10 @@
 - `engines.dsh` 声明为 `^0.1.7-rc.2`（原先写 `>=0.1.7-rc.2`，那等于宣称对 0.2/1.0 也兼容，没有依据）。
   该字段是**声明性**的：官方明确说 declaring a range does not reject incompatible hosts。
 - 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务；更新的版本未测试。
-- 实测结论也写进了插件页可见的 locale 描述（`meta.description`），安装前就能看到。
+- 实测结论同时写进两处展示文本：`package.json` 的 `description` 与 locale 的 `meta.description`。
+  原因是插件列表接口（`listBundles`）把 `package.json` 的 **file URL** 传给 `readPluginMeta`，
+  而官方说明「File paths and file URLs return no metadata」，所以该路径下只有 `package.json` 描述生效
+  （实测：列表里所有 bundle 都只有 `description`、没有 `meta`）；locale 那条用于能按包名解析元信息的 UI 路径。
 
 ### 验证
 
