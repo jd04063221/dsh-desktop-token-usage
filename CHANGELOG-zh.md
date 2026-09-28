@@ -1,6 +1,6 @@
 # 更新日志
 
-[English](CHANGELOG.md) | 中文
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | 中文
 
 本文件记录 `@jd04063221/dsh-desktop-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
@@ -10,6 +10,26 @@
 > 换 specifier、重装、甚至改包名也不会重新导入（Node 按 realpath 缓存 ESM），必须重启一次 DSH。
 > 判断当前跑的是哪一代：看 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`，再叠加
 > 「本次改动之后是否重启过」；`boot.json` 每次 `apply` 都会重写，只能说明 fiber 最近一次重挂的时间。
+
+## [0.1.1] - 2026-09-28
+
+### 修复
+
+- **npm 页面默认渲染的是中文 README。** npm 11 在 `@npmcli/package-json/lib/normalize.js` 里用
+  `{README,README.*}` 做 glob 并取第一个像 markdown 的匹配；本机上该 glob 先返回 `README.zh.md`，
+  于是 packument 的 `readme` 字段存的是中文文档。中文文档现改名为 `README-zh.md` 与 `CHANGELOG-zh.md`
+  （连字符不属于该 glob，因此只有 `README.md` 会被选中）。
+
+### 变更
+
+- 两份文档顶部的语言切换链接改为 GitHub 绝对地址：相对链接在 npm 包页面上点不开（npm 不把仓库文件当页面
+  提供），绝对地址在 GitHub 与 npm 上都可用。
+
+### 新增
+
+- GitHub Actions 发布 workflow（`.github/workflows/publish.yml`）：推 `v*` 标签即发布到 npm，
+  手动运行默认 dry-run，且打标签时会校验 tag 与 `package.json` 里的 `version` 一致。
+  认证使用仓库密钥 `NPM_TOKEN`（需开启 bypass 2FA 的 granular token）。
 
 ## [0.1.0] - 2026-09-27
 
@@ -99,7 +119,7 @@
 
 ### 文档
 
-- `README.md`（英文，默认）/ `README.zh.md`（中文）：安装、使用、配置项、token 口径表、来源推断的局限、
+- `README.md`（英文，默认）/ `README-zh.md`（中文）：安装、使用、配置项、token 口径表、来源推断的局限、
   已知限制、排查顺序，两份顶部互相链接。
 - `docs/DESIGN.md`：数据契约、关键取舍，以及踩过的坑（多帧 zstd、信封、模块代缓存、配置页机制等）。
 - `docs/research/`：前期调研记录与可复用的会话日志探针脚本。
@@ -142,7 +162,7 @@
 
 ## 附录：提交索引
 
-首个版本由以下提交构成（`git log --reverse`，截至 `2b4be69`）：
+0.1.0 由以下提交构成（`git log --reverse`，截至 `2b4be69`）：
 
 | 提交 | 时间 | 内容 |
 |---|---|---|

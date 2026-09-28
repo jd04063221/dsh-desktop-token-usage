@@ -1,6 +1,6 @@
 # Changelog
 
-English | [中文](CHANGELOG.zh.md)
+English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md)
 
 This file documents all notable changes to `@jd04063221/dsh-desktop-token-usage`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the version numbers follow [Semantic Versioning](https://semver.org/).
@@ -11,6 +11,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > DSH must be restarted once before the new code is loaded. To tell which generation is running, check whether `Config.listConfigs`
 > reports `schema` or `absent` for this plugin, together with whether the process has been restarted since your change; `boot.json`
 > is rewritten by every `apply`, so its existence only tells you when the fiber was last remounted.
+
+## [0.1.1] - 2026-09-28
+
+### Fixed
+
+- **The npm page rendered the Chinese README by default.** npm 11 picks the readme in
+  `@npmcli/package-json/lib/normalize.js` by globbing `{README,README.*}` and taking the first markdown-looking
+  match; on this machine that glob returned `README.zh.md`, so the packument's `readme` field held the Chinese
+  document. The Chinese docs are now named `README-zh.md` and `CHANGELOG-zh.md` (a hyphen is not part of that
+  glob, so only `README.md` can be selected).
+
+### Changed
+
+- The language switcher links at the top of both documents are absolute GitHub URLs: a relative link cannot be
+  opened from the npm package page, because npm does not serve repository files as pages. Absolute URLs work on
+  both GitHub and npm.
+
+### Added
+
+- A GitHub Actions publish workflow (`.github/workflows/publish.yml`): pushing a `v*` tag publishes to npm,
+  a manual run defaults to the dry run, and a tag push is checked against the `version` in `package.json`.
+  Authentication uses the `NPM_TOKEN` repository secret (a granular access token with bypass 2FA enabled).
 
 ## [0.1.0] - 2026-09-27
 
@@ -107,7 +129,7 @@ First release: fully offline token usage statistics, with all data taken from th
 
 ### Documentation
 
-- `README.md` (English, the default) / `README.zh.md` (Chinese): installation, usage, configuration options,
+- `README.md` (English, the default) / `README-zh.md` (Chinese): installation, usage, configuration options,
   the token accounting table, the limits of origin inference, known limitations, and a troubleshooting order,
   with the two top-of-file switchers linking to each other.
 - `docs/DESIGN.md`: the data contract, the key trade-offs, and the pitfalls encountered (multi-frame zstd, the envelope, module generation caching, the configuration page mechanism, and so on).
@@ -151,7 +173,7 @@ First release: fully offline token usage statistics, with all data taken from th
 
 ## Appendix: commit index
 
-The first release consists of the following commits (`git log --reverse`, up to `2b4be69`):
+Release 0.1.0 consists of the following commits (`git log --reverse`, up to `2b4be69`):
 
 | Commit | Time | Content |
 |---|---|---|

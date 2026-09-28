@@ -1,6 +1,6 @@
 # @jd04063221/dsh-desktop-token-usage
 
-[English](README.md) | 中文
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文
 
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
@@ -218,10 +218,10 @@ test/session-usage.test.mjs  聚合、毫秒区间、卡片窗口、日历、Con
 test/client-smoke.test.mjs   客户端工厂 / 槽位注册 / 两半 wire 契约对拍 / 渲染
 docs/DESIGN.md               设计、数据契约、踩过的坑与验证证据
 docs/research/               前期调研记录与可复用的会话日志探针脚本
-CHANGELOG.zh.md              中文版本变更记录（含提交索引）
+CHANGELOG-zh.md              中文版本变更记录（含提交索引）
 ```
 
-文档都提供中英两份：英文为默认（`README.md` / `CHANGELOG.md`），中文为 `README.zh.md` / `CHANGELOG.zh.md`，
+文档都提供中英两份：英文为默认（`README.md` / `CHANGELOG.md`），中文为 `README-zh.md` / `CHANGELOG-zh.md`，
 两份顶部互相链接。
 
 ## 发布到 npm

@@ -77,7 +77,7 @@ ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imp
 
 **这条约束的边界**：`install_bundle` 对本地目录采用 `link:` 安装，pnpm **不会为被链接的包装依赖**，
 所以「声明成真依赖」只在包被真正装进 profile（而非 link）时才自动生效；link 场景下依赖必须由本仓库自己
-`npm install` 提供（见 README.zh.md）。这也是为什么本包只留了**唯一一个** `@deepseek-ai/*` import —— 官方 Config
+`npm install` 提供（见 README-zh.md）。这也是为什么本包只留了**唯一一个** `@deepseek-ai/*` import —— 官方 Config
 卡片必需的 `@deepseek-ai/schemastery`；它在 `dependencies` 里，且安装后 `node -e "import(...)"` 可解析。
 schemastery 的 schema 用 Standard Schema（`~standard`）暴露校验，`resolveConfig` 只调
 `Config['~standard'].validate()`，loader 的 `isSchemastery` 只看 `~standard.vendor === 'schemastery'`，

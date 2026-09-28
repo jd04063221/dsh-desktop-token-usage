@@ -1,6 +1,6 @@
 # @jd04063221/dsh-desktop-token-usage
 
-English | [中文](README.zh.md)
+English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md)
 
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
@@ -258,8 +258,8 @@ docs/research/               Earlier research notes and reusable session-log pro
 CHANGELOG.md                 Version history (with a commit index)
 ```
 
-The docs come in both languages: English is the default (`README.md` / `CHANGELOG.md`) and Chinese is `README.zh.md` /
-`CHANGELOG.zh.md`, with the two top-of-file switchers linking to each other.
+The docs come in both languages: English is the default (`README.md` / `CHANGELOG.md`) and Chinese is `README-zh.md` /
+`CHANGELOG-zh.md`, with the two top-of-file switchers linking to each other.
 
 ## Publishing to npm
 
