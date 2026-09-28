@@ -178,10 +178,11 @@ npm test        # node --test：聚合黄金对拍 + 窗口汇总 + 客户端无
 index.js                     Host 半边：Config（schemastery）+ 注册用量 Remote 服务
 client.js                    Client 半边：窗口 __ModuleLoader__ 工厂 + 看板与侧边栏卡片
 lib/session-usage.js         纯 Node 聚合：多帧 zstd 读取、折叠、按小时分桶、窗口汇总、索引缓存
-test/session-usage.test.mjs  聚合、毫秒区间、卡片窗口、Config schema、Remote 服务
+test/session-usage.test.mjs  聚合、毫秒区间、卡片窗口、日历、Config schema、Remote 服务
 test/client-smoke.test.mjs   客户端工厂 / 槽位注册 / 两半 wire 契约对拍 / 渲染
 docs/DESIGN.md               设计、数据契约、踩过的坑与验证证据
 docs/research/               前期调研记录与可复用的会话日志探针脚本
+CHANGELOG.md                 版本变更记录（含提交索引）
 ```
 
 ## License
