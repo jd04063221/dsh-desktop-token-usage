@@ -1,12 +1,15 @@
 # 更新日志
 
+[English](CHANGELOG.md) | 中文
+
 本文件记录 `@jd04063221/dsh-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 > **升级注意**：本插件是 DSH bundle，分两半加载。`client.js`（界面）由浏览器热更新，
 > `index.js` / `lib/*`（Host）在 DSH 进程里**缓存着已导入的 JS 模块代**——重新启用插件不够，
-> 需要重启一次 DSH 才会加载新代码。判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-token-usage/boot.json`
-> 是否存在，或 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`。
+> 换 specifier、重装、甚至改包名也不会重新导入（Node 按 realpath 缓存 ESM），必须重启一次 DSH。
+> 判断当前跑的是哪一代：看 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`，再叠加
+> 「本次改动之后是否重启过」；`boot.json` 每次 `apply` 都会重写，只能说明 fiber 最近一次重挂的时间。
 
 ## [0.1.0] - 2026-09-27
 
@@ -58,6 +61,10 @@
 - **测试会覆盖线上诊断文件**：`npm test` 里的 `apply` 会写真实的 `boot.json` / `calls.json`，
   而 README 恰恰教人看这两个文件判断"当前跑的是哪一代 Host"。诊断目录现在可用环境变量
   `DSH_TOKEN_USAGE_DIAG_DIR` 覆盖，测试套件自动指向临时目录，不再污染线上文件。
+- **测试与会话日志写入竞争**：「按天区间划分总量」这类断言会在运行中的会话往日志追加一条记录时偶发失败
+  （实测差 157,951 token，且 per-day 之和反而大于快照总量）。现在这些窗口统一按**当前整点**钉住上界——
+  按小时分桶的过滤语义决定了「钉在现在」无效：当前小时桶里之后写入的记录仍会被算进来。热力图刻意不受
+  时间范围约束，因此改为比对稳定的日期网格，跨快照求和时重读一次兜底。
 
 ### 变更
 
@@ -90,7 +97,8 @@
 
 ### 文档
 
-- `README.md`：安装、使用、配置项、token 口径表、来源推断的局限、已知限制、排查顺序。
+- `README.md`（英文，默认）/ `README.zh.md`（中文）：安装、使用、配置项、token 口径表、来源推断的局限、
+  已知限制、排查顺序，两份顶部互相链接。
 - `docs/DESIGN.md`：数据契约、关键取舍，以及踩过的坑（多帧 zstd、信封、模块代缓存、配置页机制等）。
 - `docs/research/`：前期调研记录与可复用的会话日志探针脚本。
 

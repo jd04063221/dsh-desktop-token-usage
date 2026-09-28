@@ -77,7 +77,7 @@ ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imp
 
 **这条约束的边界**：`install_bundle` 对本地目录采用 `link:` 安装，pnpm **不会为被链接的包装依赖**，
 所以「声明成真依赖」只在包被真正装进 profile（而非 link）时才自动生效；link 场景下依赖必须由本仓库自己
-`npm install` 提供（见 README）。这也是为什么本包只留了**唯一一个** `@deepseek-ai/*` import —— 官方 Config
+`npm install` 提供（见 README.zh.md）。这也是为什么本包只留了**唯一一个** `@deepseek-ai/*` import —— 官方 Config
 卡片必需的 `@deepseek-ai/schemastery`；它在 `dependencies` 里，且安装后 `node -e "import(...)"` 可解析。
 schemastery 的 schema 用 Standard Schema（`~standard`）暴露校验，`resolveConfig` 只调
 `Config['~standard'].validate()`，loader 的 `isSchemastery` 只看 `~standard.vendor === 'schemastery'`，
@@ -157,16 +157,24 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 
 ### 2.5 Host 模块代是缓存的：改 Host 半边必须重启
 
-实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代。
-所以反复「重新启用」看到的一直是第一版 host 代码：`Config.listConfigs` 持续报 `absent`、
-诊断文件不更新、`apply` 收到的仍是旧 config。判断当前跑的是哪一版，看 `boot.json` 是否存在即可。
+实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代；
+`remove_bundle` + 重新 `install_bundle` 也不够。更强的一条证据是**改包名同样没用**：Node 按解析后的
+realpath 缓存 ESM，`dsh-token-usage` 与 `@jd04063221/dsh-token-usage` 两个说明符都指向同一个真实路径，
+实测 `import('dsh-token-usage') === import('@jd04063221/dsh-token-usage')` 返回**同一个模块实例**。
+所以反复「重新启用」、重装、甚至改名，看到的始终是上次启动时导入的那一代 host 代码。
 
 | 改动的半边 | 生效方式 |
 |---|---|
 | `client.js` | 客户端模块快照按 mtime/size 变更，HMR 推给页面；必要时硬刷新 |
-| `index.js` / `lib/*` | **重启 DSH**（`remove_bundle` + 重新 `install_bundle` 也不够，specifier 未变） |
+| `index.js` / `lib/*` | **只能重启 DSH**：换 specifier、重装、改包名都不会重新导入 |
 
-这也解释了为什么本次交付里「配置卡生效」只能标注为**待重启后确认**。
+判断当前跑的是哪一代**不能只看 `boot.json` 是否存在**——它由每次 `apply` 重写，只说明 fiber 最近一次
+重挂的时间，旧模块代同样会留下这个文件。可靠信号是 `Config.listConfigs` 的 `status`
+（`absent` = 该模块没有 `Config` 导出），再叠加「本次改动之后是否重启过」这个前提。
+
+本次交付里「配置卡生效」已由 `Config.listConfigs` 报 `status: schema` 证实（见 §5 验证表）。但要区分三件事：
+**Host 侧**的读/写链路已通；**客户端**那张卡要硬刷新页面才会挂上；而包含最新 Host 代码
+（`payload.heatmap`、诊断目录覆盖等）的模块代，仍需一次重启才会加载。
 
 ### 2.6 配置 UI 不是 schema 自动渲染的
 
@@ -298,6 +306,7 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 | 浏览器 → Host RPC | 页面调用后 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json` 被重写 | 打通 |
 | **配置卡生效** | `Config.listConfigs` → `include:dsh-token-usage` 报 `status: schema`，`name` 为包名 | 通过 |
 | 卡片数字 | 侧边栏卡片的窗口行（输入/输出/命中率）与轮次 | 人工确认通过 |
+| 文档中英对拍 | 脚本比对两份的标题层级序列、代码围栏数量、行内代码 token 集合与数字集合 | 一致（README 15 个标题 / 6 个代码块；CHANGELOG 12 个标题，行内 token 各 108 个） |
 | **看板视觉（含重做后的热力图）** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
 
 > **实测环境**：DSH Desktop `0.1.7-rc.2`（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`）、

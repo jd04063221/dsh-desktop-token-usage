@@ -18,7 +18,9 @@
     "icon.svg",
     "cordis.patch.yml",
     "README.md",
-    "CHANGELOG.md"
+    "README.zh.md",
+    "CHANGELOG.md",
+    "CHANGELOG.zh.md"
   ],
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
