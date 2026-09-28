@@ -1,18 +1,23 @@
-# Publish dsh-desktop-token-usage to npm.
+# Publish dsh-desktop-token-usage to npm via Trusted Publishing (OIDC).
 #
 # Trigger: pushing a version tag (v*), or a manual run from the Actions tab.
 # A manual run defaults to the dry run, so it is safe to click.
 #
-# Authentication: the NPM_TOKEN repository secret. It must be a granular access
-# token with "Read and write" on this package (or all packages) **and "Bypass
-# 2FA" enabled** — without bypass 2FA the registry rejects the publish with
-# "Two-factor authentication is required to publish this package but an
-# automation token was specified" (403).
-#
-# To switch to Trusted Publishing later (no long-lived token at all): set the
-# publisher on npm for this repository + workflow, then add `id-token: write`
-# under permissions and replace the `NODE_AUTH_TOKEN` env with
-# `--provenance` on the publish step. The rest of this file stays as is.
+# Authentication: OpenID Connect — there is no long-lived token anywhere.
+# The exchange needs three things:
+#   1. `id-token: write` in this file (below);
+#   2. a trusted publisher registered on npm for this package:
+#        provider    GitHub Actions
+#        repository  jd04063221/dsh-desktop-token-usage
+#        workflow    publish.yml
+#        permission  publish
+#      registered with:
+#        npx npm@11.20.0 trust github dsh-desktop-token-usage --file publish.yml \
+#          --repo jd04063221/dsh-desktop-token-usage --allow-publish
+#      (that command itself needs 2FA and cannot use a bypass-2FA token);
+#   3. npm >= 11.5.1 on the runner, so the CLI is upgraded below — the npm
+#      bundled with Node 22 is older and cannot complete the OIDC exchange.
+# Provenance attestations are generated automatically by trusted publishing.
 #
 # There is no separate "run the tests" step on purpose: package.json binds
 # `prepublishOnly` to `npm test`, so every publish below runs the suite first.
@@ -35,6 +40,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write # the OIDC exchange with the npm registry
 
 jobs:
   publish:
@@ -46,6 +52,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; Node 22 ships an older one.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@^11.15.0
 
       # No lockfile is committed, so this cannot be `npm ci`.
       - name: Install dependencies
@@ -61,14 +71,11 @@ jobs:
           fi
           echo "tag $GITHUB_REF_NAME matches package version $version"
 
+      # No NODE_AUTH_TOKEN on purpose: the CLI authenticates through OIDC.
       - name: Publish to npm
         if: github.event_name == 'push' || inputs.mode == 'publish'
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish dry run
         if: github.event_name != 'push' && inputs.mode != 'publish'
         run: npm publish --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
