@@ -54,9 +54,13 @@ export const Config = Schema.object({
  * A bounded record of the last calls, written next to the index cache. When the
  * dashboard shows nothing, this file answers the first question — did the
  * browser reach the Host at all — without needing the page console.
+ *
+ * The directory is overridable because the test suite runs `apply` too, and
+ * these two files are what a human inspects to tell which generation is live.
  */
-const CALL_LOG = path.join(DSH_HOME, 'cache', 'dsh-token-usage', 'calls.json')
-const BOOT_LOG = path.join(DSH_HOME, 'cache', 'dsh-token-usage', 'boot.json')
+const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || path.join(DSH_HOME, 'cache', 'dsh-token-usage')
+const CALL_LOG = path.join(DIAG_DIR, 'calls.json')
+const BOOT_LOG = path.join(DIAG_DIR, 'boot.json')
 const CALL_LOG_LIMIT = 20
 const calls = []
 

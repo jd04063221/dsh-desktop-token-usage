@@ -30,6 +30,10 @@ import {
   totalOf,
 } from '../lib/session-usage.js'
 
+// `apply` writes the plugin's own diagnostics; keep them off the live files,
+// which a human reads to tell which Host generation is running.
+process.env.DSH_TOKEN_USAGE_DIAG_DIR ??= fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-token-usage-diag-'))
+
 /** Local midnight of a `YYYY-MM-DD` key. */
 const dayKeyParts = (key) => key.split('-').map(Number)
 const dayStart = (key) => {
@@ -278,7 +282,7 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.deepEqual(edits[0].next, { hours: 12, days: 0 })
 
   // The same call must leave a diagnostic trail the shell can read back.
-  const logPath = path.join(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'), 'cache', 'dsh-token-usage', 'calls.json')
+  const logPath = path.join(process.env.DSH_TOKEN_USAGE_DIAG_DIR, 'calls.json')
   const log = JSON.parse(fs.readFileSync(logPath, 'utf8'))
   const last = log.calls[log.calls.length - 1]
   assert.equal(last.sessions, payload.totals.sessions)

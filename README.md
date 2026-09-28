@@ -175,6 +175,9 @@ npm install     # 装 @deepseek-ai/schemastery（link 安装不会为被链接�
 npm test        # node --test：聚合黄金对拍 + 窗口汇总 + 客户端无浏览器冒烟测试
 ```
 
+测试也会跑 `apply`，所以它写诊断文件时会自动指向临时目录（`DSH_TOKEN_USAGE_DIAG_DIR`），
+不会覆盖你在 `$DSH_HOME/cache/dsh-token-usage/` 下要排查的那两个文件。
+
 目录：
 
 ```

@@ -13,10 +13,15 @@
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
+
+// `apply` writes the plugin's own diagnostics; keep them off the live files,
+// which a human reads to tell which Host generation is running.
+process.env.DSH_TOKEN_USAGE_DIAG_DIR ??= fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-token-usage-diag-'))
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.dirname(here)
