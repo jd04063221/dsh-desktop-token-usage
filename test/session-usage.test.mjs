@@ -135,7 +135,12 @@ test('the rollup is internally consistent', { skip: !haveSessions }, () => {
 
 test('millisecond ranges partition the total and source filters narrow it', { skip: !haveSessions }, () => {
   clearIndexCache()
-  const all = summarize()
+  // This suite reads the LIVE session logs and the running session keeps appending
+  // to them, so every window below shares one upper bound taken at the start of the
+  // current hour. Pinning any later instant would not help: hour filtering is per
+  // bucket, so a bound inside the current hour still admits records written after it.
+  const pinnedUntil = Math.floor(Date.now() / HOUR_MS) * HOUR_MS
+  const all = summarize({ untilMs: pinnedUntil })
   if (all.days.length === 0) return
 
   // One-day ranges must partition the grand total exactly. Windows are aligned
@@ -144,7 +149,7 @@ test('millisecond ranges partition the total and source filters narrow it', { sk
   let turns = 0
   for (const day of all.days) {
     const start = dayStart(day.day)
-    const single = summarize({ sinceMs: start, untilMs: start + DAY_MS })
+    const single = summarize({ sinceMs: start, untilMs: Math.min(start + DAY_MS, pinnedUntil) })
     partitioned += single.totals.totalTokens
     turns += single.totals.turns
   }
@@ -154,13 +159,14 @@ test('millisecond ranges partition the total and source filters narrow it', { sk
   // An hour window can only be a subset of the day that contains it.
   const day = all.days[all.days.length - 1]
   const hourStartMs = new Date(...dayKeyParts(day.day), 12).getTime()
-  const oneHour = summarize({ sinceMs: hourStartMs, untilMs: hourStartMs + HOUR_MS })
-  assert.ok(oneHour.totals.totalTokens <= summarize({ sinceMs: dayStart(day.day), untilMs: dayStart(day.day) + DAY_MS }).totals.totalTokens)
+  const wholeDay = summarize({ sinceMs: dayStart(day.day), untilMs: Math.min(dayStart(day.day) + DAY_MS, pinnedUntil) })
+  const oneHour = summarize({ sinceMs: hourStartMs, untilMs: Math.min(hourStartMs + HOUR_MS, pinnedUntil) })
+  assert.ok(oneHour.totals.totalTokens <= wholeDay.totals.totalTokens)
 
   // A source filter can only narrow, and an unknown source yields nothing.
-  const clients = summarize({ sources: ['client'] })
+  const clients = summarize({ sources: ['client'], untilMs: pinnedUntil })
   assert.ok(clients.totals.totalTokens <= all.totals.totalTokens)
-  assert.equal(summarize({ sources: ['nope'] }).totals.totalTokens, 0)
+  assert.equal(summarize({ sources: ['nope'], untilMs: pinnedUntil }).totals.totalTokens, 0)
 })
 
 test('the heatmap ignores the time range and partitions by source', { skip: !haveSessions }, () => {
@@ -173,17 +179,35 @@ test('the heatmap ignores the time range and partitions by source', { skip: !hav
     assert.ok(Number.isFinite(day.tokens) && Number.isFinite(day.turns) && Number.isFinite(day.requests))
   }
 
-  // A calendar narrowed to one day is what a heatmap is not for.
+  // A calendar narrowed to one day is what a heatmap is not for. Compare the day
+  // grid rather than the token values: the keys come from the date grid and so are
+  // stable while the live logs grow, and a calendar that followed the range filter
+  // would collapse to a single day here.
   const last = all.days[all.days.length - 1].day
   const narrow = summarize({ sinceMs: dayStart(last), untilMs: dayStart(last) + DAY_MS })
-  assert.deepEqual(narrow.heatmap.days, all.heatmap.days, 'the calendar must not follow the range filter')
+  assert.deepEqual(
+    narrow.heatmap.days.map((day) => day.day),
+    all.heatmap.days.map((day) => day.day),
+    'the calendar must not follow the range filter',
+  )
 
   // But it does follow the source filter, and the surfaces partition it exactly.
-  const heatTotal = all.heatmap.days.reduce((sum, day) => sum + day.tokens, 0)
-  const perSurface = ['client', 'cli', 'subagent', 'none'].map((source) =>
-    summarize({ sources: [source] }).heatmap.days.reduce((sum, day) => sum + day.tokens, 0),
-  )
-  assert.equal(perSurface.reduce((a, b) => a + b, 0), heatTotal)
+  // The heatmap deliberately ignores the range, so no window can pin it: it is read
+  // from the live index, and this session may append a record mid-loop. Re-read once
+  // when the two snapshots disagree; a genuine partition bug fails both times.
+  const heatTotal = () => summarize().heatmap.days.reduce((sum, day) => sum + day.tokens, 0)
+  const perSurfaceTotal = () =>
+    ['client', 'cli', 'subagent', 'none'].reduce(
+      (sum, source) => sum + summarize({ sources: [source] }).heatmap.days.reduce((s, day) => s + day.tokens, 0),
+      0,
+    )
+  let expected = heatTotal()
+  let actual = perSurfaceTotal()
+  if (actual !== expected) {
+    expected = heatTotal()
+    actual = perSurfaceTotal()
+  }
+  assert.equal(actual, expected, 'the surfaces must partition the calendar')
 })
 
 test('the sidebar card follows the configured windows', { skip: !haveSessions }, () => {
