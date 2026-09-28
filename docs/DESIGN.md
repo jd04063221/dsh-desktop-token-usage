@@ -292,12 +292,17 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 | 卡片窗口 | 每个窗口 ≤ 累计值；输入/输出拆分恒等式；`hours=99`/`days=-3` 被夹紧；两窗口都关时回退到 `all` | 通过 |
 | Config schema | Standard Schema `~standard.validate`：默认 `0/0`，`hours=24`/`days=31` 被拒 | 通过 |
 | 两半 wire 契约 | 描述符逐字段对拍 + 参数 codec 喂真实取值（含越界与非法类型） | 通过 |
-| 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片（窗口行 / 累计回退）与看板、断言样式注入与卸载、刷新定时器已挂 | 通过（16/16 测试） |
+| 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片（窗口行 / 累计回退）与看板、断言样式注入与卸载、刷新定时器已挂 | 通过（23/23 测试） |
 | 实际激活 | `plugin_manager list_plugins` → `include:dsh-token-usage` | `fiberPhase: active` |
 | 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` / `main` | `dsh-token-usage`（`active: true`），两处都在 |
 | 浏览器 → Host RPC | 页面调用后 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json` 被重写 | 打通 |
-| **配置卡生效** | 需要重启 DSH 后 `Config.listConfigs` 报 `schema` | **待重启确认** |
-| **视觉与数字** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
+| **配置卡生效** | `Config.listConfigs` → `include:dsh-token-usage` 报 `status: schema`，`name` 为包名 | 通过 |
+| 卡片数字 | 侧边栏卡片的窗口行（输入/输出/命中率）与轮次 | 人工确认通过 |
+| **看板视觉（含重做后的热力图）** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
+
+> **实测环境**：DSH Desktop `0.1.7-rc.2`（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`）、
+> Windows 11 专业版 build 26200（AMD64）、Node v25.2.1。其他 DSH 版本未测试；
+> `engines.dsh` 是声明性字段，DSH 目前不强制它。
 
 
 ### 5.1 看板没数据时先看这两个文件

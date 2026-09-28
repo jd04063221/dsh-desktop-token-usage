@@ -12,6 +12,24 @@
 
 不联网、不上报、不调用任何 API：所有数字都来自本机已有的会话日志。
 
+## 兼容性与测试环境
+
+**已在 DSH Desktop 0.1.7-rc.2 上完整验证，可保证在该版本上正常使用。**
+
+| 项目 | 实测环境 |
+|---|---|
+| DSH | Desktop `0.1.7-rc.2`（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`） |
+| 操作系统 | Windows 11 专业版，build 26200，AMD64 |
+| Node（跑测试用） | v25.2.1 |
+
+验证范围不止"能装上"：插件激活到 `fiberPhase: active`、侧边栏卡片与中央看板渲染、插件页自带配置卡可读可写、
+浏览器 → Host 的 Remote 调用打通，以及与 DSH 自身投影缓存的数字逐字段对拍一致。
+
+**其他版本未测试。** 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务
+（缺了配置卡，配置只能手改 profile patch）；更新的版本还没验证过。
+`engines.dsh` 声明为 `^0.1.7-rc.2`，但请以本节的**实测结论**为准——DSH 目前并不强制这个字段
+（官方原话：declaring a range does not reject incompatible hosts）。
+
 ## 安装
 
 本仓库是一个 DSH bundle（`package.json` 声明了 `dsh.bundle.patch` 与 `dsh.client`）。用官方入口安装即可，
@@ -147,25 +165,35 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
   `dsh-token-usage`（`active: true`）；
 - 浏览器 → Host 的 RPC 已被证明打通（Host 侧索引在页面调用后被重写）。
 
-**未完成 / 需要你确认**：
+**已确认 / 仍需你确认**：
 
-1. 本环境无浏览器控制，看板的视觉与数字需要你肉眼确认；
-2. **配置表单的首次生效需要重启一次 DSH**：DSH 缓存已导入的 JS 模块代，重新启用条目只重挂 fiber。
-   重启后 **插件 → Token 用量** 页面中部会出现那张配置卡（`Config.listConfigs` 的状态也会从
-   `absent` 变成 `schema`）。
+1. **Host 侧配置链路已实测通过**：`Config.listConfigs` 对本插件报 `status: schema`
+   （`id: include:dsh-token-usage`、`name` 为包名）；重启 fiber 后 `boot.json` 的 `windows`
+   等于 profile 里配的 `{hours:5, days:1}`——读配置与经 `configEditor` 写回都在作用域名下正常工作。
+2. **客户端仍需硬刷新页面**（Ctrl/Cmd+Shift+R）：插件页中部那张配置卡由客户端注册
+   （`plugins.bundle.config` 以**包名**为键），要加载新客户端模块才会挂上。
+3. **Host 模块代仍需一次重启**：Node 按解析后的 realpath 缓存 ESM，改文件、甚至改包名都不会
+   重新导入——实测 `import('dsh-token-usage') === import('@jd04063221/dsh-token-usage')` 是同一个
+   模块实例。所以热力图依赖的 `payload.heatmap` 等新 Host 代码，只能靠重启加载；在此之前客户端
+   会走"缺 `heatmap`"的回退。
+4. 看板（含重做后的热力图）的视觉需要你肉眼确认——本环境无浏览器控制。
 
 ### 出问题时先看哪里
 
 `$DSH_HOME/cache/dsh-token-usage/` 下有两个自诊断文件：
 
 - `boot.json`：Host 激活链路（`appliedAt`/`injectedAt`/`providedAt`/`registeredAt`）与生效的 `windows`，
-  有 `error` 就说明卡在哪一步；**文件不存在说明当前跑的是更早的 Host 模块代，需要重启**；
-- `calls.json`：最近 20 次看板请求（筛选条件、窗口、会话数、总 token、耗时）。若浏览器从未请求过，
-  说明是客户端模块没加载或没重载 —— **硬刷新页面**（Ctrl/Cmd+Shift+R）；Host 侧改动只能靠重启。
+  有 `error` 就说明卡在哪一步。每次 `apply` 都会重写它，所以 `appliedAt` 是 fiber 最近一次重挂的时间；
+  但**它不能证明当前跑的是最新代码**——改文件不会重新导入模块，只有重启才会。
+- `calls.json`：最近 20 次看板请求（筛选条件、窗口、会话数、总 token、耗时）。
+  **有记录说明浏览器→Host 的链路是通的；没有记录不能单独证明链路不通**（文件缺失也可能是被删过），
+  要结合 `boot.json` 一起看；确实从未出现过记录时，多半是客户端模块没加载 —— **硬刷新页面**
+  （Ctrl/Cmd+Shift+R）。
 
-另外，`Config.listConfigs` 的 `status` 直接告诉你 Host 模块代是否包含本插件的配置：
-`absent` = 当前 fiber 的模块没有 `Config` 导出（旧模块代，设置里不会有选项）；
-`schema` = 已识别到 schemastery schema，设置里会出现 `hours` / `days`。
+另外，`Config.listConfigs` 的 `status` 直接告诉你当前 fiber 的模块有没有导出 `Config`：
+`absent` = 旧模块代（插件页不会有配置卡）；`schema` = 已识别到 schemastery schema（本插件属于这种）。
+注意 `schema` 只说明**能被校验**，配置界面仍由插件自己渲染到插件页（见上面「配置项」一节），
+DSH 不会从 schema 自动生成表单。
 客户端旧于 Host 也会出问题——所以客户端在拿不到 `card` 字段时会**回退到累计值**，不会停在"正在读取"。
 
 ## 开发

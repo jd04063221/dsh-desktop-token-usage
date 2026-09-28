@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Token 用量",
-    "description": "从本地会话日志聚合 DSH token 用量：总量、按天趋势、缓存命中率与各模型占比。完全不联网。"
+    "description": "从本地会话日志聚合 DSH token 用量：总量、按天趋势、缓存命中率与各模型占比。完全不联网。已在 DSH Desktop 0.1.7-rc.2 上验证。"
   }
 }

@@ -101,6 +101,16 @@
 - 卡片没有推送通道，靠 5 分钟定时静默刷新；刚改完配置想立刻看到可点开看板按「刷新」。
 - 导入的历史会话（如 reasonix 迁移）usage 全为 0，属有效数据，不估算。
 
+### 兼容性
+
+- **实测环境：DSH Desktop `0.1.7-rc.2`**（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`）、Windows 11 专业版
+  build 26200（AMD64）、Node v25.2.1。插件激活、侧边栏卡片、看板、插件页配置卡、浏览器 → Host RPC
+  以及与 DSH 自身投影缓存的数字对拍，全部验证通过——可保证在 0.1.7-rc.2 上正常使用。
+- `engines.dsh` 声明为 `^0.1.7-rc.2`（原先写 `>=0.1.7-rc.2`，那等于宣称对 0.2/1.0 也兼容，没有依据）。
+  该字段是**声明性**的：官方明确说 declaring a range does not reject incompatible hosts。
+- 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务；更新的版本未测试。
+- 实测结论也写进了插件页可见的 locale 描述（`meta.description`），安装前就能看到。
+
 ### 验证
 
 - 折叠结果与 DSH 自身投影缓存逐字段对拍一致（`session-5964a5d3-*`：`286650 / 182633 / 43826560 / 0`）。

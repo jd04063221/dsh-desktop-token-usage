@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Token Usage",
-    "description": "Aggregate DSH token usage from local session logs: totals, daily trend, cache hit rate and per-model share. No network access."
+    "description": "Aggregate DSH token usage from local session logs: totals, daily trend, cache hit rate and per-model share. No network access. Verified on DSH Desktop 0.1.7-rc.2."
   }
 }
