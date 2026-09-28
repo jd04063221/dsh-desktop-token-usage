@@ -2,7 +2,10 @@
 
 > 调研对象：**DSH（DeepSeek Harness）桌面版 0.1.7-rc.2**，Windows。
 > 调研范围：**只读**。未修改 `~/.dsh` 下任何数据（仅新增了本仓库 `docs/research/.cache/` 索引缓存）。
-> 调研时间：2026-09-27。样本：`C:\Users\<user>\.dsh\sessions\` 下 **151 个** `session.v4.jsonl.zstd`，93,354+ 条记录，最大单文件 2,705,456 字节 / **4,779 个 zstd 帧**。
+> 调研时间：2026-09-27。样本：`$DSH_HOME/sessions/` 下 **151 个** `session.v4.jsonl.zstd`，93,354+ 条记录，最大单文件 2,705,456 字节 / **4,779 个 zstd 帧**。
+>
+> **脱敏约定**：本机用户目录写作 `%USERPROFILE%`（即 `C:\Users\<user>`），DSH 数据根写作 `$DSH_HOME`
+> （默认 `%USERPROFILE%\.dsh`）；引用真实记录时，用户目录一律写成 `<user>`。
 
 配套脚本：**[`probe-sessions.mjs`](./probe-sessions.mjs)**（可直接运行、可 `import`）。
 
@@ -129,7 +132,7 @@ for (const { start, end } of frames) {
 ### 1.3 实测输出（含那个 4,779 帧 / 2.7 MB 的文件）
 
 ```
-$ node probe-sessions.mjs scan "C:\Users\<user>\.dsh\sessions\--C-<local-dir>-<project>--\session-8e7bf112-...\session.v4.jsonl.zstd"
+$ node probe-sessions.mjs scan "%USERPROFILE%\.dsh\sessions\--C-<local-dir>-<project>--\session-8e7bf112-...\session.v4.jsonl.zstd"
 ```
 ```json
 {
@@ -453,7 +456,7 @@ if (reasoningTokens !== undefined && (!isCount(reasoningTokens) || reasoningToke
 → 磁盘上的 `totalTokens` **逐条**等于 `inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens`。**0 例外。**（`cacheWriteTokens` 本机全为 0，因为 DeepSeek/opencode 这些网关不下发 cache creation。）
 
 **（b）与官方投影缓存对拍**（黄金验证）。DSH 把 `tokenUsage` 投影持久化在
-`C:\Users\<user>\.dsh\storages\session_projcache\sessions\<session-id>.json`
+`$DSH_HOME/storages/session_projcache/sessions/<session-id>.json`
 （包 `dsh-session-projection-cache`）。取 `session-5964a5d3` 的缓存：
 
 ```json

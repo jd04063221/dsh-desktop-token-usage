@@ -109,6 +109,10 @@ First release: fully offline token usage statistics, with all data taken from th
   with the two top-of-file switchers linking to each other.
 - `docs/DESIGN.md`: the data contract, the key trade-offs, and the pitfalls encountered (multi-frame zstd, the envelope, module generation caching, the configuration page mechanism, and so on).
 - `docs/research/`: early research notes and reusable session-log probe scripts.
+- `docs/` is not published: the `files` whitelist now carries an explicit `!docs` entry (npm's `files` does
+  support negation, while a root `.npmignore` cannot override `files`, so negation is the form that works).
+- Research notes redacted: machine paths such as `C:\Users\<user>` are written as `%USERPROFILE%` / `$DSH_HOME`,
+  real records quote the user directory as `<user>`, and the convention is stated at the top of the document.
 
 ### Known limitations
 
