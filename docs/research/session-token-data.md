@@ -5,7 +5,9 @@
 > 调研时间：2026-09-27。样本：`$DSH_HOME/sessions/` 下 **151 个** `session.v4.jsonl.zstd`，93,354+ 条记录，最大单文件 2,705,456 字节 / **4,779 个 zstd 帧**。
 >
 > **脱敏约定**：本机用户目录写作 `%USERPROFILE%`（即 `C:\Users\<user>`），DSH 数据根写作 `$DSH_HOME`
-> （默认 `%USERPROFILE%\.dsh`）；引用真实记录时，用户目录一律写成 `<user>`。
+> （默认 `%USERPROFILE%\.dsh`）；引用真实记录时，用户目录一律写成 `<user>`；会话目录 slug 里编码的
+> 本地目录名（形如 `--C-<local-dir>-<project>--`）一律写成 `<local-dir>`；指向本仓库自身的路径写成
+> `<path-to-this-repo>`。
 
 配套脚本：**[`probe-sessions.mjs`](./probe-sessions.mjs)**（可直接运行、可 `import`）。
 
@@ -850,7 +852,7 @@ Top 5 会话（按 token）：
 
 ```powershell
 $env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8
-cd C:\<local-dir>\dsh-usage\docs\research
+cd <path-to-this-repo>\docs\research
 
 node probe-sessions.mjs types                        # 全局记录类型统计（151 文件）
 node probe-sessions.mjs scan  <文件>                 # 单文件：帧数 + 类型计数
