@@ -5,4 +5,4 @@
 # as an indicator.
 - insert:
     - id: dsh-token-usage
-      name: "dsh-token-usage"
+      name: "@jd04063221/dsh-token-usage"

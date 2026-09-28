@@ -1,6 +1,6 @@
 # 更新日志
 
-本文件记录 `dsh-token-usage` 的所有重要变更。
+本文件记录 `@jd04063221/dsh-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 > **升级注意**：本插件是 DSH bundle，分两半加载。`client.js`（界面）由浏览器热更新，
@@ -65,6 +65,20 @@
 - 配置值通过官方 `configEditor` 持久化到 profile 的 `cordis.patch.yml`，不写入插件自己的文件。
 - 引入唯一一个 `@deepseek-ai/*` 依赖 `@deepseek-ai/schemastery`（官方 `Config` 卡片所需）。
 
+### 发布准备（npm）
+
+- **包名改为作用域名 `@jd04063221/dsh-token-usage`**（原 `dsh-token-usage`）。同步改了四处，缺一处就会**静默失效**：
+  Host 的 `REMOTE_PACKAGE`、Client 的模块 `id`（官方约定模块 `id` 即包名，见 `dsh-api-remotes/lib/client.js`）、
+  `cordis.patch.yml` 的行 `name`（模块说明符），以及配置卡的槽位键——`plugins.bundle.config` 以**包名**为键，
+  不跟着改就会少掉插件页那张配置卡。
+- 行的 `id` 保持 `dsh-token-usage` 不变：profile 里已有的 `- id: dsh-token-usage` 配置覆盖（`hours`/`days`）继续生效。
+  Host 认自己的 Loader 条目时现在同时匹配**包名**与**行 id**，所以还没改名的 profile 行也能正常读写配置（新增测试覆盖）。
+- 去掉 `private: true`，补齐 `author` / `repository` / `homepage` / `bugs` / `keywords` /
+  `publishConfig.access=public`（scoped 包默认 restricted）/ `engines.dsh`（声明性，DSH 不强制）/ `prepublishOnly: npm test`，
+  新增 MIT `LICENSE`。
+- ⚠️ `name` / `author` / 仓库地址里的 **`jd04063221` 是占位用户名**：发布前必须换成你自己的 npm scope 与 GitHub 用户名
+  （逐处清单见 README「发布到 npm」）。
+
 ### 兼容与回退
 
 - **客户端比 Host 新**是常态（前者热更新、后者要重启），因此对缺失字段都做了回退：
@@ -92,7 +106,7 @@
 - 两端 wire 描述符逐字段对拍（三个端点），参数 codec 可接受浏览器实际发送的值。
 - 无浏览器环境下用假 React/DOM 渲染通过（含卡片两形态、配置表单、日历结构、两处回退）。
 - 安装后 `fiberPhase: active`，`sidebar.footer.action` 与 `main` 均已注册。
-- 共 22 个测试，`npm test` 全绿。**界面视觉与最终数字需人工确认**（本环境无浏览器控制）。
+- 共 23 个测试，`npm test` 全绿。**界面视觉与最终数字需人工确认**（本环境无浏览器控制）。
 
 ---
 

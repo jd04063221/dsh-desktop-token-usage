@@ -236,7 +236,7 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   const configEditor = {
     configuration: () => [
       { entry: { id: 'include:other', options: { name: 'some-other-plugin' } } },
-      { entry: { id: 'include:dsh-token-usage', options: { name: 'dsh-token-usage' } }, inherited: {}, override: {} },
+      { entry: { id: 'include:dsh-token-usage', options: { name: '@jd04063221/dsh-token-usage' } }, inherited: {}, override: {} },
     ],
     edit: async (entry, change) => {
       edits.push({ entryId: entry.id, next: change({ hours: 0, days: 0 }, {}) })
@@ -284,6 +284,35 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.equal(last.sessions, payload.totals.sessions)
   assert.deepEqual(last.filter, { sinceMs: null, untilMs: null, sources: ['client'] })
   assert.deepEqual(last.cardBlocks, ['hours', 'days'])
+})
+
+test('the Loader row is found by id even when its name is not the scoped package', async () => {
+  // A profile row installed before the package was scoped carries no scoped
+  // `options.name`; the row id is what keeps the settings form writable.
+  const edits = []
+  const configEditor = {
+    configuration: () => [{ entry: { id: 'include:dsh-token-usage' } }],
+    edit: async (entry) => { edits.push(entry.id) },
+  }
+  const provided = []
+  const { apply } = await import('../index.js')
+  apply(
+    {
+      inject: (deps, callback) => {
+        callback({
+          typert: { register: () => () => {} },
+          reflect: { provide: (name, value) => { provided.push({ name, value }); return () => {} } },
+          effect: () => {},
+          inject: (innerDeps, innerCallback) => innerCallback({ configEditor }),
+        })
+      },
+    },
+    { hours: 2, days: 0 },
+  )
+  const service = provided[0].value
+  assert.deepEqual(await service.config(), { hours: 2, days: 0, writable: true })
+  await service.setConfig({ hours: 3, days: 0 })
+  assert.deepEqual(edits, ['include:dsh-token-usage'])
 })
 
 test('without a Loader config editor the config endpoints degrade honestly', async () => {

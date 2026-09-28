@@ -8,14 +8,16 @@
  * `--dsw-alias-*` theme tokens plus literal colors for the chart series.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-token-usage',
+  // The module id is the package name, exactly as the official client modules do it.
+  id: '@jd04063221/dsh-token-usage',
   factory(require) {
     const React = require('react')
     const h = React.createElement
 
-    /** Must equal the package name: it addresses both the `main` slot and the Remote. */
+    /** UI key: owns the `main` slot, the sidebar card and the panel selection. */
     const PANEL_ID = 'dsh-token-usage'
-    const REMOTE_PACKAGE = 'dsh-token-usage'
+    /** npm package name: addresses the Remote and keys this plugin's config card. */
+    const REMOTE_PACKAGE = '@jd04063221/dsh-token-usage'
     const REMOTE_SERVICE = 'dshTokenUsage'
     const REMOTE_NAMESPACE = 'dshUsage'
 
@@ -1219,7 +1221,7 @@ window.__ModuleLoader__.load({
       // Keyed by the bundle's package name: this is the plugin's own page in the
       // Plugins manager, between its description and its component rows.
       ctx.slots.inject('plugins.bundle.config', () =>
-        ctx.slots.register({ name: 'plugins.bundle.config', key: PANEL_ID }, ConfigForm),
+        ctx.slots.register({ name: 'plugins.bundle.config', key: REMOTE_PACKAGE }, ConfigForm),
       )
       ctx.inject(['layout'], (layoutCtx) => {
         layoutCtx.slots.inject('sidebar.footer.action', () =>

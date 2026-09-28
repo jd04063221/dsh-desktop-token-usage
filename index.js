@@ -24,8 +24,10 @@ import Schema from '@deepseek-ai/schemastery'
 
 import { DSH_HOME, cardRollup, summarize } from './lib/session-usage.js'
 
-/** The npm package identity both faces claim. */
-const REMOTE_PACKAGE = 'dsh-token-usage'
+/** npm package name, claimed by both faces: the Remote's package and the Loader row's specifier. */
+const REMOTE_PACKAGE = '@jd04063221/dsh-token-usage'
+/** The Loader row's own id, deliberately short and stable: `include:<ROW_ID>`. */
+const ROW_ID = 'dsh-token-usage'
 /** The Cordis service key the gateway resolves this Remote from. */
 const REMOTE_SERVICE = 'dshTokenUsage'
 /** The wire namespace every endpoint shares. */
@@ -202,7 +204,7 @@ class UsageService {
     const rows = this.configEditor.configuration()
     const mine = rows.find((item) => {
       const options = item.entry?.options
-      return options?.name === REMOTE_PACKAGE || item.entry?.id?.includes(REMOTE_PACKAGE)
+      return options?.name === REMOTE_PACKAGE || item.entry?.id?.includes(ROW_ID)
     })
     return mine?.entry
   }

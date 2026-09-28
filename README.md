@@ -1,4 +1,4 @@
-# dsh-token-usage
+# @jd04063221/dsh-token-usage
 
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
@@ -37,7 +37,10 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 
 判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-token-usage/boot.json` 是否存在、`windows` 是否符合预期。
 
-卸载：`plugin_manager action: remove_bundle target: dsh-token-usage`。
+卸载：`plugin_manager action: remove_bundle target: @jd04063221/dsh-token-usage`。
+
+> 包名与插件**行 id** 是两个东西：行 id 是 `dsh-token-usage`（profile 里配置覆盖的锚点），
+> 包名是 `@jd04063221/dsh-token-usage`。卸载/安装用包名，改配置用行 id。
 
 ## 使用
 
@@ -184,6 +187,38 @@ docs/DESIGN.md               设计、数据契约、踩过的坑与验证证据
 docs/research/               前期调研记录与可复用的会话日志探针脚本
 CHANGELOG.md                 版本变更记录（含提交索引）
 ```
+
+## 发布到 npm
+
+> **发布前必须替换占位身份。** 本仓库现在用占位用户名 `jd04063221`（从邮箱前缀取的字面量）。
+> npm 的 scope **必须是你自己的 npm 用户名或有权限的组织**，否则 `npm publish` 会被拒。
+> 需要同步替换的位置（漏一处就会出问题）：
+
+| 文件 | 位置 | 为什么 |
+|---|---|---|
+| `package.json` | `name`、`author`、`repository`、`homepage`、`bugs` | 包身份与仓库地址 |
+| `index.js` | `REMOTE_PACKAGE` | Remote 的 package 标识，必须等于 `name` |
+| `client.js` | 模块 `id` 与 `REMOTE_PACKAGE` | 官方 client 模块的 `id` 就是包名（见 `dsh-api-remotes/lib/client.js`） |
+| `cordis.patch.yml` | 行的 `name` | 必须是安装进 profile 的**确切包名**（模块说明符） |
+| `test/*.test.mjs` | 断言里的名字 | 跟着改，否则测试会红 |
+
+**故意不要动**的东西：
+
+- 行的 `id: dsh-token-usage`——它是 profile 里 `- id: dsh-token-usage` 配置覆盖的锚点，改了会让已有配置失效；
+- `$DSH_HOME/cache/dsh-token-usage/` 诊断目录与日志前缀——与本机已有缓存/排障习惯一致。
+- 槽位键 `main` / `sidebar.footer.action` 用的是短 id `PANEL_ID`，与包名无关。
+
+包名与行 id 相互独立，官方先例：`id: llm-commandcode` + `name: "@mars-sea/dsh-commandcode-provider"`。
+
+发布流程：
+
+```
+npm login            # scope 必须属于该账号；可在 npm 网站先建同名 scope
+npm pack --dry-run   # 检查 tarball 内容（以 package.json 的 files 白名单为准）
+npm publish          # scoped 包默认 restricted，已设 publishConfig.access=public
+```
+
+`prepublishOnly` 已绑定 `npm test`，发布前会自动跑一遍全部测试。
 
 ## License
 

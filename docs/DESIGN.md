@@ -67,7 +67,7 @@ import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'   // ← 
 
 ```
 > cd ~/.dsh/profiles/desktop
-> node -e "import('dsh-token-usage')"
+> node -e "import('@jd04063221/dsh-token-usage')"
 ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imported from .../index.js
 ```
 
@@ -176,7 +176,7 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 > slots the page declares: `plugins.item` … `plugins.bundle.config`（按包名寻址，显示在 bundle 页面的描述与组件行
 > 之间）… `plugins.row.config`（按 `<包名>#<行 id>` 寻址，给那一行一个 **Configure** 控件）。
 
-所以本插件把表单注册进 `plugins.bundle.config`（`key: 'dsh-token-usage'`），插件页中部才会出现那两个输入框。
+所以本插件把表单注册进 `plugins.bundle.config`（`key: '@jd04063221/dsh-token-usage'`，即**包名**），插件页中部才会出现那两个输入框。
 schema 的作用是：校验 `cordis.patch.yml` 里的 `config`、给 `Config.listConfigs` 投影 JSON Schema、
 在 `fiber.update()` 时填默认值。
 
