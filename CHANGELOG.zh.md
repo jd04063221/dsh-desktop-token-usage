@@ -2,7 +2,7 @@
 
 [English](CHANGELOG.md) | 中文
 
-本文件记录 `@jd04063221/dsh-token-usage` 的所有重要变更。
+本文件记录 `@jd04063221/dsh-desktop-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 > **升级注意**：本插件是 DSH bundle，分两半加载。`client.js`（界面）由浏览器热更新，
@@ -24,7 +24,7 @@
 - `(turn, step)` **折叠**语义：同一槽位内后一条 usage 替换前一条，`llm/retry-started` 之后才累加；
   `reasoningTokens` 视为 `outputTokens` 的子集不重复计入。
 - 索引按**本地小时**分桶，按文件 `mtime+size` 增量缓存，落盘于
-  `$DSH_HOME/cache/dsh-token-usage/sessions-index.json`。
+  `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`。
 - 会话来源推断：`客户端（桌面·网页）` / `命令行·机器人` / `子代理`——日志里没有客户端来源字段，
   只能从 `origin`、`delegationDepth`、用户轮次的 `source.rpcId` 推导。
 
@@ -77,12 +77,14 @@
 
 ### 发布准备（npm）
 
-- **包名改为作用域名 `@jd04063221/dsh-token-usage`**（原 `dsh-token-usage`）。同步改了四处，缺一处就会**静默失效**：
-  Host 的 `REMOTE_PACKAGE`、Client 的模块 `id`（官方约定模块 `id` 即包名，见 `dsh-api-remotes/lib/client.js`）、
-  `cordis.patch.yml` 的行 `name`（模块说明符），以及配置卡的槽位键——`plugins.bundle.config` 以**包名**为键，
-  不跟着改就会少掉插件页那张配置卡。
-- 行的 `id` 保持 `dsh-token-usage` 不变：profile 里已有的 `- id: dsh-token-usage` 配置覆盖（`hours`/`days`）继续生效。
-  Host 认自己的 Loader 条目时现在同时匹配**包名**与**行 id**，所以还没改名的 profile 行也能正常读写配置（新增测试覆盖）。
+- **包名、行 id 与仓库名统一为 `dsh-desktop-token-usage`**（作用域形式 `@jd04063221/dsh-desktop-token-usage`）：
+  本插件只对应 DSH **桌面版**（数据来自 Desktop 的 `$DSH_HOME/sessions`），名字里带 `desktop` 以区分其他形态。
+  同步改了包名、Host 的 `REMOTE_PACKAGE`、Client 的模块 `id`（官方约定模块 `id` 即包名，见
+  `dsh-api-remotes/lib/client.js`）、`cordis.patch.yml` 的行 `name` 与行 `id`、配置卡槽位键
+  （`plugins.bundle.config` 以**包名**为键）、诊断与索引缓存目录，以及 GitHub 仓库地址。
+- **这几处漏改任何一处都会静默失效**：模块 `id` 与配置卡键必须等于包名，行 `name` 必须是安装进 profile 的确切包名。
+  行 `id` 同时是 profile 里 `- id: …` 配置覆盖的锚点——改它必须一并迁移那条覆盖，否则已保存的 `hours`/`days`
+  会失效（本次已迁移）。Host 认自己的 Loader 条目时同时匹配**包名**与**行 id**，所以过渡期的旧行也能读写配置（有测试覆盖）。
 - 去掉 `private: true`，补齐 `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public`（scoped 包默认 restricted）/ `engines.dsh`（声明性，DSH 不强制）/ `prepublishOnly: npm test`，
   新增 MIT `LICENSE`。

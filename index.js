@@ -25,9 +25,9 @@ import Schema from '@deepseek-ai/schemastery'
 import { DSH_HOME, cardRollup, summarize } from './lib/session-usage.js'
 
 /** npm package name, claimed by both faces: the Remote's package and the Loader row's specifier. */
-const REMOTE_PACKAGE = '@jd04063221/dsh-token-usage'
+const REMOTE_PACKAGE = '@jd04063221/dsh-desktop-token-usage'
 /** The Loader row's own id, deliberately short and stable: `include:<ROW_ID>`. */
-const ROW_ID = 'dsh-token-usage'
+const ROW_ID = 'dsh-desktop-token-usage'
 /** The Cordis service key the gateway resolves this Remote from. */
 const REMOTE_SERVICE = 'dshTokenUsage'
 /** The wire namespace every endpoint shares. */
@@ -58,7 +58,7 @@ export const Config = Schema.object({
  * The directory is overridable because the test suite runs `apply` too, and
  * these two files are what a human inspects to tell which generation is live.
  */
-const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || path.join(DSH_HOME, 'cache', 'dsh-token-usage')
+const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || path.join(DSH_HOME, 'cache', 'dsh-desktop-token-usage')
 const CALL_LOG = path.join(DIAG_DIR, 'calls.json')
 const BOOT_LOG = path.join(DIAG_DIR, 'boot.json')
 const CALL_LOG_LIMIT = 20
@@ -290,7 +290,7 @@ export function apply(ctx, config) {
         invocations: [SUMMARY_DESCRIPTOR, CONFIG_DESCRIPTOR, SET_CONFIG_DESCRIPTOR],
       })
       boot.registeredAt = Date.now()
-      remoteCtx.effect(() => () => void unregister(), 'dsh-token-usage: usage remote')
+      remoteCtx.effect(() => () => void unregister(), 'dsh-desktop-token-usage: usage remote')
     } catch (error) {
       boot.error = error?.message ?? String(error)
     }

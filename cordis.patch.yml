@@ -1,8 +1,8 @@
-# dsh-token-usage — bundle layer.
+# dsh-desktop-token-usage — bundle layer.
 #
 # One plugin row. `name` must be the exact package specifier as installed in the
 # profile's node_modules; it is quoted because a bare YAML scalar may be parsed
 # as an indicator.
 - insert:
-    - id: dsh-token-usage
-      name: "@jd04063221/dsh-token-usage"
+    - id: dsh-desktop-token-usage
+      name: "@jd04063221/dsh-desktop-token-usage"

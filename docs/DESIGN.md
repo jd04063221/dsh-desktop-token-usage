@@ -67,7 +67,7 @@ import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'   // ← 
 
 ```
 > cd ~/.dsh/profiles/desktop
-> node -e "import('@jd04063221/dsh-token-usage')"
+> node -e "import('@jd04063221/dsh-desktop-token-usage')"
 ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imported from .../index.js
 ```
 
@@ -159,8 +159,8 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 
 实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代；
 `remove_bundle` + 重新 `install_bundle` 也不够。更强的一条证据是**改包名同样没用**：Node 按解析后的
-realpath 缓存 ESM，`dsh-token-usage` 与 `@jd04063221/dsh-token-usage` 两个说明符都指向同一个真实路径，
-实测 `import('dsh-token-usage') === import('@jd04063221/dsh-token-usage')` 返回**同一个模块实例**。
+realpath 缓存 ESM，`dsh-desktop-token-usage` 与 `@jd04063221/dsh-desktop-token-usage` 两个说明符都指向同一个真实路径，
+实测 `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` 返回**同一个模块实例**。
 所以反复「重新启用」、重装、甚至改名，看到的始终是上次启动时导入的那一代 host 代码。
 
 | 改动的半边 | 生效方式 |
@@ -184,7 +184,7 @@ realpath 缓存 ESM，`dsh-token-usage` 与 `@jd04063221/dsh-token-usage` 两个
 > slots the page declares: `plugins.item` … `plugins.bundle.config`（按包名寻址，显示在 bundle 页面的描述与组件行
 > 之间）… `plugins.row.config`（按 `<包名>#<行 id>` 寻址，给那一行一个 **Configure** 控件）。
 
-所以本插件把表单注册进 `plugins.bundle.config`（`key: '@jd04063221/dsh-token-usage'`，即**包名**），插件页中部才会出现那两个输入框。
+所以本插件把表单注册进 `plugins.bundle.config`（`key: '@jd04063221/dsh-desktop-token-usage'`，即**包名**），插件页中部才会出现那两个输入框。
 schema 的作用是：校验 `cordis.patch.yml` 里的 `config`、给 `Config.listConfigs` 投影 JSON Schema、
 在 `fiber.update()` 时填默认值。
 
@@ -251,7 +251,7 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 `buildIndex()` 按 `(mtimeMs, size)` 作为单个会话文件的身份（日志只追加，追加必然同时改动这两者）：
 
 - 进程内 memo：一次热请求里未变的文件不重复解析；
-- 磁盘缓存 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json`：重启后冷启动也只需解析变化的文件。
+- 磁盘缓存 `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`：重启后冷启动也只需解析变化的文件。
 
 实测：151 个文件 / 93,354 条记录，冷解析 3.5–4.0 s，热调用（含 Node 启动）4–254 ms。
 
@@ -275,10 +275,10 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 
 | 槽位 | 注册 | 说明 |
 |---|---|---|
-| `main`（keyed） | `{ name:'main', key:'dsh-token-usage', inject: face }` | 中央面板本体 |
-| `sidebar.footer.action`（list） | 在 `ctx.inject(['layout'], …)` 里注册 `{ id:'dsh-token-usage', order:5, inject: face }` | 侧边栏卡片；外壳只给 `wide` 这个 owner prop，卡片自己负责 chrome 与 `aria-label` |
+| `main`（keyed） | `{ name:'main', key:'dsh-desktop-token-usage', inject: face }` | 中央面板本体 |
+| `sidebar.footer.action`（list） | 在 `ctx.inject(['layout'], …)` 里注册 `{ id:'dsh-desktop-token-usage', order:5, inject: face }` | 侧边栏卡片；外壳只给 `wide` 这个 owner prop，卡片自己负责 chrome 与 `aria-label` |
 
-点卡片走 `ctx.get('layout')?.selectPanel('dsh-token-usage')`；`selectPanel` 会先校验 `main` 注册表。
+点卡片走 `ctx.get('layout')?.selectPanel('dsh-desktop-token-usage')`；`selectPanel` 会先校验 `main` 注册表。
 
 ### 4.3 图表怎么画
 
@@ -301,10 +301,10 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 | Config schema | Standard Schema `~standard.validate`：默认 `0/0`，`hours=24`/`days=31` 被拒 | 通过 |
 | 两半 wire 契约 | 描述符逐字段对拍 + 参数 codec 喂真实取值（含越界与非法类型） | 通过 |
 | 客户端可运行 | 假 React/DOM 下加载工厂、`apply`、渲染卡片（窗口行 / 累计回退）与看板、断言样式注入与卸载、刷新定时器已挂 | 通过（23/23 测试） |
-| 实际激活 | `plugin_manager list_plugins` → `include:dsh-token-usage` | `fiberPhase: active` |
-| 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` / `main` | `dsh-token-usage`（`active: true`），两处都在 |
-| 浏览器 → Host RPC | 页面调用后 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json` 被重写 | 打通 |
-| **配置卡生效** | `Config.listConfigs` → `include:dsh-token-usage` 报 `status: schema`，`name` 为包名 | 通过 |
+| 实际激活 | `plugin_manager list_plugins` → `include:dsh-desktop-token-usage` | `fiberPhase: active` |
+| 客户端挂载 | `Slots.listSubTree` → `sidebar.footer.action` / `main` | `dsh-desktop-token-usage`（`active: true`），两处都在 |
+| 浏览器 → Host RPC | 页面调用后 `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json` 被重写 | 打通 |
+| **配置卡生效** | `Config.listConfigs` → `include:dsh-desktop-token-usage` 报 `status: schema`，`name` 为包名 | 通过 |
 | 卡片数字 | 侧边栏卡片的窗口行（输入/输出/命中率）与轮次 | 人工确认通过 |
 | 文档中英对拍 | 脚本比对两份的标题层级序列、代码围栏数量、行内代码 token 集合与数字集合 | 一致（README 15 个标题 / 6 个代码块；CHANGELOG 12 个标题，行内 token 各 108 个） |
 | **看板视觉（含重做后的热力图）** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
@@ -316,7 +316,7 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 
 ### 5.1 看板没数据时先看这两个文件
 
-Host 会把自诊断写到 `$DSH_HOME/cache/dsh-token-usage/`：
+Host 会把自诊断写到 `$DSH_HOME/cache/dsh-desktop-token-usage/`：
 
 | 文件 | 内容 | 怎么用 |
 |---|---|---|

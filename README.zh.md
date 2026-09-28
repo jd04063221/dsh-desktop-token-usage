@@ -1,4 +1,4 @@
-# @jd04063221/dsh-token-usage
+# @jd04063221/dsh-desktop-token-usage
 
 [English](README.md) | 中文
 
@@ -55,12 +55,12 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 | `client.js`（界面） | 浏览器端的模块快照按 mtime/size 变更后由 HMR 推给页面；没生效就硬刷新一次页面（Ctrl/Cmd+Shift+R） |
 | `index.js` / `lib/*`（Host） | **必须重启 DSH**：重新启用条目只会重挂 fiber，不会重新导入已缓存的 JS 模块代。同理，新增/修改 `Config` 字段也要重启才会出现在设置里 |
 
-判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-token-usage/boot.json` 是否存在、`windows` 是否符合预期。
+判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-desktop-token-usage/boot.json` 是否存在、`windows` 是否符合预期。
 
-卸载：`plugin_manager action: remove_bundle target: @jd04063221/dsh-token-usage`。
+卸载：`plugin_manager action: remove_bundle target: @jd04063221/dsh-desktop-token-usage`。
 
-> 包名与插件**行 id** 是两个东西：行 id 是 `dsh-token-usage`（profile 里配置覆盖的锚点），
-> 包名是 `@jd04063221/dsh-token-usage`。卸载/安装用包名，改配置用行 id。
+> 包名与插件**行 id** 是两个东西：行 id 是 `dsh-desktop-token-usage`（profile 里配置覆盖的锚点），
+> 包名是 `@jd04063221/dsh-desktop-token-usage`。卸载/安装用包名，改配置用行 id。
 
 ## 使用
 
@@ -89,7 +89,7 @@ DSH **不会**从 `Config` schema 自动生成编辑器——自己带配置的�
 值最终落在 profile 的 `cordis.patch.yml` 里，所以也可以直接在那里写：
 
 ```yaml
-- id: dsh-token-usage
+- id: dsh-desktop-token-usage
   disabled: false
   config:
     hours: 6
@@ -145,7 +145,7 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 ## 已知限制
 
 - **首次聚合较慢**：约 150 个会话文件、9 万+ 条记录，冷启动约 3–4 秒；之后按文件指纹增量，热调用百毫秒级。
-  缓存写在 `$DSH_HOME/cache/dsh-token-usage/sessions-index.json`，删掉它只会让下次变慢。
+  缓存写在 `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`，删掉它只会让下次变慢。
 - **导入的历史会话可能用量为 0**：如果历史会话是导入的（例如 reasonix 迁移），其 usage 字段确实全为 0，
   这是有效数据，不是缺失，本插件不会回退去估算。
 - **界面文案为中文硬编码**：没有接 Client locale 服务，避免多引入一条会随版本变化的依赖。
@@ -163,26 +163,26 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 - `Config` schema 用 Standard Schema 接口验证：默认 0/0，`hours=24`、`days=31` 被拒；
 - Host 描述符与 Client contribution 在测试里**逐字段对拍**，参数编解码器接受浏览器实际会发的值；
 - 客户端两半在无浏览器环境下用假 React/DOM 渲染通过（含卡片窗口行与累计回退两种形态），样式注入与卸载有断言；
-- 安装后 `include:dsh-token-usage` 的 `fiberPhase` 为 `active`，`sidebar.footer.action` 与 `main` 里都出现
-  `dsh-token-usage`（`active: true`）；
+- 安装后 `include:dsh-desktop-token-usage` 的 `fiberPhase` 为 `active`，`sidebar.footer.action` 与 `main` 里都出现
+  `dsh-desktop-token-usage`（`active: true`）；
 - 浏览器 → Host 的 RPC 已被证明打通（Host 侧索引在页面调用后被重写）。
 
 **已确认 / 仍需你确认**：
 
 1. **Host 侧配置链路已实测通过**：`Config.listConfigs` 对本插件报 `status: schema`
-   （`id: include:dsh-token-usage`、`name` 为包名）；重启 fiber 后 `boot.json` 的 `windows`
+   （`id: include:dsh-desktop-token-usage`、`name` 为包名）；重启 fiber 后 `boot.json` 的 `windows`
    等于 profile 里配的 `{hours:5, days:1}`——读配置与经 `configEditor` 写回都在作用域名下正常工作。
 2. **客户端仍需硬刷新页面**（Ctrl/Cmd+Shift+R）：插件页中部那张配置卡由客户端注册
    （`plugins.bundle.config` 以**包名**为键），要加载新客户端模块才会挂上。
 3. **Host 模块代仍需一次重启**：Node 按解析后的 realpath 缓存 ESM，改文件、甚至改包名都不会
-   重新导入——实测 `import('dsh-token-usage') === import('@jd04063221/dsh-token-usage')` 是同一个
+   重新导入——实测 `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` 是同一个
    模块实例。所以热力图依赖的 `payload.heatmap` 等新 Host 代码，只能靠重启加载；在此之前客户端
    会走"缺 `heatmap`"的回退。
 4. 看板（含重做后的热力图）的视觉需要你肉眼确认——本环境无浏览器控制。
 
 ### 出问题时先看哪里
 
-`$DSH_HOME/cache/dsh-token-usage/` 下有两个自诊断文件：
+`$DSH_HOME/cache/dsh-desktop-token-usage/` 下有两个自诊断文件：
 
 - `boot.json`：Host 激活链路（`appliedAt`/`injectedAt`/`providedAt`/`registeredAt`）与生效的 `windows`，
   有 `error` 就说明卡在哪一步。每次 `apply` 都会重写它，所以 `appliedAt` 是 fiber 最近一次重挂的时间；
@@ -206,7 +206,7 @@ npm test        # node --test：聚合黄金对拍 + 窗口汇总 + 客户端无
 ```
 
 测试也会跑 `apply`，所以它写诊断文件时会自动指向临时目录（`DSH_TOKEN_USAGE_DIAG_DIR`），
-不会覆盖你在 `$DSH_HOME/cache/dsh-token-usage/` 下要排查的那两个文件。
+不会覆盖你在 `$DSH_HOME/cache/dsh-desktop-token-usage/` 下要排查的那两个文件。
 
 目录：
 
@@ -226,23 +226,26 @@ CHANGELOG.zh.md              中文版本变更记录（含提交索引）
 
 ## 发布到 npm
 
-> **发布前必须替换占位身份。** 本仓库现在用占位用户名 `jd04063221`（从邮箱前缀取的字面量）。
-> npm 的 scope **必须是你自己的 npm 用户名或有权限的组织**，否则 `npm publish` 会被拒。
-> 需要同步替换的位置（漏一处就会出问题）：
+> **发布前只剩一件事要确认：npm 的 scope 归属。** `jd04063221` 已确认为你的 GitHub 用户名——git 全局身份
+> （还用着 GitHub 的 noreply 邮箱）、GitHub Desktop 里保存的凭据、公开用户页三者一致；包名、仓库地址与
+> `repository` 字段都已按 `@jd04063221/dsh-desktop-token-usage` 写好。
+> 但 npm 的 scope **必须是你自己的 npm 用户名或有权限的组织**，两者**不保证相同**：先 `npm login` 再
+> `npm whoami` 确认；若不同，需同步替换下面这些位置，否则 `npm publish` 会被拒。
 
 | 文件 | 位置 | 为什么 |
 |---|---|---|
-| `package.json` | `name`、`author`、`repository`、`homepage`、`bugs` | 包身份与仓库地址 |
+| `package.json` | `name` | 包身份（`author` 与仓库地址跟的是 GitHub 用户名，不随 npm scope 变） |
 | `index.js` | `REMOTE_PACKAGE` | Remote 的 package 标识，必须等于 `name` |
 | `client.js` | 模块 `id` 与 `REMOTE_PACKAGE` | 官方 client 模块的 `id` 就是包名（见 `dsh-api-remotes/lib/client.js`） |
 | `cordis.patch.yml` | 行的 `name` | 必须是安装进 profile 的**确切包名**（模块说明符） |
 | `test/*.test.mjs` | 断言里的名字 | 跟着改，否则测试会红 |
 
-**故意不要动**的东西：
+**行 id 与包名的关系（容易踩）**：行 `id` 是 profile 里 `- id: dsh-desktop-token-usage` 配置覆盖的锚点，
+两者可以不同，但**改行 id 必须同时迁移那条覆盖**，否则已保存的 `hours`/`days` 会失效——本次就是一起改并迁移的。
+`$DSH_HOME/cache/dsh-desktop-token-usage/` 是本插件的诊断与索引缓存目录，删掉只会让下次变慢。
+槽位键 `main` / `sidebar.footer.action` 用的是短 id `PANEL_ID`，与包名无关。
 
-- 行的 `id: dsh-token-usage`——它是 profile 里 `- id: dsh-token-usage` 配置覆盖的锚点，改了会让已有配置失效；
-- `$DSH_HOME/cache/dsh-token-usage/` 诊断目录与日志前缀——与本机已有缓存/排障习惯一致。
-- 槽位键 `main` / `sidebar.footer.action` 用的是短 id `PANEL_ID`，与包名无关。
+官方先例（行 id 与包名本就独立）：`id: llm-commandcode` + `name: "@mars-sea/dsh-commandcode-provider"`。
 
 包名与行 id 相互独立，官方先例：`id: llm-commandcode` + `name: "@mars-sea/dsh-commandcode-provider"`。
 

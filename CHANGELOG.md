@@ -2,7 +2,7 @@
 
 English | [中文](CHANGELOG.zh.md)
 
-This file documents all notable changes to `@jd04063221/dsh-token-usage`.
+This file documents all notable changes to `@jd04063221/dsh-desktop-token-usage`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the version numbers follow [Semantic Versioning](https://semver.org/).
 
 > **Upgrade note**: This plugin is a DSH bundle that loads in two halves. `client.js` (the UI) is hot-reloaded by the browser,
@@ -26,7 +26,7 @@ First release: fully offline token usage statistics, with all data taken from th
 - `(turn, step)` **folding** semantics: within the same slot a later usage record replaces the earlier one, and accumulation only
   starts after `llm/retry-started`; `reasoningTokens` is treated as a subset of `outputTokens` and is not counted twice.
 - The index is bucketed by **local hour** and cached incrementally by file `mtime+size`, persisted to
-  `$DSH_HOME/cache/dsh-token-usage/sessions-index.json`.
+  `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`.
 - Session origin inference: `客户端（桌面·网页）` (desktop · web) / `命令行·机器人` (CLI · bot) / `子代理` (subagent) — the logs contain no client-origin
   field, so the origin can only be derived from `origin`, `delegationDepth`, and the `source.rpcId` of the user turn.
 
@@ -82,13 +82,16 @@ First release: fully offline token usage statistics, with all data taken from th
 
 ### Release preparation (npm)
 
-- **Package name changed to the scoped name `@jd04063221/dsh-token-usage`** (formerly `dsh-token-usage`). Four places were updated in step, and missing one would **fail silently**:
-  the Host's `REMOTE_PACKAGE`, the Client module `id` (the official convention is that a module's `id` is its package name — see `dsh-api-remotes/lib/client.js`),
-  the `name` of the line in `cordis.patch.yml` (the module specifier), and the configuration card's slot key — `plugins.bundle.config` is keyed by the **package name**,
-  so failing to update it drops the configuration card from the plugin page.
-- The line's `id` stays `dsh-token-usage`: any existing `- id: dsh-token-usage` configuration override (`hours`/`days`) in a profile keeps working.
-  When recognizing its own Loader entry, the Host now matches both the **package name** and the **line id**, so profile lines that have not yet been renamed
-  can still read and write configuration normally (covered by a new test).
+- **Package name, row id and repository name unified as `dsh-desktop-token-usage`** (scoped form `@jd04063221/dsh-desktop-token-usage`):
+  this plugin only targets **DSH Desktop** (its data comes from Desktop's `$DSH_HOME/sessions`), so the name carries `desktop` to keep it
+  apart from any other surface. Updated together: the package name, the Host's `REMOTE_PACKAGE`, the Client module `id` (the official
+  convention is that a module's `id` is its package name — see `dsh-api-remotes/lib/client.js`), the row `name` **and** row `id` in
+  `cordis.patch.yml`, the configuration card's slot key (`plugins.bundle.config` is keyed by the **package name**), the diagnostics and
+  index-cache directory, and the GitHub repository URL.
+- **Missing any one of these fails silently**: the module `id` and the config-card key must equal the package name, and the row `name` must be
+  the exact package name installed into the profile. The row `id` is also the anchor for a profile's `- id: …` configuration override —
+  changing it means migrating that override, or the saved `hours`/`days` stop applying (migrated here). When recognizing its own Loader entry
+  the Host matches both the **package name** and the **row id**, so a legacy row can still read and write configuration (covered by a test).
 - Removed `private: true` and added `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public` (scoped packages default to restricted) / `engines.dsh` (declarative; DSH does not enforce it) / `prepublishOnly: npm test`,
   plus a new MIT `LICENSE`.

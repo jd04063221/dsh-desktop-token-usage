@@ -9,15 +9,15 @@
  */
 window.__ModuleLoader__.load({
   // The module id is the package name, exactly as the official client modules do it.
-  id: '@jd04063221/dsh-token-usage',
+  id: '@jd04063221/dsh-desktop-token-usage',
   factory(require) {
     const React = require('react')
     const h = React.createElement
 
     /** UI key: owns the `main` slot, the sidebar card and the panel selection. */
-    const PANEL_ID = 'dsh-token-usage'
+    const PANEL_ID = 'dsh-desktop-token-usage'
     /** npm package name: addresses the Remote and keys this plugin's config card. */
-    const REMOTE_PACKAGE = '@jd04063221/dsh-token-usage'
+    const REMOTE_PACKAGE = '@jd04063221/dsh-desktop-token-usage'
     const REMOTE_SERVICE = 'dshTokenUsage'
     const REMOTE_NAMESPACE = 'dshUsage'
 
@@ -404,7 +404,7 @@ window.__ModuleLoader__.load({
       }
 
       componentDidCatch(error, info) {
-        console.error('[dsh-token-usage] render failed:', error, info)
+        console.error('[dsh-desktop-token-usage] render failed:', error, info)
       }
 
       render() {
@@ -414,7 +414,7 @@ window.__ModuleLoader__.load({
           return h(
             'div',
             { className: 'dtu-note', 'data-tone': 'error' },
-            `dsh-token-usage 渲染失败（${this.props.label}）：${message}`,
+            `dsh-desktop-token-usage 渲染失败（${this.props.label}）：${message}`,
           )
         }
         return this.props.children
@@ -1175,7 +1175,7 @@ window.__ModuleLoader__.load({
         tag.textContent = CSS
         document.head.appendChild(tag)
         return () => tag.remove()
-      }, 'dsh-token-usage: styles')
+      }, 'dsh-desktop-token-usage: styles')
 
       ctx.effect(() => {
         let cancelled = false
@@ -1194,17 +1194,17 @@ window.__ModuleLoader__.load({
               void loadConfig()
               namespaceCtx.effect(() => () => {
                 namespace = undefined
-              }, 'dsh-token-usage: usage namespace')
+              }, 'dsh-desktop-token-usage: usage namespace')
             })
           })
           .catch((error) => {
-            console.error('[dsh-token-usage] could not mount the usage remote:', error)
+            console.error('[dsh-desktop-token-usage] could not mount the usage remote:', error)
           })
         return () => {
           cancelled = true
           if (unmount) unmount()
         }
-      }, 'dsh-token-usage: usage remote')
+      }, 'dsh-desktop-token-usage: usage remote')
 
       // A window like "last 6 hours" slides even while nothing new is logged, and
       // a Config edit only reaches this half on the next call: refresh quietly.
@@ -1213,7 +1213,7 @@ window.__ModuleLoader__.load({
           if (namespace) void load(snapshot.filter, { silent: true })
         }, REFRESH_MS)
         return () => clearInterval(timer)
-      }, 'dsh-token-usage: refresh timer')
+      }, 'dsh-desktop-token-usage: refresh timer')
 
       ctx.slots.inject('main', () =>
         ctx.slots.register({ name: 'main', key: PANEL_ID, inject: face }, Dashboard),

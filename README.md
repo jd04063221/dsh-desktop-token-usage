@@ -1,4 +1,4 @@
-# @jd04063221/dsh-token-usage
+# @jd04063221/dsh-desktop-token-usage
 
 English | [中文](README.zh.md)
 
@@ -61,13 +61,13 @@ npm install            # installs dev/runtime dependencies only, no network data
 | `client.js` (UI) | The browser-side module snapshot is pushed to the page by HMR once its mtime/size changes; if it does not take effect, hard-refresh the page once (Ctrl/Cmd+Shift+R) |
 | `index.js` / `lib/*` (Host) | **DSH must be restarted**: re-enabling the entry only remounts the fiber, it does not re-import the cached JS module generation. Likewise, adding or changing `Config` fields also requires a restart before they appear in Settings |
 
-To tell which version is currently running: check whether `$DSH_HOME/cache/dsh-token-usage/boot.json` exists and
+To tell which version is currently running: check whether `$DSH_HOME/cache/dsh-desktop-token-usage/boot.json` exists and
 whether `windows` matches expectations.
 
-Uninstall: `plugin_manager action: remove_bundle target: @jd04063221/dsh-token-usage`.
+Uninstall: `plugin_manager action: remove_bundle target: @jd04063221/dsh-desktop-token-usage`.
 
-> The package name and the plugin **row id** are two different things: the row id is `dsh-token-usage` (the anchor for
-> configuration overrides in the profile), and the package name is `@jd04063221/dsh-token-usage`. Use the package name
+> The package name and the plugin **row id** are two different things: the row id is `dsh-desktop-token-usage` (the anchor for
+> configuration overrides in the profile), and the package name is `@jd04063221/dsh-desktop-token-usage`. Use the package name
 > to uninstall/install, and the row id to change configuration.
 
 ## Usage
@@ -107,7 +107,7 @@ does: on save it calls the official `configEditor`, and the values end up in the
 can also write them there directly:
 
 ```yaml
-- id: dsh-token-usage
+- id: dsh-desktop-token-usage
   disabled: false
   config:
     hours: 6
@@ -169,7 +169,7 @@ not listed separately.
 
 - **The first aggregation is slow**: with roughly 150 session files and 90,000+ records, a cold start takes about
   3–4 seconds; after that it goes incremental by file fingerprint, with warm calls in the hundreds of milliseconds.
-  The cache is written to `$DSH_HOME/cache/dsh-token-usage/sessions-index.json`; deleting it only makes the next run
+  The cache is written to `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`; deleting it only makes the next run
   slower.
 - **Imported historical sessions may report zero usage**: if a historical session was imported (a reasonix migration,
   for instance), its usage fields really are all 0. That is valid data, not missing data, and this plugin does not
@@ -192,14 +192,14 @@ Verification completed so far (see the "verification evidence" section of `docs/
 - The `Config` schema validates through the Standard Schema interface: default 0/0, while `hours=24` and `days=31` are rejected;
 - The Host descriptor and the Client contribution are **cross-checked field by field** in the tests, and the parameter codec accepts the values the browser actually sends;
 - Both client halves render in a browserless environment with a fake React/DOM (covering both the card window row and the cumulative fallback), with assertions on style injection and unmounting;
-- After installation, `include:dsh-token-usage` has `fiberPhase` = `active`, and `dsh-token-usage` shows up in both
+- After installation, `include:dsh-desktop-token-usage` has `fiberPhase` = `active`, and `dsh-desktop-token-usage` shows up in both
   `sidebar.footer.action` and `main` (`active: true`);
 - The browser → Host RPC path is proven to work (the Host-side index is rewritten after the page calls it).
 
 **Confirmed / still needs your confirmation**:
 
 1. **The Host-side configuration path has been verified end to end**: `Config.listConfigs` reports `status: schema`
-   for this plugin (`id: include:dsh-token-usage`, `name` is the package name); after restarting the fiber, `boot.json`'s
+   for this plugin (`id: include:dsh-desktop-token-usage`, `name` is the package name); after restarting the fiber, `boot.json`'s
    `windows` equals the `{hours:5, days:1}` configured in the profile — both reading the configuration and writing it
    back through `configEditor` work correctly under the scoped package name.
 2. **The client still needs a hard page refresh** (Ctrl/Cmd+Shift+R): the config card in the middle of the plugin page
@@ -207,7 +207,7 @@ Verification completed so far (see the "verification evidence" section of `docs/
    be loaded before it appears.
 3. **The Host module generation still needs one restart**: Node caches ESM by resolved realpath, so editing files — or
    even renaming the package — does not re-import it; in practice
-   `import('dsh-token-usage') === import('@jd04063221/dsh-token-usage')` is the same module instance. So new Host code
+   `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` is the same module instance. So new Host code
    such as the `payload.heatmap` the heatmap depends on can only be loaded by restarting; until then the client takes
    the "missing `heatmap`" fallback.
 4. The dashboard's visuals (including the reworked heatmap) need your own eyes — this environment has no browser
@@ -215,7 +215,7 @@ Verification completed so far (see the "verification evidence" section of `docs/
 
 ### Where to look when something breaks
 
-Two self-diagnostic files live under `$DSH_HOME/cache/dsh-token-usage/`:
+Two self-diagnostic files live under `$DSH_HOME/cache/dsh-desktop-token-usage/`:
 
 - `boot.json`: the Host activation chain (`appliedAt`/`injectedAt`/`providedAt`/`registeredAt`) and the active
   `windows`; if there is an `error`, it tells you which step stalled. Every `apply` rewrites it, so `appliedAt` is the
@@ -243,7 +243,7 @@ npm test        # node --test: aggregation golden cross-check + window summaries
 
 The tests also run `apply`, so when they write diagnostic files they point at a temporary directory
 (`DSH_TOKEN_USAGE_DIAG_DIR`) and will not overwrite the two files you want to inspect under
-`$DSH_HOME/cache/dsh-token-usage/`.
+`$DSH_HOME/cache/dsh-desktop-token-usage/`.
 
 Layout:
 
@@ -263,29 +263,29 @@ The docs come in both languages: English is the default (`README.md` / `CHANGELO
 
 ## Publishing to npm
 
-> **The placeholder identity must be replaced before publishing.** This repository currently uses the placeholder
-> username `jd04063221` (a literal taken from the email prefix). An npm scope **must be your own npm username or an
-> organization you have rights to**, otherwise `npm publish` will be rejected.
-> The places that need to be updated together (miss one and something breaks):
+> **One thing is left to confirm before publishing: the npm scope.** `jd04063221` is confirmed as your GitHub
+> username — the global git identity (still using GitHub's noreply address), the credential saved by GitHub Desktop,
+> and the public profile all agree; the package name, repository URL and `repository` field are already written as
+> `@jd04063221/dsh-desktop-token-usage`. But an npm scope **must be your own npm username or an organization you have
+> rights to**, and that is **not guaranteed to match** your GitHub username: run `npm login` then `npm whoami`;
+> if they differ, update these places together or `npm publish` will be rejected.
 
 | File | Location | Why |
 |---|---|---|
-| `package.json` | `name`, `author`, `repository`, `homepage`, `bugs` | Package identity and repository URLs |
+| `package.json` | `name` | Package identity (`author` and the repository URLs follow the GitHub username, not the npm scope) |
 | `index.js` | `REMOTE_PACKAGE` | The Remote's package identifier, which must equal `name` |
 | `client.js` | the module `id` and `REMOTE_PACKAGE` | The official client module's `id` is the package name (see `dsh-api-remotes/lib/client.js`) |
 | `cordis.patch.yml` | the row's `name` | Must be the **exact package name** (module specifier) installed into the profile |
 | `test/*.test.mjs` | the names in the assertions | Change them too, or the tests go red |
 
-**Things you intentionally must not touch:**
+**How the row id relates to the package name (easy to get wrong)**: the row `id` is the anchor for the
+`- id: dsh-desktop-token-usage` configuration override in a profile. The two may differ, but **changing the row id means
+migrating that override**, otherwise the saved `hours`/`days` stop applying — which is why they were changed together
+and migrated here. `$DSH_HOME/cache/dsh-desktop-token-usage/` is this plugin's diagnostics and index-cache directory;
+deleting it only makes the next run slower. The slot keys `main` / `sidebar.footer.action` use the short id `PANEL_ID`
+and have nothing to do with the package name.
 
-- The row's `id: dsh-token-usage` — it is the anchor for the `- id: dsh-token-usage` configuration override in the
-  profile, and changing it invalidates existing configurations;
-- The `$DSH_HOME/cache/dsh-token-usage/` diagnostic directory and the log prefix — they match the existing caches and
-  troubleshooting habits on this machine.
-- The slot keys `main` / `sidebar.footer.action` use the short id `PANEL_ID` and have nothing to do with the package
-  name.
-
-The package name and the row id are independent of each other; an official precedent: `id: llm-commandcode` +
+Official precedent (a row id and a package name are independent by design): `id: llm-commandcode` +
 `name: "@mars-sea/dsh-commandcode-provider"`.
 
 Publishing flow:

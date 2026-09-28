@@ -1,5 +1,5 @@
 {
-  "name": "@jd04063221/dsh-token-usage",
+  "name": "@jd04063221/dsh-desktop-token-usage",
   "version": "0.1.0",
   "description": "Local-only DSH token usage dashboard: aggregates session logs under $DSH_HOME and renders them in the sidebar. Verified on DSH Desktop 0.1.7-rc.2.",
   "icon": "./icon.svg",
@@ -44,11 +44,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jd04063221/dsh-token-usage.git"
+    "url": "git+https://github.com/jd04063221/dsh-desktop-token-usage.git"
   },
-  "homepage": "https://github.com/jd04063221/dsh-token-usage#readme",
+  "homepage": "https://github.com/jd04063221/dsh-desktop-token-usage#readme",
   "bugs": {
-    "url": "https://github.com/jd04063221/dsh-token-usage/issues"
+    "url": "https://github.com/jd04063221/dsh-desktop-token-usage/issues"
   },
   "publishConfig": {
     "access": "public"
