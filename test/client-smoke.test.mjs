@@ -279,7 +279,7 @@ test('the Client half requires only React and registers both slots', async () =>
   assert.ok(config, 'the plugin must draw its own configuration card')
   assert.equal(main.options.key, 'dsh-desktop-token-usage')
   assert.equal(footer.options.id, 'dsh-desktop-token-usage')
-  assert.equal(config.options.key, '@jd04063221/dsh-desktop-token-usage', 'the card is keyed by the bundle package name')
+  assert.equal(config.options.key, 'dsh-desktop-token-usage', 'the card is keyed by the bundle package name')
   assert.equal(typeof main.component, 'function')
   assert.equal(typeof footer.component, 'function')
   assert.equal(typeof config.component, 'function')
@@ -425,7 +425,7 @@ test('the configuration card renders the windows and saves them to the Host', as
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
-  const tree = render({ type: slot.component, props: { entryKey: '@jd04063221/dsh-desktop-token-usage', view: 'page' } })
+  const tree = render({ type: slot.component, props: { entryKey: 'dsh-desktop-token-usage', view: 'page' } })
   const text = collect(tree).join(' ')
   assert.match(text, /侧边栏卡片显示的时间跨度/)
   assert.match(text, /当前：近 6 小时 \+ 近 7 天/)
@@ -473,7 +473,7 @@ test('without a Host config editor the card is read-only and says so', async () 
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
-  const tree = render({ type: slot.component, props: { entryKey: '@jd04063221/dsh-desktop-token-usage', view: 'page' } })
+  const tree = render({ type: slot.component, props: { entryKey: 'dsh-desktop-token-usage', view: 'page' } })
   const text = collect(tree).join(' ')
   assert.match(text, /当前：累计/, 'both windows off reads as the cumulative view')
   assert.match(text, /没有提供配置编辑器/)
@@ -541,7 +541,7 @@ test('the Host descriptor and the Client contribution agree', async () => {
   const provided = []
   const attached = []
   const configEditor = {
-    configuration: () => [{ entry: { id: 'include:dsh-desktop-token-usage', options: { name: '@jd04063221/dsh-desktop-token-usage' } } }],
+    configuration: () => [{ entry: { id: 'include:dsh-desktop-token-usage', options: { name: 'dsh-desktop-token-usage' } } }],
     edit: async () => {},
   }
   const hostCtx = {

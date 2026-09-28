@@ -1,4 +1,4 @@
-# @jd04063221/dsh-desktop-token-usage
+# dsh-desktop-token-usage
 
 [English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文
 
@@ -57,10 +57,10 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 
 判断当前跑的是哪一版：看 `$DSH_HOME/cache/dsh-desktop-token-usage/boot.json` 是否存在、`windows` 是否符合预期。
 
-卸载：`plugin_manager action: remove_bundle target: @jd04063221/dsh-desktop-token-usage`。
+卸载：`plugin_manager action: remove_bundle target: dsh-desktop-token-usage`。
 
 > 包名与插件**行 id** 是两个东西：行 id 是 `dsh-desktop-token-usage`（profile 里配置覆盖的锚点），
-> 包名是 `@jd04063221/dsh-desktop-token-usage`。卸载/安装用包名，改配置用行 id。
+> 包名是 `dsh-desktop-token-usage`。卸载/安装用包名，改配置用行 id。
 
 ## 使用
 
@@ -175,7 +175,7 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
 2. **客户端仍需硬刷新页面**（Ctrl/Cmd+Shift+R）：插件页中部那张配置卡由客户端注册
    （`plugins.bundle.config` 以**包名**为键），要加载新客户端模块才会挂上。
 3. **Host 模块代仍需一次重启**：Node 按解析后的 realpath 缓存 ESM，改文件、甚至改包名都不会
-   重新导入——实测 `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` 是同一个
+   重新导入——实测 `import('dsh-desktop-token-usage') === import('dsh-desktop-token-usage')` 是同一个
    模块实例。所以热力图依赖的 `payload.heatmap` 等新 Host 代码，只能靠重启加载；在此之前客户端
    会走"缺 `heatmap`"的回退。
 4. 看板（含重做后的热力图）的视觉需要你肉眼确认——本环境无浏览器控制。
@@ -223,41 +223,6 @@ CHANGELOG-zh.md              中文版本变更记录（含提交索引）
 
 文档都提供中英两份：英文为默认（`README.md` / `CHANGELOG.md`），中文为 `README-zh.md` / `CHANGELOG-zh.md`，
 两份顶部互相链接。
-
-## 发布到 npm
-
-> **发布前只剩一件事要确认：npm 的 scope 归属。** `jd04063221` 已确认为你的 GitHub 用户名——git 全局身份
-> （还用着 GitHub 的 noreply 邮箱）、GitHub Desktop 里保存的凭据、公开用户页三者一致；包名、仓库地址与
-> `repository` 字段都已按 `@jd04063221/dsh-desktop-token-usage` 写好。
-> 但 npm 的 scope **必须是你自己的 npm 用户名或有权限的组织**，两者**不保证相同**：先 `npm login` 再
-> `npm whoami` 确认；若不同，需同步替换下面这些位置，否则 `npm publish` 会被拒。
-
-| 文件 | 位置 | 为什么 |
-|---|---|---|
-| `package.json` | `name` | 包身份（`author` 与仓库地址跟的是 GitHub 用户名，不随 npm scope 变） |
-| `index.js` | `REMOTE_PACKAGE` | Remote 的 package 标识，必须等于 `name` |
-| `client.js` | 模块 `id` 与 `REMOTE_PACKAGE` | 官方 client 模块的 `id` 就是包名（见 `dsh-api-remotes/lib/client.js`） |
-| `cordis.patch.yml` | 行的 `name` | 必须是安装进 profile 的**确切包名**（模块说明符） |
-| `test/*.test.mjs` | 断言里的名字 | 跟着改，否则测试会红 |
-
-**行 id 与包名的关系（容易踩）**：行 `id` 是 profile 里 `- id: dsh-desktop-token-usage` 配置覆盖的锚点，
-两者可以不同，但**改行 id 必须同时迁移那条覆盖**，否则已保存的 `hours`/`days` 会失效——本次就是一起改并迁移的。
-`$DSH_HOME/cache/dsh-desktop-token-usage/` 是本插件的诊断与索引缓存目录，删掉只会让下次变慢。
-槽位键 `main` / `sidebar.footer.action` 用的是短 id `PANEL_ID`，与包名无关。
-
-官方先例（行 id 与包名本就独立）：`id: llm-commandcode` + `name: "@mars-sea/dsh-commandcode-provider"`。
-
-包名与行 id 相互独立，官方先例：`id: llm-commandcode` + `name: "@mars-sea/dsh-commandcode-provider"`。
-
-发布流程：
-
-```
-npm login            # scope 必须属于该账号；可在 npm 网站先建同名 scope
-npm pack --dry-run   # 检查 tarball 内容（以 package.json 的 files 白名单为准）
-npm publish          # scoped 包默认 restricted，已设 publishConfig.access=public
-```
-
-`prepublishOnly` 已绑定 `npm test`，发布前会自动跑一遍全部测试。
 
 ## License
 

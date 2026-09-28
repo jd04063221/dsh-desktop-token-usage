@@ -67,7 +67,7 @@ import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'   // ← 
 
 ```
 > cd ~/.dsh/profiles/desktop
-> node -e "import('@jd04063221/dsh-desktop-token-usage')"
+> node -e "import('dsh-desktop-token-usage')"
 ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/dsh-typert-protocol' imported from .../index.js
 ```
 
@@ -159,8 +159,8 @@ Host 的 `typert.register({...invocations})` 与 Client 的 `ctx.remote.$mount({
 
 实测：`plugin_manager action: set_plugin` 关掉再打开只会**重挂 fiber**，不会重新导入已经缓存的 JS 模块代；
 `remove_bundle` + 重新 `install_bundle` 也不够。更强的一条证据是**改包名同样没用**：Node 按解析后的
-realpath 缓存 ESM，`dsh-desktop-token-usage` 与 `@jd04063221/dsh-desktop-token-usage` 两个说明符都指向同一个真实路径，
-实测 `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` 返回**同一个模块实例**。
+realpath 缓存 ESM，`dsh-desktop-token-usage` 与 `dsh-desktop-token-usage` 两个说明符都指向同一个真实路径，
+实测 `import('dsh-desktop-token-usage') === import('dsh-desktop-token-usage')` 返回**同一个模块实例**。
 所以反复「重新启用」、重装、甚至改名，看到的始终是上次启动时导入的那一代 host 代码。
 
 | 改动的半边 | 生效方式 |
@@ -184,7 +184,7 @@ realpath 缓存 ESM，`dsh-desktop-token-usage` 与 `@jd04063221/dsh-desktop-tok
 > slots the page declares: `plugins.item` … `plugins.bundle.config`（按包名寻址，显示在 bundle 页面的描述与组件行
 > 之间）… `plugins.row.config`（按 `<包名>#<行 id>` 寻址，给那一行一个 **Configure** 控件）。
 
-所以本插件把表单注册进 `plugins.bundle.config`（`key: '@jd04063221/dsh-desktop-token-usage'`，即**包名**），插件页中部才会出现那两个输入框。
+所以本插件把表单注册进 `plugins.bundle.config`（`key: 'dsh-desktop-token-usage'`，即**包名**），插件页中部才会出现那两个输入框。
 schema 的作用是：校验 `cordis.patch.yml` 里的 `config`、给 `Config.listConfigs` 投影 JSON Schema、
 在 `fiber.update()` 时填默认值。
 

@@ -1,4 +1,4 @@
-# @jd04063221/dsh-desktop-token-usage
+# dsh-desktop-token-usage
 
 English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md)
 
@@ -64,10 +64,10 @@ npm install            # installs dev/runtime dependencies only, no network data
 To tell which version is currently running: check whether `$DSH_HOME/cache/dsh-desktop-token-usage/boot.json` exists and
 whether `windows` matches expectations.
 
-Uninstall: `plugin_manager action: remove_bundle target: @jd04063221/dsh-desktop-token-usage`.
+Uninstall: `plugin_manager action: remove_bundle target: dsh-desktop-token-usage`.
 
 > The package name and the plugin **row id** are two different things: the row id is `dsh-desktop-token-usage` (the anchor for
-> configuration overrides in the profile), and the package name is `@jd04063221/dsh-desktop-token-usage`. Use the package name
+> configuration overrides in the profile), and the package name is `dsh-desktop-token-usage`. Use the package name
 > to uninstall/install, and the row id to change configuration.
 
 ## Usage
@@ -207,7 +207,7 @@ Verification completed so far (see the "verification evidence" section of `docs/
    be loaded before it appears.
 3. **The Host module generation still needs one restart**: Node caches ESM by resolved realpath, so editing files — or
    even renaming the package — does not re-import it; in practice
-   `import('dsh-desktop-token-usage') === import('@jd04063221/dsh-desktop-token-usage')` is the same module instance. So new Host code
+   `import('dsh-desktop-token-usage') === import('dsh-desktop-token-usage')` is the same module instance. So new Host code
    such as the `payload.heatmap` the heatmap depends on can only be loaded by restarting; until then the client takes
    the "missing `heatmap`" fallback.
 4. The dashboard's visuals (including the reworked heatmap) need your own eyes — this environment has no browser
@@ -260,43 +260,6 @@ CHANGELOG.md                 Version history (with a commit index)
 
 The docs come in both languages: English is the default (`README.md` / `CHANGELOG.md`) and Chinese is `README-zh.md` /
 `CHANGELOG-zh.md`, with the two top-of-file switchers linking to each other.
-
-## Publishing to npm
-
-> **One thing is left to confirm before publishing: the npm scope.** `jd04063221` is confirmed as your GitHub
-> username — the global git identity (still using GitHub's noreply address), the credential saved by GitHub Desktop,
-> and the public profile all agree; the package name, repository URL and `repository` field are already written as
-> `@jd04063221/dsh-desktop-token-usage`. But an npm scope **must be your own npm username or an organization you have
-> rights to**, and that is **not guaranteed to match** your GitHub username: run `npm login` then `npm whoami`;
-> if they differ, update these places together or `npm publish` will be rejected.
-
-| File | Location | Why |
-|---|---|---|
-| `package.json` | `name` | Package identity (`author` and the repository URLs follow the GitHub username, not the npm scope) |
-| `index.js` | `REMOTE_PACKAGE` | The Remote's package identifier, which must equal `name` |
-| `client.js` | the module `id` and `REMOTE_PACKAGE` | The official client module's `id` is the package name (see `dsh-api-remotes/lib/client.js`) |
-| `cordis.patch.yml` | the row's `name` | Must be the **exact package name** (module specifier) installed into the profile |
-| `test/*.test.mjs` | the names in the assertions | Change them too, or the tests go red |
-
-**How the row id relates to the package name (easy to get wrong)**: the row `id` is the anchor for the
-`- id: dsh-desktop-token-usage` configuration override in a profile. The two may differ, but **changing the row id means
-migrating that override**, otherwise the saved `hours`/`days` stop applying — which is why they were changed together
-and migrated here. `$DSH_HOME/cache/dsh-desktop-token-usage/` is this plugin's diagnostics and index-cache directory;
-deleting it only makes the next run slower. The slot keys `main` / `sidebar.footer.action` use the short id `PANEL_ID`
-and have nothing to do with the package name.
-
-Official precedent (a row id and a package name are independent by design): `id: llm-commandcode` +
-`name: "@mars-sea/dsh-commandcode-provider"`.
-
-Publishing flow:
-
-```
-npm login            # the scope must belong to that account; you can create a scope of the same name on the npm site first
-npm pack --dry-run   # check the tarball contents (governed by the files whitelist in package.json)
-npm publish          # scoped packages are restricted by default; publishConfig.access=public is already set
-```
-
-`prepublishOnly` is bound to `npm test`, so the whole test suite runs automatically before publishing.
 
 ## License
 

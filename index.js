@@ -25,7 +25,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { DSH_HOME, cardRollup, summarize } from './lib/session-usage.js'
 
 /** npm package name, claimed by both faces: the Remote's package and the Loader row's specifier. */
-const REMOTE_PACKAGE = '@jd04063221/dsh-desktop-token-usage'
+const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
 /** The Loader row's own id, deliberately short and stable: `include:<ROW_ID>`. */
 const ROW_ID = 'dsh-desktop-token-usage'
 /** The Cordis service key the gateway resolves this Remote from. */

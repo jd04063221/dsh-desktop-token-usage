@@ -1,4 +1,4 @@
-# Publish @jd04063221/dsh-desktop-token-usage to npm.
+# Publish dsh-desktop-token-usage to npm.
 #
 # Trigger: pushing a version tag (v*), or a manual run from the Actions tab.
 # A manual run defaults to the dry run, so it is safe to click.

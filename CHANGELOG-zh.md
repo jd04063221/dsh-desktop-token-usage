@@ -2,7 +2,7 @@
 
 [English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | 中文
 
-本文件记录 `@jd04063221/dsh-desktop-token-usage` 的所有重要变更。
+本文件记录 `dsh-desktop-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 > **升级注意**：本插件是 DSH bundle，分两半加载。`client.js`（界面）由浏览器热更新，
@@ -10,6 +10,19 @@
 > 换 specifier、重装、甚至改包名也不会重新导入（Node 按 realpath 缓存 ESM），必须重启一次 DSH。
 > 判断当前跑的是哪一代：看 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`，再叠加
 > 「本次改动之后是否重启过」；`boot.json` 每次 `apply` 都会重写，只能说明 fiber 最近一次重挂的时间。
+
+## [0.1.2] - 2026-09-28
+
+### 变更
+
+- **包名去掉作用域**：`@jd04063221/dsh-desktop-token-usage` → `dsh-desktop-token-usage`。0.1.0 与 0.1.1 是
+  作用域包；作用域名已 deprecate 并指向本包。无作用域名不要求账号拥有同名 scope，安装命令更短，发布也不再
+  依赖 scope 归属。同步改了 Host 的 `REMOTE_PACKAGE`、Client 的模块 `id` 与 `cordis.patch.yml` 的行 `name`；
+  行 `id` 与 `PANEL_ID` 本来就等于无作用域名，因此这次不需要迁移任何 profile 配置。
+
+### 说明
+
+- GitHub 仓库名本来就是 `dsh-desktop-token-usage`，所以仓库地址与发布 tag 都不需要改动。
 
 ## [0.1.1] - 2026-09-28
 
@@ -97,7 +110,7 @@
 
 ### 发布准备（npm）
 
-- **包名、行 id 与仓库名统一为 `dsh-desktop-token-usage`**（作用域形式 `@jd04063221/dsh-desktop-token-usage`）：
+- **包名、行 id 与仓库名统一为 `@jd04063221/dsh-desktop-token-usage`**（作用域在 0.1.2 中去掉）：
   本插件只对应 DSH **桌面版**（数据来自 Desktop 的 `$DSH_HOME/sessions`），名字里带 `desktop` 以区分其他形态。
   同步改了包名、Host 的 `REMOTE_PACKAGE`、Client 的模块 `id`（官方约定模块 `id` 即包名，见
   `dsh-api-remotes/lib/client.js`）、`cordis.patch.yml` 的行 `name` 与行 `id`、配置卡槽位键

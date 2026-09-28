@@ -9,7 +9,7 @@
  */
 window.__ModuleLoader__.load({
   // The module id is the package name, exactly as the official client modules do it.
-  id: '@jd04063221/dsh-desktop-token-usage',
+  id: 'dsh-desktop-token-usage',
   factory(require) {
     const React = require('react')
     const h = React.createElement
@@ -17,7 +17,7 @@ window.__ModuleLoader__.load({
     /** UI key: owns the `main` slot, the sidebar card and the panel selection. */
     const PANEL_ID = 'dsh-desktop-token-usage'
     /** npm package name: addresses the Remote and keys this plugin's config card. */
-    const REMOTE_PACKAGE = '@jd04063221/dsh-desktop-token-usage'
+    const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
     const REMOTE_SERVICE = 'dshTokenUsage'
     const REMOTE_NAMESPACE = 'dshUsage'
 

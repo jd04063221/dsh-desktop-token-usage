@@ -2,7 +2,7 @@
 
 English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md)
 
-This file documents all notable changes to `@jd04063221/dsh-desktop-token-usage`.
+This file documents all notable changes to `dsh-desktop-token-usage`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the version numbers follow [Semantic Versioning](https://semver.org/).
 
 > **Upgrade note**: This plugin is a DSH bundle that loads in two halves. `client.js` (the UI) is hot-reloaded by the browser,
@@ -11,6 +11,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > DSH must be restarted once before the new code is loaded. To tell which generation is running, check whether `Config.listConfigs`
 > reports `schema` or `absent` for this plugin, together with whether the process has been restarted since your change; `boot.json`
 > is rewritten by every `apply`, so its existence only tells you when the fiber was last remounted.
+
+## [0.1.2] - 2026-09-28
+
+### Changed
+
+- **The package name dropped its scope**: `@jd04063221/dsh-desktop-token-usage` → `dsh-desktop-token-usage`.
+  Versions 0.1.0 and 0.1.1 were scoped packages; the scoped name is deprecated and now points here. An unscoped
+  name needs no matching npm scope, so the install command is shorter and publishing no longer depends on owning one.
+  Updated in step: the Host's `REMOTE_PACKAGE`, the Client module `id`, and the row `name` in `cordis.patch.yml`.
+  The row `id` and the `PANEL_ID` slot key already were the unscoped string, so no profile configuration had to be
+  migrated this time.
+
+### Note
+
+- The GitHub repository name was already `dsh-desktop-token-usage`, so neither the repository URL nor the release
+  tags needed changing.
 
 ## [0.1.1] - 2026-09-28
 
@@ -104,7 +120,7 @@ First release: fully offline token usage statistics, with all data taken from th
 
 ### Release preparation (npm)
 
-- **Package name, row id and repository name unified as `dsh-desktop-token-usage`** (scoped form `@jd04063221/dsh-desktop-token-usage`):
+- **Package name, row id and repository name unified as `@jd04063221/dsh-desktop-token-usage`** (the scope was dropped in 0.1.2):
   this plugin only targets **DSH Desktop** (its data comes from Desktop's `$DSH_HOME/sessions`), so the name carries `desktop` to keep it
   apart from any other surface. Updated together: the package name, the Host's `REMOTE_PACKAGE`, the Client module `id` (the official
   convention is that a module's `id` is its package name — see `dsh-api-remotes/lib/client.js`), the row `name` **and** row `id` in

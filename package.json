@@ -1,6 +1,6 @@
 {
-  "name": "@jd04063221/dsh-desktop-token-usage",
-  "version": "0.1.1",
+  "name": "dsh-desktop-token-usage",
+  "version": "0.1.2",
   "description": "Local-only DSH token usage dashboard: aggregates session logs under $DSH_HOME and renders them in the sidebar. Verified on DSH Desktop 0.1.7-rc.2.",
   "icon": "./icon.svg",
   "type": "module",

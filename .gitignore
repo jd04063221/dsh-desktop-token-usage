@@ -4,6 +4,9 @@ package-lock.json
 docs/research/.cache/
 *.log
 
+# 仅本地的维护者文档（不进 git，也不进 npm 包）
+*.local.md
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db

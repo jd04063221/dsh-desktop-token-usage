@@ -264,7 +264,7 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   const configEditor = {
     configuration: () => [
       { entry: { id: 'include:other', options: { name: 'some-other-plugin' } } },
-      { entry: { id: 'include:dsh-desktop-token-usage', options: { name: '@jd04063221/dsh-desktop-token-usage' } }, inherited: {}, override: {} },
+      { entry: { id: 'include:dsh-desktop-token-usage', options: { name: 'dsh-desktop-token-usage' } }, inherited: {}, override: {} },
     ],
     edit: async (entry, change) => {
       edits.push({ entryId: entry.id, next: change({ hours: 0, days: 0 }, {}) })
