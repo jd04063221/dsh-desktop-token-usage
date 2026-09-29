@@ -498,7 +498,7 @@ test('without a Host config editor the card is read-only and says so', async () 
   assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
 })
 
-test('the cache-hit curve gets its own axis instead of a second scale on the bars', async () => {
+test('the trend overlays a daily-total line on the bars instead of a second scale', async () => {
   const { plugin } = loadClient()
   const { ctx, record } = fakeContext()
   plugin.apply(ctx)
@@ -506,6 +506,7 @@ test('the cache-hit curve gets its own axis instead of a second scale on the bar
 
   const main = record.slots.find((item) => item.options?.name === 'main')
   const classes = []
+  const polylines = []
   const walk = (node) => {
     if (node === null || node === undefined || typeof node !== 'object') return
     if (Array.isArray(node)) {
@@ -513,20 +514,30 @@ test('the cache-hit curve gets its own axis instead of a second scale on the bar
       return
     }
     if (typeof node.props?.className === 'string') classes.push(node.props.className)
+    if (node.tag === 'polyline') polylines.push(node.props.points)
     walk(node.children)
   }
   walk(render({ type: main.component, props: main.options.inject() }))
 
-  assert.equal(classes.filter((name) => name === 'dtu-chart').length, 1, 'the token bars own one plot')
-  assert.equal(
-    classes.filter((name) => name === 'dtu-chart dtu-chartHit').length,
-    1,
-    'the cache-hit curve must be plotted in a band of its own',
+  assert.equal(classes.filter((name) => name === 'dtu-chart').length, 1, 'the bars and the line share one plot')
+  assert.ok(!classes.includes('dtu-chartHit'), 'the separate cache-hit band is gone')
+  assert.ok(!classes.includes('dtu-axisYr'), 'the trend must not carry a second scale')
+  assert.equal(polylines.length, 1, 'the daily total is drawn as one polyline')
+  const plotted = polylines[0].split(' ')
+  assert.equal(plotted.length, 2, 'one point per day')
+  assert.deepEqual(
+    plotted.map((point) => point.split(',')[0]),
+    ['25', '75'],
+    'the points sit at the centre of each column',
   )
-  assert.ok(
-    !classes.includes('dtu-axisYr'),
-    'the cache-hit rate must not be a second scale sharing the token plot',
+  // both fixture days total 2,600 tokens against a 5,000 axis, so both plot 48% down;
+  // a cache-hit curve would have plotted 80% instead
+  assert.deepEqual(
+    plotted.map((point) => Math.round(Number(point.split(',')[1]))),
+    [48, 48],
+    'the line must carry daily token usage, not the cache hit rate',
   )
+  assert.equal(classes.filter((name) => name === 'dtu-point').length, 2, 'one dot per day')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

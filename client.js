@@ -270,9 +270,10 @@ window.__ModuleLoader__.load({
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary);display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-chart{position:relative;height:260px;margin-top:4px}
-/* The cache-hit band shares the bar chart's plot insets, so the two columns line
-   up; it carries its own 0-100% axis instead of a second scale on one plot. */
-.dtu-chartHit{height:104px}
+/* The daily-total line shares the bars' plot insets, so both read off the same
+   token axis; the dots are positioned in % so they stay round. */
+.dtu-lineKey{display:inline-block;width:14px;height:2px;border-radius:1px;background:var(--dsw-alias-label-primary);margin-right:5px;vertical-align:middle}
+.dtu-point{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--dsw-alias-label-primary)}
 .dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
@@ -817,10 +818,9 @@ window.__ModuleLoader__.load({
       const max = niceMax(columns.reduce((peak, column) => Math.max(peak, column.total), 0))
       const labelled = columns.length <= 16 ? columns.map((_, index) => index) : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
       const ticks = [0, 0.25, 0.5, 0.75, 1]
-      const hitPoints = columns
-        .map((column, index) => (column.hit === null ? null : `${((index + 0.5) / columns.length) * 100},${100 - column.hit * 100}`))
-        .filter(Boolean)
-        .join(' ')
+      const pointX = (index) => ((index + 0.5) / columns.length) * 100
+      const pointY = (column) => (1 - column.total / max) * 100
+      const totalPoints = columns.map((column, index) => `${pointX(index)},${pointY(column)}`).join(' ')
       return h(
         'div',
         null,
@@ -841,12 +841,7 @@ window.__ModuleLoader__.load({
             h('span', { className: 'dtu-dot', style: { background: OTHER } }),
             '其他',
           ),
-          h(
-            'span',
-            null,
-            h('span', { className: 'dtu-dot', style: { background: 'var(--dsw-alias-state-warn-primary)', borderRadius: '50%' } }),
-            '缓存命中率（下图）',
-          ),
+          h('span', null, h('span', { className: 'dtu-lineKey' }), '每日合计'),
         ),
         h(
           'div',
@@ -889,45 +884,36 @@ window.__ModuleLoader__.load({
               ),
             ),
           ),
+          h(
+            'div',
+            { className: 'dtu-line' },
+            h(
+              'svg',
+              { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
+              h('polyline', {
+                points: totalPoints,
+                fill: 'none',
+                stroke: 'var(--dsw-alias-label-primary)',
+                strokeWidth: 1.5,
+                vectorEffect: 'non-scaling-stroke',
+              }),
+            ),
+            columns.map((column, index) =>
+              h('span', {
+                key: column.day,
+                className: 'dtu-point',
+                style: { left: `${pointX(index)}%`, top: `${pointY(column)}%` },
+              }),
+            ),
+          ),
+          h(
+            'div',
+            { className: 'dtu-axisX' },
+            labelled.map((index) =>
+              h('span', { key: index, style: { left: `${pointX(index)}%` } }, columns[index].day.slice(5)),
+            ),
+          ),
         ),
-        hitPoints
-          ? h(
-              'div',
-              { className: 'dtu-chart dtu-chartHit' },
-              h(
-                'div',
-                { className: 'dtu-grid' },
-                ticks.map((tick) => h('div', { key: tick, className: 'dtu-gridline', style: { top: `${tick * 100}%` } })),
-              ),
-              h(
-                'div',
-                { className: 'dtu-axisY' },
-                ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, `${Math.round((1 - tick) * 100)}%`)),
-              ),
-              h(
-                'div',
-                { className: 'dtu-line' },
-                h(
-                  'svg',
-                  { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
-                  h('polyline', {
-                    points: hitPoints,
-                    fill: 'none',
-                    stroke: 'var(--dsw-alias-state-warn-primary)',
-                    strokeWidth: 1.5,
-                    vectorEffect: 'non-scaling-stroke',
-                  }),
-                ),
-              ),
-              h(
-                'div',
-                { className: 'dtu-axisX' },
-                labelled.map((index) =>
-                  h('span', { key: index, style: { left: `${((index + 0.5) / columns.length) * 100}%` } }, columns[index].day.slice(5)),
-                ),
-              ),
-            )
-          : null,
       )
     }
 

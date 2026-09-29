@@ -30,8 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   With both windows off it falls back to a single cumulative card.
 - **The per-day trend no longer puts two scales on one plot.** The cache hit rate was a line drawn over the token bars
   with its own 0-100% right-hand axis; since it normally sits above 90%, the line floated along the top of the plot
-  with no visible relation to the bars under it. It now has a band of its own directly beneath the bars, sharing the
-  same plot insets and x axis but carrying a 0-100% axis of its own.
+  with no visible relation to the bars under it. The hit rate is already given per window in the stat cards and the
+  `配置窗口` row, so that curve is gone: the chart now overlays the **daily token total** on the bars instead, sharing
+  the one left-hand token axis, its vertices landing on each stacked column's top so the composition and the trend read
+  together. Days with no usage drop the line to the baseline, which makes the empty-then-spike shape clearer. The
+  legend's hit-rate entry became `每日合计`.
 - **Writes are atomic, bounded, and switchable off.** Both writers now write a `<name>.<pid>.tmp` sibling and rename it
   over the target, so a concurrent reader never sees a partial file and a killed process cannot leave a truncated one.
   The session index is capped at 800 entries (oldest dropped, re-scanned on demand) and any `.tmp` a crash left behind
