@@ -267,25 +267,32 @@ test('the Client half requires only React and registers both slots', async () =>
   // The Remote namespace arrives one microtask after `$mount` resolves.
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  assert.deepEqual(plain(record.injected), [['remote.dshUsage']], 'the Remote namespace must be awaited')
+  assert.deepEqual(plain(record.injected), [['layout'], ['remote.dshUsage']], 'both services must be awaited')
   assert.equal(record.mounted.length, 1)
 
   const registrations = record.slots.filter((entry) => entry.options)
   const main = registrations.find((entry) => entry.options.name === 'main')
-  const panel = registrations.find((entry) => entry.options.name === 'sidebar.panellist')
+  const footer = registrations.find((entry) => entry.options.name === 'sidebar.footer.action')
   const config = registrations.find((entry) => entry.options.name === 'plugins.bundle.config')
   assert.ok(main, 'a main panel must be registered')
-  assert.ok(panel, 'a sidebar panel entry must be registered')
+  assert.ok(footer, 'a sidebar footer entry must be registered')
   assert.ok(config, 'the plugin must draw its own configuration card')
   assert.equal(main.options.key, 'dsh-desktop-token-usage')
-  assert.equal(panel.options.id, 'dsh-desktop-token-usage', 'the list id addresses the matching main panel')
-  assert.equal(panel.options.label, 'Token 用量', 'the sidebar paints this string as the row title')
-  assert.equal(typeof panel.options.order, 'number')
-  assert.equal(panel.options.inject, undefined, 'the sidebar owns the click, so no face is injected here')
+  assert.equal(footer.options.id, 'dsh-desktop-token-usage')
   assert.equal(config.options.key, 'dsh-desktop-token-usage', 'the card is keyed by the bundle package name')
   assert.equal(typeof main.component, 'function')
-  assert.equal(typeof panel.component, 'function')
+  assert.equal(typeof footer.component, 'function')
   assert.equal(typeof config.component, 'function')
+
+  // The seat is one horizontal row shared with other plugins, and every plugin in
+  // it declares width:100%. The card therefore makes the seat wrap, addressing it
+  // through its child so nothing depends on DSH's hashed class names.
+  const styles = document.head.children[0].textContent
+  assert.ok(
+    styles.includes(':has(> .dtu-footCard){flex-wrap:wrap}'),
+    'the entry must make the seat wrap it onto a line of its own',
+  )
+  assert.ok(styles.includes('flex:1 1 100%'), 'the card must claim the full line it wrapped onto')
 
   // Styles are owned by the fiber and removed on unload.
   assert.equal(document.head.children.length, 1)
@@ -303,17 +310,22 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   const { ctx, record } = fakeContext()
   plugin.apply(ctx)
 
-  const entry = record.slots.find((item) => item.options?.name === 'sidebar.panellist')
+  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
   // Await the initial load the apply pass kicked off.
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  // The sidebar owns the row, the click and the label; the occupant is only a
-  // glyph, so it must honour the edge the row asks for and paint nothing else.
-  const glyph = render({ type: entry.component, props: { size: 18, active: false } })
-  assert.equal(glyph.tag, 'svg', 'the occupant must be a bare glyph')
-  assert.equal(glyph.props.width, 18, 'the glyph must use the size the row passes')
-  assert.equal(glyph.props.height, 18)
-  assert.equal(collect(glyph).join(''), '', 'the glyph carries no text of its own')
+  const wide = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  assert.match(wide, /Token 用量/)
+  // Every configured window is its own row, split into input and output.
+  assert.match(wide, /近 6 小时/)
+  assert.match(wide, /近 7 天/)
+  assert.match(wide, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${wide}`)
+  assert.match(wide, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${wide}`)
+  assert.match(wide, /缓存命中 80\.0%/)
+
+  const rail = render({ type: entry.component, props: { ...entry.options.inject(), wide: false } })
+  assert.equal(rail.tag, 'button')
+  assert.match(rail.props['aria-label'], /Token 用量/)
 
   const main = record.slots.find((item) => item.options?.name === 'main')
   const body = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
@@ -484,6 +496,37 @@ test('without a Host config editor the card is read-only and says so', async () 
   }
   walk(tree)
   assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
+})
+
+test('the cache-hit curve gets its own axis instead of a second scale on the bars', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const classes = []
+  const walk = (node) => {
+    if (node === null || node === undefined || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const child of node) walk(child)
+      return
+    }
+    if (typeof node.props?.className === 'string') classes.push(node.props.className)
+    walk(node.children)
+  }
+  walk(render({ type: main.component, props: main.options.inject() }))
+
+  assert.equal(classes.filter((name) => name === 'dtu-chart').length, 1, 'the token bars own one plot')
+  assert.equal(
+    classes.filter((name) => name === 'dtu-chart dtu-chartHit').length,
+    1,
+    'the cache-hit curve must be plotted in a band of its own',
+  )
+  assert.ok(
+    !classes.includes('dtu-axisYr'),
+    'the cache-hit rate must not be a second scale sharing the token plot',
+  )
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

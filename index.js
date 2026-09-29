@@ -22,7 +22,7 @@ import path from 'node:path'
 
 import Schema from '@deepseek-ai/schemastery'
 
-import { DSH_HOME, cardRollup, summarize } from './lib/session-usage.js'
+import { PLUGIN_CACHE_DIR, cardRollup, summarize } from './lib/session-usage.js'
 
 /** npm package name, claimed by both faces: the Remote's package and the Loader row's specifier. */
 const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
@@ -52,23 +52,32 @@ export const Config = Schema.object({
 })
 
 /**
- * A bounded record of the last calls, written next to the index cache. When the
- * dashboard shows nothing, this file answers the first question — did the
- * browser reach the Host at all — without needing the page console.
+ * A bounded record of the last calls, written inside this plugin's own cache
+ * directory (see `PLUGIN_CACHE_DIR`). When the dashboard shows nothing, this file
+ * answers the first question — did the browser reach the Host at all — without
+ * needing the page console.
  *
- * The directory is overridable because the test suite runs `apply` too, and
- * these two files are what a human inspects to tell which generation is live.
+ * These are diagnostics, not data: setting `DSH_TOKEN_USAGE_DIAG=0` turns every
+ * write below off, and the plugin keeps working. The directory is overridable
+ * because the test suite runs `apply` too, and these two files are what a human
+ * inspects to tell which generation is live.
  */
-const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || path.join(DSH_HOME, 'cache', 'dsh-desktop-token-usage')
+const DIAG_ENABLED = !/^(0|false|off|no)$/i.test(process.env.DSH_TOKEN_USAGE_DIAG ?? '')
+const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || PLUGIN_CACHE_DIR
 const CALL_LOG = path.join(DIAG_DIR, 'calls.json')
 const BOOT_LOG = path.join(DIAG_DIR, 'boot.json')
 const CALL_LOG_LIMIT = 20
 const calls = []
 
 function writeJson(file, value) {
+  if (!DIAG_ENABLED) return
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.writeFileSync(file, JSON.stringify(value))
+    // Atomic: write beside the target then rename, so a reader never sees half a
+    // file and a killed process cannot leave a truncated one behind.
+    const tmp = `${file}.${process.pid}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(value))
+    fs.renameSync(tmp, file)
   } catch {
     // Diagnostics must never fail a call.
   }

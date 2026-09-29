@@ -270,6 +270,9 @@ window.__ModuleLoader__.load({
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary);display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-chart{position:relative;height:260px;margin-top:4px}
+/* The cache-hit band shares the bar chart's plot insets, so the two columns line
+   up; it carries its own 0-100% axis instead of a second scale on one plot. */
+.dtu-chartHit{height:104px}
 .dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
@@ -279,9 +282,7 @@ window.__ModuleLoader__.load({
 .dtu-axisX{position:absolute;left:52px;right:44px;bottom:0;height:18px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisX span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .dtu-axisY{position:absolute;left:0;top:0;bottom:22px;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
-.dtu-axisY span,.dtu-axisYr span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
-.dtu-axisYr{position:absolute;right:0;top:0;bottom:22px;width:42px;color:var(--dsw-alias-label-secondary);font-size:11px}
-.dtu-axisYr span{right:auto;left:4px}
+.dtu-axisY span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
 .dtu-grid{position:absolute;left:52px;right:44px;top:0;bottom:22px}
 .dtu-gridline{position:absolute;left:0;right:0;border-top:1px solid var(--dsw-alias-border-l1);opacity:.6}
 .dtu-models{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:20px;align-items:start}
@@ -299,6 +300,14 @@ window.__ModuleLoader__.load({
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
 .dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-wrap:wrap;gap:12px}
 .dtu-footEntry{min-width:0;max-width:360px}
+.dtu-footTop{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.dtu-footValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.dtu-footRow{display:flex;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.dtu-window{display:flex;flex-direction:column;gap:1px;padding:4px 0 5px;border-top:1px solid var(--dsw-alias-border-l1)}
+.dtu-window:first-of-type{border-top:0;padding-top:2px}
+.dtu-windowLabel{color:var(--dsw-alias-label-secondary);font-size:11.5px;font-weight:600}
+.dtu-windowValue{color:var(--dsw-alias-label-primary);font-size:12.5px;font-variant-numeric:tabular-nums}
+.dtu-windowMeta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
 .dtu-form{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1);max-width:560px}
 .dtu-formTitle{font-weight:600}
 .dtu-hint{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}
@@ -310,9 +319,17 @@ window.__ModuleLoader__.load({
 .dtu-save:disabled{opacity:.5;cursor:default}
 .dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
 .dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
-/* The sidebar paints the glyph inside its own panel row and passes the edge in
-   pixels, so nothing here may fix the size. */
-.dtu-icon{flex:none;display:block}
+/* The seat lays every occupant on one horizontal line, yet every plugin in it
+   declares width:100% — so they can never share it, and each one ends up
+   squeezed against its neighbours. The :has() selector addresses the seat by its
+   child, which keeps this independent of DSH's hashed class names; the wrap then
+   gives every occupant the full-width row it was written for. */
+:has(> .dtu-footCard){flex-wrap:wrap}
+.dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;flex:1 1 100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
+.dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
+.dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
+.dtu-rail:hover{background:var(--dsw-alias-bg-layer-2)}
+.dtu-icon{width:16px;height:16px;flex:none}
 `
 
     // ── small pieces ────────────────────────────────────────────────────────
@@ -414,18 +431,111 @@ window.__ModuleLoader__.load({
     // ── sidebar entry ───────────────────────────────────────────────────────
 
     /**
-     * The glyph the sidebar paints in the panel row it owns. `sidebar.panellist`
-     * is not a box the plugin draws: the sidebar turns every registered id into
-     * its own full-width row, owns the click (`selectPanel`), resolves the row's
-     * label from the registration, and asks the occupant only for a mark at
-     * `size` px — `active` is reported but the row already colours it.
-     *
-     * That is why the entry left `sidebar.footer.action`: that seat is a
-     * horizontal row shared with every other plugin, so a card registered there
-     * has no choice but to sit beside its neighbours and fight them for width.
+     * One card row: the configured window's own label, its input/output split
+     * and its cache hit rate. Input counts everything the provider was sent —
+     * the cache-missing part plus the cached reads — so the pair reads the way a
+     * user thinks about a request.
      */
-    function SidebarEntry({ size = 16 }) {
-      return h(Icon, { size })
+    function CardWindow({ block }) {
+      return h(
+        'div',
+        { className: 'dtu-window' },
+        h('div', { className: 'dtu-windowLabel' }, block.label),
+        h(
+          'div',
+          { className: 'dtu-windowValue' },
+          `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)}`,
+        ),
+        h(
+          'div',
+          { className: 'dtu-windowMeta' },
+          `缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
+        ),
+      )
+    }
+
+    /**
+     * The all-time block, rebuilt from `totals` when the Host answered without a
+     * `card`. A Client newer than its Host is a normal upgrade state, and the
+     * card must still show figures rather than wait for a field that will only
+     * appear after the Host module generation is reloaded.
+     */
+    function cumulativeBlock(totals) {
+      if (!totals || !Array.isArray(totals.buckets)) return null
+      const buckets = totals.buckets
+      return {
+        id: 'all',
+        label: '累计',
+        buckets,
+        totalTokens: typeof totals.totalTokens === 'number' ? totals.totalTokens : totalOf(buckets),
+        inputTokens: typeof totals.inputTokens === 'number' ? totals.inputTokens : buckets[0] + buckets[2],
+        outputTokens: buckets[1],
+        cacheHitRate: totals.cacheHitRate,
+        turns: totals.turns,
+        requests: totals.requests,
+      }
+    }
+
+    /**
+     * The usage card in the sidebar foot (`sidebar.footer.action`), and the icon
+     * button the collapsed rail gets instead.
+     *
+     * That seat is a single horizontal row, and every plugin in it declares
+     * `width: 100%`, so no two of them can share it — see the `:has()` rule in the
+     * stylesheet, which makes the seat wrap so each occupant gets the full-width
+     * row it was written for.
+     */
+    function SidebarEntry(props) {
+      const state = useStore()
+      const card = state.data ? state.data.card : null
+      const blocks = card ? card.blocks : []
+      const all = card ? card.all : state.data ? cumulativeBlock(state.data.totals) : null
+      const headline = blocks.length > 0 ? blocks[0].inputTokens + blocks[0].outputTokens : all ? all.totalTokens : 0
+      if (props.wide === false) {
+        const label = `Token 用量 · ${compact(headline)}`
+        return h(
+          'button',
+          { type: 'button', className: 'dtu-rail', title: label, 'aria-label': label, onClick: props.open },
+          h(Icon, { size: 16 }),
+        )
+      }
+      let body
+      if (state.status === 'error') {
+        body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
+      } else if (!state.data) {
+        body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
+      } else if (blocks.length > 0) {
+        body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
+      } else if (!all) {
+        body = h('div', { className: 'dtu-windowMeta' }, '该筛选条件下没有用量记录。')
+      } else {
+        body = [
+          h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
+          h(
+            'div',
+            { key: 'split', className: 'dtu-footRow' },
+            h('span', null, `输入 ${compact(all.inputTokens)} · 输出 ${compact(all.outputTokens)}`),
+          ),
+          h(
+            'div',
+            { key: 'meta', className: 'dtu-footRow' },
+            h('span', null, `缓存命中 ${percent(all.cacheHitRate)}`),
+            h('span', null, `${all.turns} 轮`),
+          ),
+        ]
+      }
+      return h(
+        'button',
+        { type: 'button', className: 'dtu-footCard', title: '打开 Token 用量看板', onClick: props.open },
+        h(
+          'div',
+          { className: 'dtu-footTop' },
+          h(Icon, { size: 14 }),
+          h('span', null, 'Token 用量'),
+          h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
+        ),
+        body,
+      )
     }
 
     // ── configuration form ──────────────────────────────────────────────────
@@ -707,7 +817,7 @@ window.__ModuleLoader__.load({
       const max = niceMax(columns.reduce((peak, column) => Math.max(peak, column.total), 0))
       const labelled = columns.length <= 16 ? columns.map((_, index) => index) : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
       const ticks = [0, 0.25, 0.5, 0.75, 1]
-      const points = columns
+      const hitPoints = columns
         .map((column, index) => (column.hit === null ? null : `${((index + 0.5) / columns.length) * 100},${100 - column.hit * 100}`))
         .filter(Boolean)
         .join(' ')
@@ -735,7 +845,7 @@ window.__ModuleLoader__.load({
             'span',
             null,
             h('span', { className: 'dtu-dot', style: { background: 'var(--dsw-alias-state-warn-primary)', borderRadius: '50%' } }),
-            '缓存命中率',
+            '缓存命中率（下图）',
           ),
         ),
         h(
@@ -752,11 +862,6 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dtu-axisY' },
             ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, compact(max * (1 - tick)))),
-          ),
-          h(
-            'div',
-            { className: 'dtu-axisYr' },
-            ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, `${Math.round((1 - tick) * 100)}%`)),
           ),
           h(
             'div',
@@ -784,31 +889,45 @@ window.__ModuleLoader__.load({
               ),
             ),
           ),
-          points
-            ? h(
+        ),
+        hitPoints
+          ? h(
+              'div',
+              { className: 'dtu-chart dtu-chartHit' },
+              h(
+                'div',
+                { className: 'dtu-grid' },
+                ticks.map((tick) => h('div', { key: tick, className: 'dtu-gridline', style: { top: `${tick * 100}%` } })),
+              ),
+              h(
+                'div',
+                { className: 'dtu-axisY' },
+                ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, `${Math.round((1 - tick) * 100)}%`)),
+              ),
+              h(
                 'div',
                 { className: 'dtu-line' },
                 h(
                   'svg',
                   { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
                   h('polyline', {
-                    points,
+                    points: hitPoints,
                     fill: 'none',
                     stroke: 'var(--dsw-alias-state-warn-primary)',
                     strokeWidth: 1.5,
                     vectorEffect: 'non-scaling-stroke',
                   }),
                 ),
-              )
-            : null,
-          h(
-            'div',
-            { className: 'dtu-axisX' },
-            labelled.map((index) =>
-              h('span', { key: index, style: { left: `${((index + 0.5) / columns.length) * 100}%` } }, columns[index].day.slice(5)),
-            ),
-          ),
-        ),
+              ),
+              h(
+                'div',
+                { className: 'dtu-axisX' },
+                labelled.map((index) =>
+                  h('span', { key: index, style: { left: `${((index + 0.5) / columns.length) * 100}%` } }, columns[index].day.slice(5)),
+                ),
+              ),
+            )
+          : null,
       )
     }
 
@@ -1042,6 +1161,11 @@ window.__ModuleLoader__.load({
       return h(Boundary, { label: '中央看板' }, h(DashboardBody, props))
     }
 
+    /** Sidebar foot card, guarded for the same reason. */
+    function UsageEntry(props) {
+      return h(Boundary, { label: '侧边栏卡片' }, h(SidebarEntry, props))
+    }
+
     // ── wire contribution + slots ───────────────────────────────────────────
 
     /**
@@ -1086,6 +1210,8 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       const face = () => ({
         refresh: reload,
+        open: () => ctx.get('layout')?.selectPanel(PANEL_ID),
+        close: () => ctx.get('layout')?.selectPanel(null),
       })
 
       // Styles belong to the plugin fiber: registered once, removed on unload.
@@ -1143,17 +1269,15 @@ window.__ModuleLoader__.load({
       ctx.slots.inject('plugins.bundle.config', () =>
         ctx.slots.register({ name: 'plugins.bundle.config', key: REMOTE_PACKAGE }, ConfigForm),
       )
-      // `sidebar.panellist`, not `sidebar.footer.action`: every registered id
-      // becomes a full-width row of its own, stacked vertically, and the sidebar
-      // owns the click (`selectPanel(id)`) and paints `label`. The footer seat is
-      // a horizontal row shared with other plugins, so an entry there is forced
-      // to sit beside them and compete for width.
-      ctx.slots.inject('sidebar.panellist', () =>
-        ctx.slots.register(
-          { name: 'sidebar.panellist', id: PANEL_ID, order: 5, label: 'Token 用量' },
-          SidebarEntry,
-        ),
-      )
+      // `sidebar.footer.action`: the usage card the user reads at a glance. The
+      // seat is one horizontal row and every plugin in it declares width:100%, so
+      // the stylesheet's `:has()` rule makes it wrap and each occupant gets its
+      // own full-width line.
+      ctx.inject(['layout'], (layoutCtx) => {
+        layoutCtx.slots.inject('sidebar.footer.action', () =>
+          layoutCtx.slots.register({ name: 'sidebar.footer.action', id: PANEL_ID, order: 5, inject: face }, UsageEntry),
+        )
+      })
     }
 
     return {
