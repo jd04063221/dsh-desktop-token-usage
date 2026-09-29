@@ -304,14 +304,21 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   // Await the initial load the apply pass kicked off.
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  const wide = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  const wideTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
+  const wide = collect(wideTree).join(' ')
+  // The seat is a shared horizontal row beside Settings, so the chip stays
+  // compact and shows only the headline total...
   assert.match(wide, /Token 用量/)
-  // Every configured window is its own row, split into input and output.
-  assert.match(wide, /近 6 小时/)
-  assert.match(wide, /近 7 天/)
-  assert.match(wide, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${wide}`)
-  assert.match(wide, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${wide}`)
-  assert.match(wide, /缓存命中 80\.0%/)
+  assert.match(wide, /2,080/, `expected the chip to show the headline total, got: ${wide}`)
+  assert.equal(wideTree.props.className, 'dtu-footChip', 'the wide entry must not claim the full width')
+  // ...while every configured window's own split stays reachable in the tooltip.
+  const tooltip = wideTree.props.title
+  assert.equal(wideTree.props['aria-label'], tooltip, 'the tooltip doubles as the accessible name')
+  assert.match(tooltip, /近 6 小时/)
+  assert.match(tooltip, /近 7 天/)
+  assert.match(tooltip, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${tooltip}`)
+  assert.match(tooltip, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${tooltip}`)
+  assert.match(tooltip, /缓存命中 80\.0%/)
 
   const rail = render({ type: entry.component, props: { ...entry.options.inject(), wide: false } })
   assert.equal(rail.tag, 'button')
@@ -339,6 +346,20 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
 })
 
+test('a pending first read reads as loading, not as an empty range', async () => {
+  const { plugin } = loadClient()
+  // A summary that never settles: the entry must stay in its loading state.
+  const { ctx, record } = fakeContext({ summary: () => new Promise(() => {}) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
+  const tree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
+  assert.equal(collect(tree).join(' '), 'Token 用量 …', 'a pending chip shows no figure yet')
+  assert.match(tree.props.title, /正在读取/, 'a pending read must read as loading')
+  assert.ok(!tree.props.title.includes('没有用量记录'), 'an unread range is not an empty range')
+})
+
 test('a Host older than this Client still yields card numbers', async () => {
   const { plugin } = loadClient()
   // The upgrade state that actually happened: a current Client half talking to a
@@ -353,10 +374,11 @@ test('a Host older than this Client still yields card numbers', async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
+  const card = collect(cardTree).join(' ')
   assert.match(card, /5,200/, `expected the cumulative total, got: ${card}`)
-  assert.match(card, /输入 5,000 · 输出 200/, 'input/output are rebuilt from the buckets')
-  assert.match(card, /缓存命中 80\.0%/)
+  assert.match(cardTree.props.title, /输入 5,000 · 输出 200/, 'input/output are rebuilt from the buckets')
+  assert.match(cardTree.props.title, /缓存命中 80\.0%/)
   assert.ok(!card.includes('正在读取'), 'the card must not claim to be loading once data has arrived')
 
   // The calendar has the same problem, and the same answer: fall back to the
@@ -380,11 +402,12 @@ test('with both card windows off the card falls back to the all-time split', asy
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
+  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
+  const card = collect(cardTree).join(' ')
   assert.match(card, /5,200/, `expected the all-time total, got: ${card}`)
-  assert.match(card, /输入 5,000 · 输出 200/)
-  assert.match(card, /缓存命中 90\.0%/)
-  assert.ok(!card.includes('近 6 小时'), 'a disabled window must not render')
+  assert.match(cardTree.props.title, /输入 5,000 · 输出 200/)
+  assert.match(cardTree.props.title, /缓存命中 90\.0%/)
+  assert.ok(!cardTree.props.title.includes('近 6 小时'), 'a disabled window must not render')
 })
 
 test('a failed Remote result shows its message instead of blanking the panel', async () => {
@@ -401,8 +424,9 @@ test('a failed Remote result shows its message instead of blanking the panel', a
   assert.match(text, /is unavailable/)
 
   const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const card = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
-  assert.match(card, /读取失败/, 'the card must report the failure too')
+  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
+  assert.match(cardTree.props.title, /读取失败/, 'the card must report the failure too')
+  assert.equal(collect(cardTree).join(' '), 'Token 用量 —', 'the chip keeps its shape and swaps the figure for a dash')
 })
 
 test('a malformed payload shows an error instead of a blank panel', async () => {

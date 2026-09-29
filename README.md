@@ -5,37 +5,48 @@ English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/ma
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
 - The **Host half** scans `$DSH_HOME/sessions/**/session.vN.jsonl.zstd` and folds out the real token usage;
-- The **Client half** mounts a card at the bottom of the left sidebar (above Settings); clicking it opens a dashboard
-  in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day token trend
-  (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
+- The **Client half** mounts a compact chip at the bottom of the left sidebar (above Settings); clicking it opens a
+  dashboard in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day token
+  trend (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
 
-Which time span the sidebar card reports is decided by the **plugin configuration** (both windows are off by default,
-so the card shows cumulative values): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a
+Which time span the sidebar chip reports is decided by the **plugin configuration** (both windows are off by default,
+so the chip shows cumulative values): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a
 "last N hours" window (0-23) and a "last N days" window (1-30) independently; turn both off and you are back to the
 cumulative view.
-Each window shows its own **input volume, output volume, and cache hit rate**.
+The chip carries a single number — the first enabled window's total, or the cumulative total when both are off —
+and hovering it reveals every window's own **input volume, output volume, cache hit rate and turn count** in the
+tooltip.
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 
 ## Compatibility and tested environment
 
-**Fully verified on DSH Desktop 0.1.7-rc.2, and guaranteed to work on that version.**
+**Fully verified on DSH Desktop 0.1.7-rc.2, and checked for compatibility with 0.2.0-rc.1.**
 
 | Item | Tested environment |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (`@deepseek-ai/dsh-desktop@0.1.7-rc.2`) |
+| DSH | Desktop `0.1.7-rc.2` (full verification) and `0.2.0-rc.1` (compatibility check) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
-| Node (used to run the tests) | v25.2.1 |
+| Node (used to run the tests) | v25.2.1, v26.7.0 |
 
-Verification went well beyond "it installs": plugin activation reaching `fiberPhase: active`, the sidebar card and the
+Verification went well beyond "it installs": plugin activation reaching `fiberPhase: active`, the sidebar chip and the
 central dashboard rendering, the config card that the plugin page carries being readable and writable, the
 browser → Host Remote calls working end to end, and every field matching DSH's own projection cache in a cross-check.
+
+For `0.2.0-rc.1` the check was structural rather than a second full run. Every published package this plugin touches
+was diffed against `0.1.7-rc.2`: `dsh-plugin-manager` is byte-identical, and in `dsh-client-ui-sidebar`,
+`dsh-client-ui-layout` and `dsh-client-ui-cordis` only the version string, one analytics call and title-bar CSS differ.
+The `sidebar.footer.action` slot contract and its `{ wide }` owner props are unchanged, and the packages this plugin
+imports (`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`) keep their names. A manual trial on
+`0.2.0-rc.1` reports the dashboard and the Remote calls working.
+
+This plugin declares **no** `@deepseek-ai/dsh*` peer dependency, and that is what DSH actually validates — an absent
+peer range applies no version constraint at all. `engines.dsh` is declared as `^0.1.7-rc.2 || ^0.2.0-rc.1` for humans
+only: the official documentation states plainly that declaring a range does not reject incompatible hosts.
 
 **Other versions are untested.** Earlier DSH builds may lack the `plugins.bundle.config` slot and the `configEditor`
 service this plugin uses (without them there is no config card, and configuration can only be edited by hand in the
 profile patch); newer builds have not been verified yet.
-`engines.dsh` is declared as `^0.1.7-rc.2`, but treat the **measured result** in this section as authoritative —
-DSH does not currently enforce that field (official wording: declaring a range does not reject incompatible hosts).
 
 ## Installation
 

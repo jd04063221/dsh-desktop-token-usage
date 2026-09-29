@@ -11,6 +11,23 @@
 > 判断当前跑的是哪一代：看 `Config.listConfigs` 对本插件报 `schema` 还是 `absent`，再叠加
 > 「本次改动之后是否重启过」；`boot.json` 每次 `apply` 都会重写，只能说明 fiber 最近一次重挂的时间。
 
+## [0.1.4] - 2026-09-29
+
+### 变更
+
+- **侧边栏入口改为紧凑芯片，不再是整行卡片。** `sidebar.footer.action` 席位是一条横向排布的「操作行」，
+  与注册在那里的其他插件共用——标准安装下 `dsh-opencode-go-usage`、`cordis-panel`、`commandcode-panel`
+  都占着它——而席位自身的规则是 `.footerActions { display: flex }`，不换行。声明 `width: 100%` 的入口
+  必须和它们抢这唯一一行，结果就是被挤在旁边并排显示。现在入口按内容定宽（`flex: 0 1 auto`），
+  只带一个数字：第一个已启用窗口的总量，两个窗口都关时是累计总量。悬停时在 tooltip 里给出每个窗口的
+  输入量、输出量、缓存命中率与轮次；完整拆解仍在中央看板。随之删除的还有 `CardWindow` 组件
+  以及只有它在用的 `.dtu-window*`、`.dtu-footTop`、`.dtu-footValue`、`.dtu-footRow`、`.dtu-footCard` 规则。
+- **声明对 DSH Desktop 0.2.0-rc.1 的兼容性。** 本插件仍不声明任何 `@deepseek-ai/dsh*` peer dependency，
+  而这才是 DSH 实际校验的东西；`engines.dsh` 放宽为 `^0.1.7-rc.2 || ^0.2.0-rc.1`（仅供人阅读）。
+  把本插件涉及的所有已发布包在两个版本间逐文件对比：`dsh-plugin-manager` 完全一致，
+  `dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis` 只有版本号字符串、
+  一行埋点与标题栏 CSS 的差异。槽契约与其 `{ wide }` owner props 未变。
+
 ## [0.1.3] - 2026-09-28
 
 ### 变更

@@ -5,32 +5,41 @@
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
 - **Host 半边**扫描 `$DSH_HOME/sessions/**/session.vN.jsonl.zstd`，折叠出真实的 token 用量；
-- **Client 半边**在左侧栏底部（Settings 上方）挂一张卡片，点开后在中央面板打开看板：
+- **Client 半边**在左侧栏底部（Settings 上方）挂一个紧凑芯片，点开后在中央面板打开看板：
   时间范围与来源筛选、6 张统计卡、活跃热力图、按天 Token 趋势（按模型堆叠 + 缓存命中率折线）、模型用量环形图与列表。
 
-侧边栏卡片显示哪一段时间的用量由**插件配置**决定（默认关闭两个窗口，卡片显示累计值）：
+侧边栏芯片显示哪一段时间的用量由**插件配置**决定（默认关闭两个窗口，芯片显示累计值）：
 在 **设置 → 插件 → Token 用量** 里可以分别打开「最近 N 小时」（0-23）与「最近 N 天」（1-30）两个窗口；
-两个都关掉就回到累计视图。每个窗口各自显示**输入量、输出量与缓存命中率**。
+两个都关掉就回到累计视图。芯片上只有一个数字——第一个已启用窗口的总量，两个都关时是累计总量——
+悬停时在 tooltip 里给出每个窗口各自的**输入量、输出量、缓存命中率与轮次**。
 
 不联网、不上报、不调用任何 API：所有数字都来自本机已有的会话日志。
 
 ## 兼容性与测试环境
 
-**已在 DSH Desktop 0.1.7-rc.2 上完整验证，可保证在该版本上正常使用。**
+**已在 DSH Desktop 0.1.7-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对。**
 
 | 项目 | 实测环境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2`（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`） |
+| DSH | Desktop `0.1.7-rc.2`（完整验证）与 `0.2.0-rc.1`（兼容性核对） |
 | 操作系统 | Windows 11 专业版，build 26200，AMD64 |
-| Node（跑测试用） | v25.2.1 |
+| Node（跑测试用） | v25.2.1、v26.7.0 |
 
-验证范围不止"能装上"：插件激活到 `fiberPhase: active`、侧边栏卡片与中央看板渲染、插件页自带配置卡可读可写、
+验证范围不止"能装上"：插件激活到 `fiberPhase: active`、侧边栏芯片与中央看板渲染、插件页自带配置卡可读可写、
 浏览器 → Host 的 Remote 调用打通，以及与 DSH 自身投影缓存的数字逐字段对拍一致。
+
+`0.2.0-rc.1` 采用的是**结构性核对**而非再跑一遍完整验证：把本插件涉及的所有已发布包与 `0.1.7-rc.2` 逐文件对比——
+`dsh-plugin-manager` 完全一致；`dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis`
+只有版本号字符串、一行埋点和标题栏 CSS 的差异。`sidebar.footer.action` 槽的契约与其 `{ wide }` owner props 未变，
+本插件 import 的包名（`dsh-api-remotes`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`）也都保持。
+另有一次在 `0.2.0-rc.1` 上的手工试用，看板与 Remote 调用正常。
+
+本插件**没有**声明任何 `@deepseek-ai/dsh*` 的 peer dependency，而 DSH 实际校验的正是 peer 范围——
+不声明就不施加任何版本约束。`engines.dsh` 声明为 `^0.1.7-rc.2 || ^0.2.0-rc.1` 仅供人阅读：
+官方文档明确写着 declaring a range does not reject incompatible hosts。
 
 **其他版本未测试。** 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务
 （缺了配置卡，配置只能手改 profile patch）；更新的版本还没验证过。
-`engines.dsh` 声明为 `^0.1.7-rc.2`，但请以本节的**实测结论**为准——DSH 目前并不强制这个字段
-（官方原话：declaring a range does not reject incompatible hosts）。
 
 ## 安装
 

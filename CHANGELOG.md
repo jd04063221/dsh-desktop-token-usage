@@ -12,6 +12,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > reports `schema` or `absent` for this plugin, together with whether the process has been restarted since your change; `boot.json`
 > is rewritten by every `apply`, so its existence only tells you when the fiber was last remounted.
 
+## [0.1.4] - 2026-09-29
+
+### Changed
+
+- **The sidebar entry is a compact chip now, not a full-width card.** The `sidebar.footer.action` seat is a
+  horizontal row of actions shared with every other plugin registered there — `dsh-opencode-go-usage`,
+  `cordis-panel` and `commandcode-panel` all occupy it on a stock install — and the seat's own rule is
+  `.footerActions { display: flex }` with no wrapping. An entry that claims `width: 100%` has to fight the others
+  for that single row and ends up squeezed beside them. The entry now sizes to its content (`flex: 0 1 auto`) and
+  carries one number: the first enabled window's total, or the cumulative total when both windows are off.
+  Hovering it reveals every window's input volume, output volume, cache hit rate and turn count in the tooltip;
+  the full breakdown stays in the central dashboard. The `CardWindow` component and the rules it alone used
+  (`.dtu-window*`, `.dtu-footTop`, `.dtu-footValue`, `.dtu-footRow`, `.dtu-footCard`) went with it.
+- **Compatibility is declared for DSH Desktop 0.2.0-rc.1.** The plugin still declares no `@deepseek-ai/dsh*` peer
+  dependency, which is what DSH actually validates; `engines.dsh` is widened to `^0.1.7-rc.2 || ^0.2.0-rc.1` for
+  readers only. Every published package this plugin touches was diffed across the two releases: `dsh-plugin-manager`
+  is byte-identical, and `dsh-client-ui-sidebar`, `dsh-client-ui-layout` and `dsh-client-ui-cordis` differ only in the
+  version string, one analytics call and title-bar CSS. The slot contract and its `{ wide }` owner props are unchanged.
+
 ## [0.1.3] - 2026-09-28
 
 ### Changed

@@ -299,14 +299,6 @@ window.__ModuleLoader__.load({
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
 .dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-wrap:wrap;gap:12px}
 .dtu-footEntry{min-width:0;max-width:360px}
-.dtu-footTop{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.dtu-footValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
-.dtu-footRow{display:flex;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.dtu-window{display:flex;flex-direction:column;gap:1px;padding:4px 0 5px;border-top:1px solid var(--dsw-alias-border-l1)}
-.dtu-window:first-of-type{border-top:0;padding-top:2px}
-.dtu-windowLabel{color:var(--dsw-alias-label-secondary);font-size:11.5px;font-weight:600}
-.dtu-windowValue{color:var(--dsw-alias-label-primary);font-size:12.5px;font-variant-numeric:tabular-nums}
-.dtu-windowMeta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
 .dtu-form{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1);max-width:560px}
 .dtu-formTitle{font-weight:600}
 .dtu-hint{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}
@@ -318,8 +310,12 @@ window.__ModuleLoader__.load({
 .dtu-save:disabled{opacity:.5;cursor:default}
 .dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
 .dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
-.dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
-.dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
+/* The seat is a horizontal row shared with other plugins' actions, so the entry
+   sizes to its content instead of claiming the full width a stacked card wants. */
+.dtu-footChip{appearance:none;font:inherit;cursor:pointer;flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
+.dtu-footChip:hover{background:var(--dsw-alias-bg-layer-2)}
+.dtu-footChipLabel{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.dtu-footChipValue{flex:none;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
 .dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 .dtu-rail:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-icon{width:16px;height:16px;flex:none}
@@ -424,30 +420,6 @@ window.__ModuleLoader__.load({
     // ── sidebar entry ───────────────────────────────────────────────────────
 
     /**
-     * One card row: the configured window's own label, its input/output split
-     * and its cache hit rate. Input counts everything the provider was sent —
-     * the cache-missing part plus the cached reads — so the pair reads the way a
-     * user thinks about a request.
-     */
-    function CardWindow({ block }) {
-      return h(
-        'div',
-        { className: 'dtu-window' },
-        h('div', { className: 'dtu-windowLabel' }, block.label),
-        h(
-          'div',
-          { className: 'dtu-windowValue' },
-          `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)}`,
-        ),
-        h(
-          'div',
-          { className: 'dtu-windowMeta' },
-          `缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
-        ),
-      )
-    }
-
-    /**
      * The all-time block, rebuilt from `totals` when the Host answered without a
      * `card`. A Client newer than its Host is a normal upgrade state, and the
      * card must still show figures rather than wait for a field that will only
@@ -469,6 +441,29 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * The chip's tooltip: every configured window's own label, its input/output
+     * split, its cache hit rate and its turn count. Input counts everything the
+     * provider was sent — the cache-missing part plus the cached reads — so the
+     * pair reads the way a user thinks about a request.
+     */
+    function describeEntry(blocks, all, status) {
+      if (status === 'error') return 'Token 用量 · 读取失败，点开查看原因'
+      const rows = blocks.length > 0 ? blocks : all ? [all] : []
+      if (rows.length === 0) {
+        // "No records" is only the truth once the read actually finished; before
+        // that the honest label is the loading one.
+        return status === 'ready'
+          ? 'Token 用量 · 该筛选条件下没有用量记录'
+          : 'Token 用量 · 正在读取本地会话日志…'
+      }
+      const parts = rows.map(
+        (block) =>
+          `${block.label} 输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
+      )
+      return `Token 用量 · ${parts.join(' ｜ ')}`
+    }
+
     function SidebarEntry(props) {
       const state = useStore()
       const card = state.data ? state.data.card : null
@@ -483,42 +478,19 @@ window.__ModuleLoader__.load({
           h(Icon, { size: 16 }),
         )
       }
-      let body
-      if (state.status === 'error') {
-        body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
-      } else if (!state.data) {
-        body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
-      } else if (blocks.length > 0) {
-        body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
-      } else if (!all) {
-        body = h('div', { className: 'dtu-windowMeta' }, '该筛选条件下没有用量记录。')
-      } else {
-        body = [
-          h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
-          h(
-            'div',
-            { key: 'split', className: 'dtu-footRow' },
-            h('span', null, `输入 ${compact(all.inputTokens)} · 输出 ${compact(all.outputTokens)}`),
-          ),
-          h(
-            'div',
-            { key: 'meta', className: 'dtu-footRow' },
-            h('span', null, `缓存命中 ${percent(all.cacheHitRate)}`),
-            h('span', null, `${all.turns} 轮`),
-          ),
-        ]
-      }
+      // The seat is a horizontal row of actions shared with whatever other
+      // plugins registered there, so the entry sizes to its content instead of
+      // pretending to own the full width; the per-window numbers move into the
+      // tooltip and the full breakdown stays in the central panel.
+      const value =
+        state.status === 'error' ? '—' : !state.data ? '…' : blocks.length > 0 || all ? compact(headline) : '0'
+      const detail = describeEntry(blocks, all, state.status)
       return h(
         'button',
-        { type: 'button', className: 'dtu-footCard', title: '打开 Token 用量看板', onClick: props.open },
-        h(
-          'div',
-          { className: 'dtu-footTop' },
-          h(Icon, { size: 14 }),
-          h('span', null, 'Token 用量'),
-          h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
-        ),
-        body,
+        { type: 'button', className: 'dtu-footChip', title: detail, 'aria-label': detail, onClick: props.open },
+        h(Icon, { size: 16 }),
+        h('span', { className: 'dtu-footChipLabel' }, 'Token 用量'),
+        h('span', { className: 'dtu-footChipValue' }, value),
       )
     }
 
