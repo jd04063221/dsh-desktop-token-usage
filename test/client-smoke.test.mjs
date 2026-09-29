@@ -335,6 +335,37 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   }
   // The source tabs must stay honest about what is derivable offline.
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
+
+  // The configured windows are wall-clock figures the Host builds without the
+  // source filter, so they get their own section instead of a filter-following card.
+  assert.ok(body.includes('配置窗口'), 'the dashboard must carry the configured windows')
+  assert.ok(body.includes('近 6 小时') && body.includes('近 7 天'), 'both configured windows must be named')
+  assert.ok(body.includes('2,080'), `expected the hour window's total, got: ${body.slice(0, 500)}`)
+  assert.ok(
+    body.includes('输入 2,000 · 输出 80 · 缓存命中 80.0% · 2 轮'),
+    'each window must show its own split, not the filtered totals',
+  )
+  assert.ok(body.includes('不随上方来源筛选变化'), 'the section must not claim to follow the filter')
+})
+
+test('with both windows off the dashboard falls back to the all-time rollup', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  payload.card = {
+    hours: 0,
+    days: 0,
+    blocks: [],
+    all: cardBlock('all', '累计', [1000, 200, 4000, 0, 50], 0.9, 7),
+  }
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const body = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.ok(body.includes('配置窗口'), 'the section stays, labelled with the all-time block')
+  assert.ok(body.includes('输入 5,000 · 输出 200 · 缓存命中 90.0% · 7 轮'), `expected the all-time split, got: ${body.slice(0, 500)}`)
+  assert.ok(!body.includes('近 6 小时'), 'a disabled window must not be listed')
 })
 
 test('a Host older than this Client still fills the dashboard and the calendar', async () => {
@@ -392,8 +423,9 @@ test('the configuration card renders the windows and saves them to the Host', as
   const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
   const tree = render({ type: slot.component, props: { entryKey: 'dsh-desktop-token-usage', view: 'page' } })
   const text = collect(tree).join(' ')
-  assert.match(text, /侧边栏卡片显示的时间跨度/)
+  assert.match(text, /看板「配置窗口」的时间跨度/)
   assert.match(text, /当前：近 6 小时 \+ 近 7 天/)
+  assert.match(text, /不随看板上方的来源筛选变化/, 'the form must say the windows ignore the filter')
 
   const inputs = []
   const find = (node, match) => {

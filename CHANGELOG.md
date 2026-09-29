@@ -29,8 +29,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `SidebarEntry` card/chip, its tooltip builder, the `.dtu-footChip*` and `.dtu-rail*` rules, and the
   `cumulativeBlock` fallback that only the card used are all gone — as are the `open`/`close` members of the injected
   face, which existed solely so the entry could select the panel itself.
-  Consequence: the two configured time windows are no longer drawn in the sidebar. They still reach the Host's `card`
-  rollup and the dashboard names them in its footer.
+  The two configured time windows lose their sidebar home, so the dashboard gains a **Configured windows** row that
+  renders the Host's `card` blocks directly — label, total, input/output split, cache hit rate and turns. Those windows
+  are wall-clock recency (the Host builds them from `{root, useCache, now}` alone), so the row states outright that it
+  does not follow the source filter, unlike the stat cards above it; with both windows off it falls back to a single
+  cumulative card, the same fallback the old sidebar card had. The config form and the `Config` field descriptions now
+  say "configured windows" instead of "sidebar card".
 - **Compatibility is declared for DSH Desktop 0.2.0-rc.1.** The plugin still declares no `@deepseek-ai/dsh*` peer
   dependency, which is what DSH actually validates; `engines.dsh` is widened to `^0.1.7-rc.2 || ^0.2.0-rc.1` for
   readers only. Every published package this plugin touches was diffed across the two releases: `dsh-plugin-manager`

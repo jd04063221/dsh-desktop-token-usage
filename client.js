@@ -458,11 +458,11 @@ window.__ModuleLoader__.load({
       return h(
         'div',
         { className: 'dtu-form' },
-        h('div', { className: 'dtu-formTitle' }, '侧边栏卡片显示的时间跨度'),
+        h('div', { className: 'dtu-formTitle' }, '看板「配置窗口」的时间跨度'),
         h(
           'div',
           { className: 'dtu-hint' },
-          '0 表示关闭该窗口；两个都关闭时卡片显示累计值。窗口按本地时间取整到小时，保存后立即生效。',
+          '0 表示关闭该窗口；两个都关闭时只显示累计值。窗口按本地时间取整到小时，保存后立即生效；它们不随看板上方的来源筛选变化。',
         ),
         h(
           'label',
@@ -947,6 +947,34 @@ window.__ModuleLoader__.load({
               title: totals.topModel ?? undefined,
             }),
           ),
+          // The configured windows are wall-clock recency figures: the Host
+          // builds them from `{root, useCache, now}` alone, so unlike every other
+          // section here they do not follow the source filter. Say so.
+          data.card
+            ? h(
+                Section,
+                {
+                  title: '配置窗口',
+                  extra: h(
+                    'span',
+                    { className: 'dtu-hint' },
+                    '固定回溯窗口，不随上方来源筛选变化；在 插件 → Token 用量 里调整',
+                  ),
+                },
+                h(
+                  'div',
+                  { className: 'dtu-cards' },
+                  (data.card.blocks.length > 0 ? data.card.blocks : data.card.all ? [data.card.all] : []).map((block) =>
+                    h(Card, {
+                      key: block.id,
+                      label: block.label,
+                      value: grouped(block.totalTokens),
+                      sub: `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${grouped(block.turns)} 轮`,
+                    }),
+                  ),
+                ),
+              )
+            : null,
           h(
             Section,
             { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
@@ -997,13 +1025,6 @@ window.__ModuleLoader__.load({
             { className: 'dtu-foot' },
             h('span', null, `统计截至 ${new Date(data ? data.generatedAt : Date.now()).toLocaleString('zh-CN')}`),
             h('span', null, `数据源：本地会话日志（${data ? data.coverage.files : 0} 个文件，未联网）`),
-            h(
-              'span',
-              null,
-              data && data.card
-                ? `配置窗口：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 插件 → Token 用量 里调整）`
-                : null,
-            ),
             h(
               'span',
               { className: 'dtu-footEntry' },

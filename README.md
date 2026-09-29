@@ -6,14 +6,17 @@ A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
 - The **Host half** scans `$DSH_HOME/sessions/**/session.vN.jsonl.zstd` and folds out the real token usage;
 - The **Client half** adds an entry to the sidebar's panel list (the same column as the Plugins entry); clicking it
-  opens a dashboard in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day
-  token trend (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
+  opens a dashboard in the central panel: time-range and source filters, 6 stat cards, a configured-windows row, an
+  activity heatmap, a per-day token trend (stacked by model plus a cache hit rate line), and a model usage donut chart
+  with a list.
 
-Which time spans the Host folds into its `card` rollup is decided by the **plugin configuration** (both windows are off
-by default): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a "last N hours" window (0-23) and a
-"last N days" window (1-30) independently; turn both off and only the cumulative rollup is produced.
-The sidebar entry itself is just a glyph — the sidebar owns that row, its click and its title — so those windows are
-not drawn in the sidebar; the dashboard names them in its footer.
+Which time spans the dashboard's **Configured windows** row reports is decided by the **plugin configuration** (both
+windows are off by default): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a "last N hours"
+window (0-23) and a "last N days" window (1-30) independently; turn both off and the row falls back to a single
+cumulative card.
+Those windows are wall-clock recency and deliberately ignore the dashboard's source filter, which is why they sit in a
+row of their own rather than among the filter-following stat cards. The sidebar entry is only a glyph: the sidebar owns
+that row, its click and its title.
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 
@@ -125,8 +128,8 @@ can also write them there directly:
 
 | Key | Default | Description |
 |---|---|---|
-| `hours` | `0` | How many hours of usage the sidebar card shows (0-23). `0` = turn this window off |
-| `days` | `0` | How many days of usage the sidebar card shows (1-30). `0` = turn this window off |
+| `hours` | `0` | How many hours the Configured windows section reports (0-23). `0` = turn this window off |
+| `days` | `0` | How many days the Configured windows section reports (1-30). `0` = turn this window off |
 
 With both off (the default) the card shows cumulative values, just as before these two parameters existed. Windows
 round to the hour in **local time**: "last 6 hours" means starting from the top of the hour 6 hours ago.
@@ -258,7 +261,7 @@ Layout:
 
 ```
 index.js                     Host half: Config (schemastery) + registration of the usage Remote service
-client.js                    Client half: window __ModuleLoader__ factory + dashboard and sidebar card
+client.js                    Client half: window __ModuleLoader__ factory + dashboard and sidebar entry
 lib/session-usage.js         Pure Node aggregation: multi-frame zstd reading, folding, hourly bucketing, window summaries, index cache
 test/session-usage.test.mjs  Aggregation, millisecond ranges, card windows, calendar, Config schema, Remote service
 test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-contract cross-check / rendering

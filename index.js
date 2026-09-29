@@ -14,7 +14,7 @@
  *    is replaced by the two public calls it wraps — `ctx.reflect.provide` plus a
  *    frozen `typertRemote` binding. Schemastery *is* a declared dependency, which
  *    is what makes the official Config card in Settings → Plugins possible.
- *  - The card's windows are resolved from that Config, so the browser never has
+ *  - The windows are resolved from that Config, so the browser never has
  *    to know them.
  */
 import fs from 'node:fs'
@@ -36,18 +36,19 @@ const REMOTE_NAMESPACE = 'dshUsage'
 const SURFACES = ['client', 'cli', 'subagent', 'none']
 
 /**
- * Sidebar card windows, editable in Settings → Plugins. `0` disables a window;
- * with both disabled the card shows the all-time figures.
+ * The dashboard's configured-window rollup, editable in Settings → Plugins.
+ * `0` disables a window; with both disabled the rollup falls back to the
+ * all-time figures.
  */
 export const Config = Schema.object({
   hours: Schema.natural()
     .max(23)
     .default(0)
-    .description('侧边栏卡片显示最近多少小时的用量（0-23）；0 表示关闭这个窗口。'),
+    .description('看板「配置窗口」里最近多少小时的用量（0-23）；0 表示关闭这个窗口。'),
   days: Schema.natural()
     .max(30)
     .default(0)
-    .description('侧边栏卡片显示最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
+    .description('看板「配置窗口」里最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
 })
 
 /**
@@ -221,7 +222,7 @@ class UsageService {
   /**
    * Persist new windows through the Loader's own editor, so the value lands in
    * the profile patch rather than in a file this plugin owns. The Loader then
-   * restarts this fiber with the new config, which recomputes the card.
+   * restarts this fiber with the new config, which recomputes the windows.
    */
   async setConfig(patch) {
     const next = parseConfigPatch(patch)
@@ -231,7 +232,7 @@ class UsageService {
     return { ...next, writable: true }
   }
 
-  /** Token usage rolled up for one range, plus the sidebar card for one config. */
+  /** Token usage rolled up for one range, plus the configured windows for one config. */
   async summary(filter) {
     const started = Date.now()
     const accepted = parseFilter(filter)
