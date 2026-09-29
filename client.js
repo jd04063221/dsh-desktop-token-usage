@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
 
-    /** UI key: owns the `main` slot, the sidebar card and the panel selection. */
+    /** UI key: owns the `main` slot, the sidebar panel entry and the panel selection. */
     const PANEL_ID = 'dsh-desktop-token-usage'
     /** npm package name: addresses the Remote and keys this plugin's config card. */
     const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
@@ -310,15 +310,9 @@ window.__ModuleLoader__.load({
 .dtu-save:disabled{opacity:.5;cursor:default}
 .dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
 .dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
-/* The seat is a horizontal row shared with other plugins' actions, so the entry
-   sizes to its content instead of claiming the full width a stacked card wants. */
-.dtu-footChip{appearance:none;font:inherit;cursor:pointer;flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
-.dtu-footChip:hover{background:var(--dsw-alias-bg-layer-2)}
-.dtu-footChipLabel{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
-.dtu-footChipValue{flex:none;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
-.dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
-.dtu-rail:hover{background:var(--dsw-alias-bg-layer-2)}
-.dtu-icon{width:16px;height:16px;flex:none}
+/* The sidebar paints the glyph inside its own panel row and passes the edge in
+   pixels, so nothing here may fix the size. */
+.dtu-icon{flex:none;display:block}
 `
 
     // ── small pieces ────────────────────────────────────────────────────────
@@ -420,78 +414,18 @@ window.__ModuleLoader__.load({
     // ── sidebar entry ───────────────────────────────────────────────────────
 
     /**
-     * The all-time block, rebuilt from `totals` when the Host answered without a
-     * `card`. A Client newer than its Host is a normal upgrade state, and the
-     * card must still show figures rather than wait for a field that will only
-     * appear after the Host module generation is reloaded.
+     * The glyph the sidebar paints in the panel row it owns. `sidebar.panellist`
+     * is not a box the plugin draws: the sidebar turns every registered id into
+     * its own full-width row, owns the click (`selectPanel`), resolves the row's
+     * label from the registration, and asks the occupant only for a mark at
+     * `size` px — `active` is reported but the row already colours it.
+     *
+     * That is why the entry left `sidebar.footer.action`: that seat is a
+     * horizontal row shared with every other plugin, so a card registered there
+     * has no choice but to sit beside its neighbours and fight them for width.
      */
-    function cumulativeBlock(totals) {
-      if (!totals || !Array.isArray(totals.buckets)) return null
-      const buckets = totals.buckets
-      return {
-        id: 'all',
-        label: '累计',
-        buckets,
-        totalTokens: typeof totals.totalTokens === 'number' ? totals.totalTokens : totalOf(buckets),
-        inputTokens: typeof totals.inputTokens === 'number' ? totals.inputTokens : buckets[0] + buckets[2],
-        outputTokens: buckets[1],
-        cacheHitRate: totals.cacheHitRate,
-        turns: totals.turns,
-        requests: totals.requests,
-      }
-    }
-
-    /**
-     * The chip's tooltip: every configured window's own label, its input/output
-     * split, its cache hit rate and its turn count. Input counts everything the
-     * provider was sent — the cache-missing part plus the cached reads — so the
-     * pair reads the way a user thinks about a request.
-     */
-    function describeEntry(blocks, all, status) {
-      if (status === 'error') return 'Token 用量 · 读取失败，点开查看原因'
-      const rows = blocks.length > 0 ? blocks : all ? [all] : []
-      if (rows.length === 0) {
-        // "No records" is only the truth once the read actually finished; before
-        // that the honest label is the loading one.
-        return status === 'ready'
-          ? 'Token 用量 · 该筛选条件下没有用量记录'
-          : 'Token 用量 · 正在读取本地会话日志…'
-      }
-      const parts = rows.map(
-        (block) =>
-          `${block.label} 输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
-      )
-      return `Token 用量 · ${parts.join(' ｜ ')}`
-    }
-
-    function SidebarEntry(props) {
-      const state = useStore()
-      const card = state.data ? state.data.card : null
-      const blocks = card ? card.blocks : []
-      const all = card ? card.all : state.data ? cumulativeBlock(state.data.totals) : null
-      const headline = blocks.length > 0 ? blocks[0].inputTokens + blocks[0].outputTokens : all ? all.totalTokens : 0
-      if (props.wide === false) {
-        const label = `Token 用量 · ${compact(headline)}`
-        return h(
-          'button',
-          { type: 'button', className: 'dtu-rail', title: label, 'aria-label': label, onClick: props.open },
-          h(Icon, { size: 16 }),
-        )
-      }
-      // The seat is a horizontal row of actions shared with whatever other
-      // plugins registered there, so the entry sizes to its content instead of
-      // pretending to own the full width; the per-window numbers move into the
-      // tooltip and the full breakdown stays in the central panel.
-      const value =
-        state.status === 'error' ? '—' : !state.data ? '…' : blocks.length > 0 || all ? compact(headline) : '0'
-      const detail = describeEntry(blocks, all, state.status)
-      return h(
-        'button',
-        { type: 'button', className: 'dtu-footChip', title: detail, 'aria-label': detail, onClick: props.open },
-        h(Icon, { size: 16 }),
-        h('span', { className: 'dtu-footChipLabel' }, 'Token 用量'),
-        h('span', { className: 'dtu-footChipValue' }, value),
-      )
+    function SidebarEntry({ size = 16 }) {
+      return h(Icon, { size })
     }
 
     // ── configuration form ──────────────────────────────────────────────────
@@ -1067,7 +1001,7 @@ window.__ModuleLoader__.load({
               'span',
               null,
               data && data.card
-                ? `侧边栏卡片：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 插件 → Token 用量 里调整）`
+                ? `配置窗口：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 插件 → Token 用量 里调整）`
                 : null,
             ),
             h(
@@ -1085,11 +1019,6 @@ window.__ModuleLoader__.load({
     /** Central panel: a render failure must show text, never a blank seat. */
     function Dashboard(props) {
       return h(Boundary, { label: '中央看板' }, h(DashboardBody, props))
-    }
-
-    /** Sidebar footer card, guarded for the same reason. */
-    function UsageEntry(props) {
-      return h(Boundary, { label: '侧边栏卡片' }, h(SidebarEntry, props))
     }
 
     // ── wire contribution + slots ───────────────────────────────────────────
@@ -1136,8 +1065,6 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       const face = () => ({
         refresh: reload,
-        open: () => ctx.get('layout')?.selectPanel(PANEL_ID),
-        close: () => ctx.get('layout')?.selectPanel(null),
       })
 
       // Styles belong to the plugin fiber: registered once, removed on unload.
@@ -1195,11 +1122,17 @@ window.__ModuleLoader__.load({
       ctx.slots.inject('plugins.bundle.config', () =>
         ctx.slots.register({ name: 'plugins.bundle.config', key: REMOTE_PACKAGE }, ConfigForm),
       )
-      ctx.inject(['layout'], (layoutCtx) => {
-        layoutCtx.slots.inject('sidebar.footer.action', () =>
-          layoutCtx.slots.register({ name: 'sidebar.footer.action', id: PANEL_ID, order: 5, inject: face }, UsageEntry),
-        )
-      })
+      // `sidebar.panellist`, not `sidebar.footer.action`: every registered id
+      // becomes a full-width row of its own, stacked vertically, and the sidebar
+      // owns the click (`selectPanel(id)`) and paints `label`. The footer seat is
+      // a horizontal row shared with other plugins, so an entry there is forced
+      // to sit beside them and compete for width.
+      ctx.slots.inject('sidebar.panellist', () =>
+        ctx.slots.register(
+          { name: 'sidebar.panellist', id: PANEL_ID, order: 5, label: 'Token 用量' },
+          SidebarEntry,
+        ),
+      )
     }
 
     return {

@@ -5,17 +5,15 @@ English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/ma
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
 - The **Host half** scans `$DSH_HOME/sessions/**/session.vN.jsonl.zstd` and folds out the real token usage;
-- The **Client half** mounts a compact chip at the bottom of the left sidebar (above Settings); clicking it opens a
-  dashboard in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day token
-  trend (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
+- The **Client half** adds an entry to the sidebar's panel list (the same column as the Plugins entry); clicking it
+  opens a dashboard in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day
+  token trend (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
 
-Which time span the sidebar chip reports is decided by the **plugin configuration** (both windows are off by default,
-so the chip shows cumulative values): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a
-"last N hours" window (0-23) and a "last N days" window (1-30) independently; turn both off and you are back to the
-cumulative view.
-The chip carries a single number — the first enabled window's total, or the cumulative total when both are off —
-and hovering it reveals every window's own **input volume, output volume, cache hit rate and turn count** in the
-tooltip.
+Which time spans the Host folds into its `card` rollup is decided by the **plugin configuration** (both windows are off
+by default): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a "last N hours" window (0-23) and a
+"last N days" window (1-30) independently; turn both off and only the cumulative rollup is produced.
+The sidebar entry itself is just a glyph — the sidebar owns that row, its click and its title — so those windows are
+not drawn in the sidebar; the dashboard names them in its footer.
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 

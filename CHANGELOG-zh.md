@@ -15,18 +15,22 @@
 
 ### 变更
 
-- **侧边栏入口改为紧凑芯片，不再是整行卡片。** `sidebar.footer.action` 席位是一条横向排布的「操作行」，
-  与注册在那里的其他插件共用——标准安装下 `dsh-opencode-go-usage`、`cordis-panel`、`commandcode-panel`
-  都占着它——而席位自身的规则是 `.footerActions { display: flex }`，不换行。声明 `width: 100%` 的入口
-  必须和它们抢这唯一一行，结果就是被挤在旁边并排显示。现在入口按内容定宽（`flex: 0 1 auto`），
-  只带一个数字：第一个已启用窗口的总量，两个窗口都关时是累计总量。悬停时在 tooltip 里给出每个窗口的
-  输入量、输出量、缓存命中率与轮次；完整拆解仍在中央看板。随之删除的还有 `CardWindow` 组件
-  以及只有它在用的 `.dtu-window*`、`.dtu-footTop`、`.dtu-footValue`、`.dtu-footRow`、`.dtu-footCard` 规则。
+- **侧边栏入口从 `sidebar.footer.action` 迁到 `sidebar.panellist`。** 前者是一条横向行——规则是
+  `.footerActions { display: flex }`，不换行——而标准安装下 `dsh-opencode-go-usage`、`cordis-panel`、
+  `commandcode-panel` 也占着它。因此登记在那里的东西必然与邻居并排、并且要和它们抢宽度；实测结果很糟：
+  其中两个占用者声明了 `width: 100%` 且不可收缩，直接吃掉整行 254px，把其余的都挤出侧边栏。
+  把卡片做窄或改 `flex` 只能改变「谁被挤压」，改变不了「它们在同一行」这件事。
+  `sidebar.panellist` 的形状与归属权正好相反：侧边栏把每个登记的 id 变成**自己的一整行**、纵向堆叠，
+  自己拥有点击（`selectPanel(id)`）、用你登记的 `label` 画行标题，只要求占用者提供一个 `size` 像素的图形。
+  现在入口就是那个图形：`SidebarEntry` 卡片/芯片、它的 tooltip 构造器、`.dtu-footChip*` 与 `.dtu-rail*` 规则、
+  以及只有卡片在用的 `cumulativeBlock` 回退全部删除——`face` 里的 `open`/`close` 也一并去掉，
+  它们存在的唯一理由就是让入口自己切换面板。
+  代价：那两个已配置的时间窗口不再画在侧边栏里。它们仍会进入 Host 的 `card`，看板会在页脚处列出它们。
 - **声明对 DSH Desktop 0.2.0-rc.1 的兼容性。** 本插件仍不声明任何 `@deepseek-ai/dsh*` peer dependency，
   而这才是 DSH 实际校验的东西；`engines.dsh` 放宽为 `^0.1.7-rc.2 || ^0.2.0-rc.1`（仅供人阅读）。
   把本插件涉及的所有已发布包在两个版本间逐文件对比：`dsh-plugin-manager` 完全一致，
   `dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis` 只有版本号字符串、
-  一行埋点与标题栏 CSS 的差异。槽契约与其 `{ wide }` owner props 未变。
+  一行埋点与标题栏 CSS 的差异。槽契约未变。
 
 ## [0.1.3] - 2026-09-28
 
