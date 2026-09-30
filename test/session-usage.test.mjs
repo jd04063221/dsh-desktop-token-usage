@@ -42,17 +42,28 @@ const dayStart = (key) => {
   return new Date(year, month - 1, day).getTime()
 }
 
-const GOLDEN_SESSION = 'session-5964a5d3-...'
-const PROJECTION_CACHE = path.join(
-  os.homedir(),
-  '.dsh',
-  'storages',
-  'session_projcache',
-  'sessions',
-  `${GOLDEN_SESSION}.json`,
-)
 const SESSIONS = path.join(os.homedir(), '.dsh', 'sessions')
+const PROJECTIONS = path.join(os.homedir(), '.dsh', 'storages', 'session_projcache', 'sessions')
 const haveSessions = fs.existsSync(SESSIONS)
+
+/**
+ * The golden case needs no hard-coded session id: the Harness names a projection
+ * cache after a session, and the log directory carries that same id (root
+ * sessions `session-<id>`, subagents the bare id), so any cached session whose
+ * log is still on disk can serve. Logs touched within the last ten minutes are
+ * skipped: the running session keeps appending to its log, which would make the
+ * projection the stale side of the comparison.
+ */
+const goldenSession = (() => {
+  if (!haveSessions || !fs.existsSync(PROJECTIONS)) return null
+  const filesById = new Map(enumerateSessionFiles().map((file) => [path.basename(path.dirname(file)), file]))
+  for (const name of fs.readdirSync(PROJECTIONS).sort()) {
+    const id = name.endsWith('.json') ? name.slice(0, -'.json'.length) : ''
+    const file = id && filesById.get(id)
+    if (file && Date.now() - fs.statSync(file).mtimeMs > 10 * 60 * 1000) return { id, file, cache: path.join(PROJECTIONS, name) }
+  }
+  return null
+})()
 
 test('a frame-scan finds the concatenated frames and parses every record', { skip: !haveSessions }, () => {
   const files = enumerateSessionFiles()
@@ -98,18 +109,19 @@ test('foldUsage replaces a repeated (turn, step) slot and adds after a retry', (
   assert.deepEqual(attributed.entries[0].buckets, [30, 2, 0, 0, 0])
 })
 
-test('folded totals match the Harness projection for a real session', { skip: !haveSessions || !fs.existsSync(PROJECTION_CACHE) }, () => {
-  const expected = JSON.parse(fs.readFileSync(PROJECTION_CACHE, 'utf8')).record.rows.tokenUsage.val.totals
-  const file = enumerateSessionFiles().find((candidate) => readSessionRecords(candidate).records[0]?.id === GOLDEN_SESSION)
-  assert.ok(file, `session log for ${GOLDEN_SESSION} not found`)
-  const { totals } = foldUsage(readSessionRecords(file).records)
-  assert.deepEqual(totals, [
-    expected.uncachedInputTokens,
-    expected.outputTokens,
-    expected.cacheReadTokens,
-    expected.cacheWriteTokens,
-    0,
-  ])
+test('folded totals match the Harness projection for a real session', { skip: !goldenSession }, () => {
+  const expected = JSON.parse(fs.readFileSync(goldenSession.cache, 'utf8')).record.rows.tokenUsage.val.totals
+  const { records } = readSessionRecords(goldenSession.file)
+  assert.equal(records[0]?.id, goldenSession.id, 'the log directory names the session it holds')
+  const { totals } = foldUsage(records)
+  // The projection carries the four billed buckets; reasoning is a subset of
+  // output and belongs to no projected total, so only its bound is asserted.
+  assert.deepEqual(
+    totals.slice(0, 4),
+    [expected.uncachedInputTokens, expected.outputTokens, expected.cacheReadTokens, expected.cacheWriteTokens],
+    'the four projected buckets must match',
+  )
+  assert.ok(totals[4] <= totals[1], 'reasoningTokens must stay inside outputTokens')
 })
 
 test('the rollup is internally consistent', { skip: !haveSessions }, () => {
