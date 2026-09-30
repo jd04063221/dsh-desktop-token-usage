@@ -26,11 +26,11 @@
 
 ## 兼容性与测试环境
 
-**已在 DSH Desktop 0.1.7-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对；插件 0.1.3 也在 0.2.0 上手工试用通过。**
+**已在 DSH Desktop 0.1.7-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对；插件 0.1.3 也在 0.2.0-rc.2 上手工试用通过。**
 
 | 项目 | 实测环境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对）与 `0.2.0`（`0.1.3` 版手工试用） |
+| DSH | Desktop `0.1.7-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对）与 `0.2.0-rc.2`（`0.1.3` 版手工试用） |
 | 内置运行时 | Electron 44 / Chromium 152 / Node 24.18.1（把席位改成纵向列需要 `:has()`，Chrome 105+） |
 | 操作系统 | Windows 11 专业版，build 26200，AMD64 |
 | Node（跑测试用） | v25.2.1、v26.7.0 |
@@ -42,14 +42,14 @@
 `dsh-plugin-manager` 完全一致；`dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis`
 只有版本号字符串、一行埋点和标题栏 CSS 的差异。`sidebar.footer.action` 槽的契约与其 `{ wide }` owner props 未变，
 本插件 import 的包名（`dsh-api-remotes`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`）也都保持。
-另有一次在 `0.2.0-rc.1` 上的手工试用，看板与 Remote 调用正常；插件 `0.1.3` 在 `0.2.0` 上的手工试用同样正常。
+另有一次在 `0.2.0-rc.1` 上的手工试用，看板与 Remote 调用正常；插件 `0.1.3` 在 `0.2.0-rc.2` 上的手工试用同样正常。
 
 本插件**没有**声明任何 `@deepseek-ai/dsh*` 的 peer dependency，而 DSH 实际校验的正是 peer 范围——
 不声明就不施加任何版本约束。`engines.dsh` 声明为 `^0.1.7-rc.2 || ^0.2.0-rc.1` 仅供人阅读：
 官方文档明确写着 declaring a range does not reject incompatible hosts。
 
 **上表之外的版本未测试。** 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务
-（缺了配置卡，配置只能手改 profile patch）；比 `0.2.0` 更新的版本还没验证过。
+（缺了配置卡，配置只能手改 profile patch）；比 `0.2.0-rc.2` 更新的版本还没验证过。
 
 ## 写入磁盘的内容
 
