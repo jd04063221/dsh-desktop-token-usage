@@ -17,9 +17,13 @@ Those windows are wall-clock recency and deliberately ignore the dashboard's sou
 their own rather than among the filter-following stat cards.
 
 The sidebar foot is one horizontal row shared with every other plugin registered there, and every one of them declares
-`width: 100%` — so no two of them can share it. The card therefore makes that row **wrap** (a `:has(> .dtu-footCard)`
-rule, keyed on the card itself so nothing depends on DSH's internal class names), which gives each plugin in the seat
-the full-width line it was written for. That needs `:has()`; see the compatibility table below.
+`width: 100%` — so no two of them can share it. Measured live, with nothing intervening this card is squeezed to
+105.2px. The card therefore turns that row into a **column** (`[class*="_footerActions"]:has(.dtu-footCard)` — keyed on
+the class suffix plus `:has()`, so nothing depends on DSH's hashed class names and no ancestor is touched), which gives
+each plugin in the seat the full-width line it was written for; this card spans the whole 256px. It is `flex-direction`
+rather than `flex-wrap` because the shell wraps each slot in a `display: contents` element — a direct-child selector
+never matches the seat — and because on a column seat `flex-wrap` means "start another column", which pushes the card
+beside its neighbour instead. That needs `:has()`; see the compatibility table below.
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 
@@ -30,7 +34,7 @@ No network access, no telemetry, no API calls: every number comes from session l
 | Item | Tested environment |
 |---|---|
 | DSH | Desktop `0.1.7-rc.2` (full verification) and `0.2.0-rc.1` (compatibility check) |
-| Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (the wrap needs `:has()`, Chrome 105+) |
+| Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
 

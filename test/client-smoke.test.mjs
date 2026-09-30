@@ -285,14 +285,26 @@ test('the Client half requires only React and registers both slots', async () =>
   assert.equal(typeof config.component, 'function')
 
   // The seat is one horizontal row shared with other plugins, and every plugin in
-  // it declares width:100%. The card therefore makes the seat wrap, addressing it
-  // through its child so nothing depends on DSH's hashed class names.
+  // it declares width:100%. The card therefore turns the seat into a column,
+  // addressing it through its own class suffix plus :has() so nothing depends on
+  // DSH's hashed class names and no ancestor is ever touched. Wrapping is not the
+  // fix: on a column seat flex-wrap would lay the card out beside its neighbour.
+  // The direct-child form is the fallback for a shell that stops inserting the
+  // display:contents slot wrapper the seat has today.
   const styles = document.head.children[0].textContent
   assert.ok(
-    styles.includes(':has(> .dtu-footCard){flex-wrap:wrap}'),
-    'the entry must make the seat wrap it onto a line of its own',
+    styles.includes('[class*="_footerActions"]:has(.dtu-footCard)'),
+    'the entry must turn the seat into a column, matching it by class suffix',
   )
-  assert.ok(styles.includes('flex:1 1 100%'), 'the card must claim the full line it wrapped onto')
+  assert.ok(
+    styles.includes(':has(> .dtu-footCard){flex-direction:column}'),
+    'and it must still work if the shell stops wrapping the slot',
+  )
+  assert.ok(
+    !/\.dtu-footCard\)\{flex-wrap/.test(styles) && !/:has\(\.dtu-footCard\)\{flex-wrap/.test(styles),
+    'flex-wrap is the wrong tool: on a column seat it wraps into extra columns',
+  )
+  assert.ok(styles.includes('flex:1 1 100%'), 'the card must claim the full line it moved onto')
 
   // Styles are owned by the fiber and removed on unload.
   assert.equal(document.head.children.length, 1)

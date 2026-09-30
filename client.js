@@ -321,11 +321,20 @@ window.__ModuleLoader__.load({
 .dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
 .dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
 /* The seat lays every occupant on one horizontal line, yet every plugin in it
-   declares width:100% — so they can never share it, and each one ends up
-   squeezed against its neighbours. The :has() selector addresses the seat by its
-   child, which keeps this independent of DSH's hashed class names; the wrap then
-   gives every occupant the full-width row it was written for. */
-:has(> .dtu-footCard){flex-wrap:wrap}
+   declares width:100% — so they can never share it and each one ends up squeezed
+   against its neighbours. Making the seat a column is what gives every occupant
+   the full-width row it was written for.
+   Direction, not wrapping: flex-wrap on a column seat wraps into extra COLUMNS,
+   which puts the card beside its neighbour and overflows the sidebar (measured
+   live on 0.2.0-rc.2).
+   Two selectors, both narrowed to the seat so no ancestor is ever touched
+   (forcing a direction on the shell's own row containers would stack the sidebar
+   above the main panel): the shell wraps each slot in a display:contents element,
+   so the card is not a direct child of the seat today and the direct-child form
+   only covers a shell that stops inserting that wrapper. Neither depends on
+   DSH's hashed class name. */
+[class*="_footerActions"]:has(.dtu-footCard),
+:has(> .dtu-footCard){flex-direction:column}
 .dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;flex:1 1 100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
 .dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}

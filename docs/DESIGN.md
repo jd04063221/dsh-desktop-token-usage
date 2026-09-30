@@ -280,6 +280,15 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 
 点卡片走 `ctx.get('layout')?.selectPanel('dsh-desktop-token-usage')`；`selectPanel` 会先校验 `main` 注册表。
 
+席位本身是一条**不换行的横向 flex 行**（`.footerActions{display:flex}`），而其中每个占用者都声明了 `width: 100%`，
+所以谁都拿不到整行——参考实现 `@mars-sea/dsh-commandcode-provider` 的做法是
+`[class*="_footArea"] [class*="_footerActions"]{flex-direction:column}`，把席位变成纵向列。
+本插件采用同样的**方向**，但用 `:has()` 收窄成「自己存在时才生效」：
+`[class*="_footerActions"]:has(.dtu-footCard), :has(> .dtu-footCard){flex-direction:column}`。
+两条选择器都只可能命中席位（外壳会给每个槽位包一层 `display: contents`，所以今天生效的是前者，
+后者留给不再包一层的外壳）。这两个数字都来自 0.2.0-rc.2 上的真实页面：没有这条规则时卡片只有 105.2px 宽，
+有它时铺满 256px。详见 README 与 CHANGELOG。
+
 ### 4.3 图表怎么画
 
 不引入图表库：

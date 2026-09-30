@@ -17,13 +17,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - **The sidebar card now gets a full-width line of its own in the footer seat.** `sidebar.footer.action` is a single
-  horizontal row (`display: flex`, no wrapping) and on a stock install `dsh-opencode-go-usage`, `cordis-panel` and
-  `commandcode-panel` sit in it too — and every one of them declares `width: 100%`. Measured, that means two of them
-  take the whole 254px row without shrinking and push the rest out of the column, and no `flex` value on this plugin's
-  own card can change the fact that they are all on one line. The card now makes the seat wrap instead, addressing the
-  seat through its child (`:has(> .dtu-footCard)`) so nothing depends on DSH's hashed class names; every occupant then
-  gets the full-width line it was written for. This needs `:has()`, which is why the compatibility table below now
-  records the bundled Chromium.
+  horizontal row (`display: flex`) and on a stock install `dsh-opencode-go-usage`, the Cordis badge and
+  `commandcode-panel` sit in it too — and every one of them declares `width: 100%`, so none of them can share the row.
+  Measured in a live 0.2.0-rc.2 window, with nothing intervening this plugin's card is squeezed to **105.2px** while its
+  neighbour takes 150.8px, and the three sets of labels run into each other. The card now turns the **seat into a
+  column** (`[class*="_footerActions"]:has(.dtu-footCard)`), so every occupant gets the full-width line it was written
+  for: the card spans the whole **256px**. Matching on the class suffix plus `:has()` keeps it independent of DSH's
+  hashed class names and keeps it off every ancestor — forcing a direction on the shell's own row containers would stack
+  the sidebar above the main panel. It is `flex-direction` rather than `flex-wrap` for two reasons: the shell wraps each
+  slot in a `display: contents` element, so a direct-child selector never matches the seat; and on a **column** seat
+  `flex-wrap` means "start another column" — measured, that puts the card beside its neighbour and widens the sidebar to
+  387.8px, overflowing it. This needs `:has()`, which is why the compatibility table below now records the bundled
+  Chromium.
 - **The same windows are shown in the dashboard too**, in a `配置窗口` row: label, total, input/output split, cache hit
   rate and turns. They are wall-clock recency — the Host builds them from `{root, useCache, now}` alone — and
   deliberately ignore the source filter, so that row says so instead of sitting among the filter-following stat cards.
