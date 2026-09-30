@@ -29,11 +29,11 @@ No network access, no telemetry, no API calls: every number comes from session l
 
 ## Compatibility and tested environment
 
-**Fully verified on DSH Desktop 0.1.7-rc.2, and checked for compatibility with 0.2.0-rc.1.**
+**Fully verified on DSH Desktop 0.1.7-rc.2, checked for compatibility with 0.2.0-rc.1, and plugin 0.1.3 was tried by hand on 0.2.0 with no problems.**
 
 | Item | Tested environment |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (full verification) and `0.2.0-rc.1` (compatibility check) |
+| DSH | Desktop `0.1.7-rc.2` (full verification), `0.2.0-rc.1` (compatibility check) and `0.2.0` (manual trial of `0.1.3`) |
 | Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
@@ -47,15 +47,16 @@ was diffed against `0.1.7-rc.2`: `dsh-plugin-manager` is byte-identical, and in 
 `dsh-client-ui-layout` and `dsh-client-ui-cordis` only the version string, one analytics call and title-bar CSS differ.
 The `sidebar.footer.action` slot contract and its `{ wide }` owner props are unchanged, and the packages this plugin
 imports (`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`) keep their names. A manual trial on
-`0.2.0-rc.1` reports the dashboard and the Remote calls working.
+`0.2.0-rc.1` reports the dashboard and the Remote calls working; plugin `0.1.3` was likewise tried by hand on
+`0.2.0` and reports the same.
 
 This plugin declares **no** `@deepseek-ai/dsh*` peer dependency, and that is what DSH actually validates — an absent
 peer range applies no version constraint at all. `engines.dsh` is declared as `^0.1.7-rc.2 || ^0.2.0-rc.1` for humans
 only: the official documentation states plainly that declaring a range does not reject incompatible hosts.
 
-**Other versions are untested.** Earlier DSH builds may lack the `plugins.bundle.config` slot and the `configEditor`
-service this plugin uses (without them there is no config card, and configuration can only be edited by hand in the
-profile patch); newer builds have not been verified yet.
+**Versions other than the table above are untested.** Earlier DSH builds may lack the `plugins.bundle.config` slot and
+the `configEditor` service this plugin uses (without them there is no config card, and configuration can only be edited
+by hand in the profile patch); builds newer than `0.2.0` have not been verified yet.
 
 ## What it writes to disk
 

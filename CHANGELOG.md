@@ -57,6 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Note
 
+- After the release, a manual trial on DSH Desktop `0.2.0` was run with plugin `0.1.3`: the dashboard and the
+  Remote calls work.
 - The entry briefly moved to `sidebar.panellist`, which gives a full-width row the sidebar owns — but that seat renders
   an icon and a label only, so the usage numbers the card exists to show would have had nowhere to go. It came back.
 
