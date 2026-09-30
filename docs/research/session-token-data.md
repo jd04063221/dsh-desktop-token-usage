@@ -7,7 +7,7 @@
 > **脱敏约定**：本机用户目录写作 `%USERPROFILE%`（即 `C:\Users\<user>`），DSH 数据根写作 `$DSH_HOME`
 > （默认 `%USERPROFILE%\.dsh`）；引用真实记录时，用户目录一律写成 `<user>`；会话目录 slug 里编码的
 > 本地目录名（形如 `--C-<local-dir>-<project>--`）一律写成 `<local-dir>`；指向本仓库自身的路径写成
-> `<path-to-this-repo>`。
+> `<path-to-this-repo>`；会话标题由用户首条消息自动生成、含个人化内容，一律不引用原文，写成 `<标题已脱敏>`。
 
 配套脚本：**[`probe-sessions.mjs`](./probe-sessions.mjs)**（可直接运行、可 `import`）。
 
