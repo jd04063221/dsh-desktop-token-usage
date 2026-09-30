@@ -5,17 +5,21 @@ English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/ma
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
 - The **Host half** scans `$DSH_HOME/sessions/**/session.vN.jsonl.zstd` and folds out the real token usage;
-- The **Client half** mounts a compact chip at the bottom of the left sidebar (above Settings); clicking it opens a
-  dashboard in the central panel: time-range and source filters, 6 stat cards, an activity heatmap, a per-day token
-  trend (stacked by model plus a cache hit rate line), and a model usage donut chart with a list.
+- The **Client half** mounts a usage card at the foot of the left sidebar; clicking it opens a dashboard in the central
+  panel: time-range and source filters, 6 stat cards, a configured-windows row, an activity heatmap, a per-day token
+  trend (stacked by model, with the daily total overlaid as a smooth curve), and a model usage donut chart with a list.
 
-Which time span the sidebar chip reports is decided by the **plugin configuration** (both windows are off by default,
-so the chip shows cumulative values): in **Settings → Plugins → `Token 用量`** (Token usage) you can enable a
-"last N hours" window (0-23) and a "last N days" window (1-30) independently; turn both off and you are back to the
-cumulative view.
-The chip carries a single number — the first enabled window's total, or the cumulative total when both are off —
-and hovering it reveals every window's own **input volume, output volume, cache hit rate and turn count** in the
-tooltip.
+Which time spans the card and the dashboard's **Configured windows** row report is decided by the **plugin
+configuration** (both windows are off by default): in **Settings → Plugins → `Token 用量`** (Token usage) you can
+enable a "last N hours" window (0-23) and a "last N days" window (1-30) independently; turn both off and each surface
+falls back to a single cumulative block.
+Those windows are wall-clock recency and deliberately ignore the dashboard's source filter, so they sit in a row of
+their own rather than among the filter-following stat cards.
+
+The sidebar foot is one horizontal row shared with every other plugin registered there, and every one of them declares
+`width: 100%` — so no two of them can share it. The card therefore makes that row **wrap** (a `:has(> .dtu-footCard)`
+rule, keyed on the card itself so nothing depends on DSH's internal class names), which gives each plugin in the seat
+the full-width line it was written for. That needs `:has()`; see the compatibility table below.
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 
@@ -26,10 +30,11 @@ No network access, no telemetry, no API calls: every number comes from session l
 | Item | Tested environment |
 |---|---|
 | DSH | Desktop `0.1.7-rc.2` (full verification) and `0.2.0-rc.1` (compatibility check) |
+| Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (the wrap needs `:has()`, Chrome 105+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
 
-Verification went well beyond "it installs": plugin activation reaching `fiberPhase: active`, the sidebar chip and the
+Verification went well beyond "it installs": plugin activation reaching `fiberPhase: active`, the sidebar card and the
 central dashboard rendering, the config card that the plugin page carries being readable and writable, the
 browser → Host Remote calls working end to end, and every field matching DSH's own projection cache in a cross-check.
 
@@ -47,6 +52,22 @@ only: the official documentation states plainly that declaring a range does not 
 **Other versions are untested.** Earlier DSH builds may lack the `plugins.bundle.config` slot and the `configEditor`
 service this plugin uses (without them there is no config card, and configuration can only be edited by hand in the
 profile patch); newer builds have not been verified yet.
+
+## What it writes to disk
+
+The plugin reads session logs and writes only inside one directory of its own:
+`$DSH_HOME/cache/dsh-desktop-token-usage/`. Nothing is written next to a session log, nothing elsewhere under
+`$DSH_HOME` is created, modified or deleted, and no network access is ever made.
+
+| File in that directory | Written by | Purpose | To switch it off |
+|---|---|---|---|
+| `sessions-index.json` | `lib/session-usage.js` | Per-session fold cache, so a warm call does not re-scan every `session.vN.jsonl.zstd` | Delete it; it is rebuilt on the next call |
+| `calls.json` | `index.js` | Diagnostics: the last 20 Remote calls | `DSH_TOKEN_USAGE_DIAG=0` |
+| `boot.json` | `index.js` | Diagnostics: when the fiber was last applied | `DSH_TOKEN_USAGE_DIAG=0` |
+
+Both writers are **atomic**: they write a `<name>.<pid>.tmp` sibling and rename it over the target, so a concurrent
+reader never sees a partial file and a killed process cannot leave a truncated one behind. The index is capped at 800
+entries (oldest dropped, re-scanned on demand), and any `.tmp` a crash left behind is swept on the next write.
 
 ## Installation
 
@@ -127,8 +148,8 @@ can also write them there directly:
 
 | Key | Default | Description |
 |---|---|---|
-| `hours` | `0` | How many hours of usage the sidebar card shows (0-23). `0` = turn this window off |
-| `days` | `0` | How many days of usage the sidebar card shows (1-30). `0` = turn this window off |
+| `hours` | `0` | How many hours the Configured windows section reports (0-23). `0` = turn this window off |
+| `days` | `0` | How many days the Configured windows section reports (1-30). `0` = turn this window off |
 
 With both off (the default) the card shows cumulative values, just as before these two parameters existed. Windows
 round to the hour in **local time**: "last 6 hours" means starting from the top of the hour 6 hours ago.
@@ -260,7 +281,7 @@ Layout:
 
 ```
 index.js                     Host half: Config (schemastery) + registration of the usage Remote service
-client.js                    Client half: window __ModuleLoader__ factory + dashboard and sidebar card
+client.js                    Client half: window __ModuleLoader__ factory + dashboard and sidebar entry
 lib/session-usage.js         Pure Node aggregation: multi-frame zstd reading, folding, hourly bucketing, window summaries, index cache
 test/session-usage.test.mjs  Aggregation, millisecond ranges, card windows, calendar, Config schema, Remote service
 test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-contract cross-check / rendering

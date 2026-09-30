@@ -284,6 +284,16 @@ test('the Client half requires only React and registers both slots', async () =>
   assert.equal(typeof footer.component, 'function')
   assert.equal(typeof config.component, 'function')
 
+  // The seat is one horizontal row shared with other plugins, and every plugin in
+  // it declares width:100%. The card therefore makes the seat wrap, addressing it
+  // through its child so nothing depends on DSH's hashed class names.
+  const styles = document.head.children[0].textContent
+  assert.ok(
+    styles.includes(':has(> .dtu-footCard){flex-wrap:wrap}'),
+    'the entry must make the seat wrap it onto a line of its own',
+  )
+  assert.ok(styles.includes('flex:1 1 100%'), 'the card must claim the full line it wrapped onto')
+
   // Styles are owned by the fiber and removed on unload.
   assert.equal(document.head.children.length, 1)
   assert.equal(document.head.children[0].dataset.plugin, 'dsh-desktop-token-usage')
@@ -304,21 +314,14 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   // Await the initial load the apply pass kicked off.
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  const wideTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
-  const wide = collect(wideTree).join(' ')
-  // The seat is a shared horizontal row beside Settings, so the chip stays
-  // compact and shows only the headline total...
+  const wide = collect(render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })).join(' ')
   assert.match(wide, /Token 用量/)
-  assert.match(wide, /2,080/, `expected the chip to show the headline total, got: ${wide}`)
-  assert.equal(wideTree.props.className, 'dtu-footChip', 'the wide entry must not claim the full width')
-  // ...while every configured window's own split stays reachable in the tooltip.
-  const tooltip = wideTree.props.title
-  assert.equal(wideTree.props['aria-label'], tooltip, 'the tooltip doubles as the accessible name')
-  assert.match(tooltip, /近 6 小时/)
-  assert.match(tooltip, /近 7 天/)
-  assert.match(tooltip, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${tooltip}`)
-  assert.match(tooltip, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${tooltip}`)
-  assert.match(tooltip, /缓存命中 80\.0%/)
+  // Every configured window is its own row, split into input and output.
+  assert.match(wide, /近 6 小时/)
+  assert.match(wide, /近 7 天/)
+  assert.match(wide, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${wide}`)
+  assert.match(wide, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${wide}`)
+  assert.match(wide, /缓存命中 80\.0%/)
 
   const rail = render({ type: entry.component, props: { ...entry.options.inject(), wide: false } })
   assert.equal(rail.tag, 'button')
@@ -344,51 +347,20 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   }
   // The source tabs must stay honest about what is derivable offline.
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
+
+  // The configured windows are wall-clock figures the Host builds without the
+  // source filter, so they get their own section instead of a filter-following card.
+  assert.ok(body.includes('配置窗口'), 'the dashboard must carry the configured windows')
+  assert.ok(body.includes('近 6 小时') && body.includes('近 7 天'), 'both configured windows must be named')
+  assert.ok(body.includes('2,080'), `expected the hour window's total, got: ${body.slice(0, 500)}`)
+  assert.ok(
+    body.includes('输入 2,000 · 输出 80 · 缓存命中 80.0% · 2 轮'),
+    'each window must show its own split, not the filtered totals',
+  )
+  assert.ok(body.includes('不随上方来源筛选变化'), 'the section must not claim to follow the filter')
 })
 
-test('a pending first read reads as loading, not as an empty range', async () => {
-  const { plugin } = loadClient()
-  // A summary that never settles: the entry must stay in its loading state.
-  const { ctx, record } = fakeContext({ summary: () => new Promise(() => {}) })
-  plugin.apply(ctx)
-  await new Promise((resolve) => setTimeout(resolve, 0))
-
-  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const tree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
-  assert.equal(collect(tree).join(' '), 'Token 用量 …', 'a pending chip shows no figure yet')
-  assert.match(tree.props.title, /正在读取/, 'a pending read must read as loading')
-  assert.ok(!tree.props.title.includes('没有用量记录'), 'an unread range is not an empty range')
-})
-
-test('a Host older than this Client still yields card numbers', async () => {
-  const { plugin } = loadClient()
-  // The upgrade state that actually happened: a current Client half talking to a
-  // Host module generation that predates `card`. The card must not sit on
-  // "loading" forever — it falls back to the all-time figures.
-  const payload = summaryPayload()
-  delete payload.card
-  delete payload.totals.inputTokens
-  delete payload.heatmap
-  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
-  plugin.apply(ctx)
-  await new Promise((resolve) => setTimeout(resolve, 0))
-
-  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
-  const card = collect(cardTree).join(' ')
-  assert.match(card, /5,200/, `expected the cumulative total, got: ${card}`)
-  assert.match(cardTree.props.title, /输入 5,000 · 输出 200/, 'input/output are rebuilt from the buckets')
-  assert.match(cardTree.props.title, /缓存命中 80\.0%/)
-  assert.ok(!card.includes('正在读取'), 'the card must not claim to be loading once data has arrived')
-
-  // The calendar has the same problem, and the same answer: fall back to the
-  // range's days rather than rendering an empty year.
-  const main = record.slots.find((item) => item.options?.name === 'main')
-  const panel = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
-  assert.match(panel, /当前筛选共 2 天有活动/, `expected a filled calendar, got: ${panel.slice(0, 200)}`)
-})
-
-test('with both card windows off the card falls back to the all-time split', async () => {
+test('with both windows off the dashboard falls back to the all-time rollup', async () => {
   const { plugin } = loadClient()
   const payload = summaryPayload()
   payload.card = {
@@ -401,13 +373,30 @@ test('with both card windows off the card falls back to the all-time split', asy
   plugin.apply(ctx)
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
-  const card = collect(cardTree).join(' ')
-  assert.match(card, /5,200/, `expected the all-time total, got: ${card}`)
-  assert.match(cardTree.props.title, /输入 5,000 · 输出 200/)
-  assert.match(cardTree.props.title, /缓存命中 90\.0%/)
-  assert.ok(!cardTree.props.title.includes('近 6 小时'), 'a disabled window must not render')
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const body = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.ok(body.includes('配置窗口'), 'the section stays, labelled with the all-time block')
+  assert.ok(body.includes('输入 5,000 · 输出 200 · 缓存命中 90.0% · 7 轮'), `expected the all-time split, got: ${body.slice(0, 500)}`)
+  assert.ok(!body.includes('近 6 小时'), 'a disabled window must not be listed')
+})
+
+test('a Host older than this Client still fills the dashboard and the calendar', async () => {
+  const { plugin } = loadClient()
+  // The upgrade state that actually happened: a current Client half talking to a
+  // Host module generation that predates `card`. The dashboard must still render,
+  // and the calendar must fall back to the range's days rather than an empty year.
+  const payload = summaryPayload()
+  delete payload.card
+  delete payload.totals.inputTokens
+  delete payload.heatmap
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const panel = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.ok(!panel.includes('读取失败'), 'a missing `card` is not a failed read')
+  assert.match(panel, /当前筛选共 2 天有活动/, `expected a filled calendar, got: ${panel.slice(0, 200)}`)
 })
 
 test('a failed Remote result shows its message instead of blanking the panel', async () => {
@@ -422,11 +411,6 @@ test('a failed Remote result shows its message instead of blanking the panel', a
   const text = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
   assert.match(text, /读取失败/)
   assert.match(text, /is unavailable/)
-
-  const entry = record.slots.find((item) => item.options?.name === 'sidebar.footer.action')
-  const cardTree = render({ type: entry.component, props: { ...entry.options.inject(), wide: true } })
-  assert.match(cardTree.props.title, /读取失败/, 'the card must report the failure too')
-  assert.equal(collect(cardTree).join(' '), 'Token 用量 —', 'the chip keeps its shape and swaps the figure for a dash')
 })
 
 test('a malformed payload shows an error instead of a blank panel', async () => {
@@ -451,8 +435,9 @@ test('the configuration card renders the windows and saves them to the Host', as
   const slot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
   const tree = render({ type: slot.component, props: { entryKey: 'dsh-desktop-token-usage', view: 'page' } })
   const text = collect(tree).join(' ')
-  assert.match(text, /侧边栏卡片显示的时间跨度/)
+  assert.match(text, /看板「配置窗口」的时间跨度/)
   assert.match(text, /当前：近 6 小时 \+ 近 7 天/)
+  assert.match(text, /不随看板上方的来源筛选变化/, 'the form must say the windows ignore the filter')
 
   const inputs = []
   const find = (node, match) => {
@@ -511,6 +496,105 @@ test('without a Host config editor the card is read-only and says so', async () 
   }
   walk(tree)
   assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
+})
+
+// ── the trend line ──────────────────────────────────────────────────────────
+
+/** Five days: a zero plateau, a spike, then a drop. */
+function trendPayload() {
+  const payload = summaryPayload()
+  const day = (name, total) => ({ day: name, buckets: [total, 0, 0, 0, 0], turns: 1, requests: 1, byModel: {} })
+  payload.days = [
+    day('2026-09-21', 0),
+    day('2026-09-22', 0),
+    day('2026-09-23', 400),
+    day('2026-09-24', 1000),
+    day('2026-09-25', 200),
+  ]
+  return payload
+}
+
+/** Renders the dashboard and reports the trend line's geometry. */
+async function renderTrend(payload) {
+  const { plugin } = loadClient()
+  const summary = payload ? async () => ({ ok: true, value: payload }) : undefined
+  const { ctx, record } = fakeContext(summary ? { summary } : {})
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const classes = []
+  const curves = []
+  const charts = []
+  const visit = (node) => {
+    if (node === null || node === undefined || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const child of node) visit(child)
+      return
+    }
+    if (typeof node.props?.className === 'string') {
+      const name = node.props.className
+      classes.push(name)
+      if (name === 'dtu-chart') charts.push(node)
+      if (name === 'dtu-line') {
+        const sweep = (child) => {
+          if (child === null || child === undefined || typeof child !== 'object') return
+          if (Array.isArray(child)) {
+            for (const entry of child) sweep(entry)
+            return
+          }
+          if (child.tag === 'path') curves.push(child.props.d)
+          if (child.tag === 'polyline') curves.push(child.props.points)
+          sweep(child.children)
+        }
+        sweep(node)
+      }
+    }
+    visit(node.children)
+  }
+  visit(render({ type: main.component, props: main.options.inject() }))
+  return { classes, curves, charts }
+}
+
+/** [x0, y0, x1, y1, ...] of a path's `d`, in the svg's 0-100 space. */
+const curveCoordinates = (d) => (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+
+test('the trend overlays a daily-total line on the bars instead of a second scale', async () => {
+  const { classes, curves } = await renderTrend(null)
+
+  assert.equal(classes.filter((name) => name === 'dtu-chart').length, 1, 'the bars and the line share one plot')
+  assert.ok(!classes.includes('dtu-chartHit'), 'the separate cache-hit band is gone')
+  assert.ok(!classes.includes('dtu-axisYr'), 'the trend must not carry a second scale')
+  assert.equal(classes.filter((name) => name === 'dtu-point').length, 2, 'one dot per day')
+  assert.equal(curves.length, 1, 'the daily total is drawn as a single curve')
+  assert.match(curves[0], /^M/, 'the line must be one path, not a polyline of straight hops')
+
+  // both fixture days total 2,600 tokens against a 5,000 axis, so both plot 48% down;
+  // a cache-hit curve would have plotted 80% instead
+  assert.match(curves[0], /^M25,48 C/, 'the curve starts at the first column centre, 48% down')
+  assert.equal(curves[0].match(/C/g).length, 1, 'two days means one cubic segment')
+  assert.match(curves[0], /75,48$/, 'and ends on the second column centre')
+})
+
+test('the trend curve is smoothed, and monotone enough not to overshoot', async () => {
+  const { curves } = await renderTrend(trendPayload())
+  assert.equal(curves.length, 1, 'expected exactly one curve')
+  const numbers = curveCoordinates(curves[0])
+  // the axis tops out at the 1,000-token spike, so the days plot at 100/100/60/0/80%
+  const dayY = numbers.filter((_, index) => index % 2 === 1)
+  assert.equal(numbers.length, 2 + 6 * 4, 'five days means four cubic segments')
+  assert.ok(
+    dayY.every((y) => y >= 0 && y <= 100),
+    `a monotone curve must stay inside the plot, got ${dayY.join(', ')}`,
+  )
+  assert.deepEqual(
+    [numbers[1], ...[0, 1, 2, 3].map((segment) => numbers[2 + 6 * segment + 5])],
+    [100, 100, 60, 0, 80],
+    'the curve must still pass through every day',
+  )
+  // A straight line from day 2 (100%) to day 3 (60%) would put its first control point at
+  // 86.67%; the tangent is flat there, so the curve eases out of the plateau instead.
+  assert.equal(numbers[2 + 6 + 1], 100, 'the curve should leave the zero plateau without a corner')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

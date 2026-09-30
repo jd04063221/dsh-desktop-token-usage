@@ -14,7 +14,7 @@
  *    is replaced by the two public calls it wraps — `ctx.reflect.provide` plus a
  *    frozen `typertRemote` binding. Schemastery *is* a declared dependency, which
  *    is what makes the official Config card in Settings → Plugins possible.
- *  - The card's windows are resolved from that Config, so the browser never has
+ *  - The windows are resolved from that Config, so the browser never has
  *    to know them.
  */
 import fs from 'node:fs'
@@ -22,7 +22,7 @@ import path from 'node:path'
 
 import Schema from '@deepseek-ai/schemastery'
 
-import { DSH_HOME, cardRollup, summarize } from './lib/session-usage.js'
+import { PLUGIN_CACHE_DIR, cardRollup, summarize } from './lib/session-usage.js'
 
 /** npm package name, claimed by both faces: the Remote's package and the Loader row's specifier. */
 const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
@@ -36,38 +36,48 @@ const REMOTE_NAMESPACE = 'dshUsage'
 const SURFACES = ['client', 'cli', 'subagent', 'none']
 
 /**
- * Sidebar card windows, editable in Settings → Plugins. `0` disables a window;
- * with both disabled the card shows the all-time figures.
+ * The dashboard's configured-window rollup, editable in Settings → Plugins.
+ * `0` disables a window; with both disabled the rollup falls back to the
+ * all-time figures.
  */
 export const Config = Schema.object({
   hours: Schema.natural()
     .max(23)
     .default(0)
-    .description('侧边栏卡片显示最近多少小时的用量（0-23）；0 表示关闭这个窗口。'),
+    .description('看板「配置窗口」里最近多少小时的用量（0-23）；0 表示关闭这个窗口。'),
   days: Schema.natural()
     .max(30)
     .default(0)
-    .description('侧边栏卡片显示最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
+    .description('看板「配置窗口」里最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
 })
 
 /**
- * A bounded record of the last calls, written next to the index cache. When the
- * dashboard shows nothing, this file answers the first question — did the
- * browser reach the Host at all — without needing the page console.
+ * A bounded record of the last calls, written inside this plugin's own cache
+ * directory (see `PLUGIN_CACHE_DIR`). When the dashboard shows nothing, this file
+ * answers the first question — did the browser reach the Host at all — without
+ * needing the page console.
  *
- * The directory is overridable because the test suite runs `apply` too, and
- * these two files are what a human inspects to tell which generation is live.
+ * These are diagnostics, not data: setting `DSH_TOKEN_USAGE_DIAG=0` turns every
+ * write below off, and the plugin keeps working. The directory is overridable
+ * because the test suite runs `apply` too, and these two files are what a human
+ * inspects to tell which generation is live.
  */
-const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || path.join(DSH_HOME, 'cache', 'dsh-desktop-token-usage')
+const DIAG_ENABLED = !/^(0|false|off|no)$/i.test(process.env.DSH_TOKEN_USAGE_DIAG ?? '')
+const DIAG_DIR = process.env.DSH_TOKEN_USAGE_DIAG_DIR || PLUGIN_CACHE_DIR
 const CALL_LOG = path.join(DIAG_DIR, 'calls.json')
 const BOOT_LOG = path.join(DIAG_DIR, 'boot.json')
 const CALL_LOG_LIMIT = 20
 const calls = []
 
 function writeJson(file, value) {
+  if (!DIAG_ENABLED) return
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.writeFileSync(file, JSON.stringify(value))
+    // Atomic: write beside the target then rename, so a reader never sees half a
+    // file and a killed process cannot leave a truncated one behind.
+    const tmp = `${file}.${process.pid}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(value))
+    fs.renameSync(tmp, file)
   } catch {
     // Diagnostics must never fail a call.
   }
@@ -221,7 +231,7 @@ class UsageService {
   /**
    * Persist new windows through the Loader's own editor, so the value lands in
    * the profile patch rather than in a file this plugin owns. The Loader then
-   * restarts this fiber with the new config, which recomputes the card.
+   * restarts this fiber with the new config, which recomputes the windows.
    */
   async setConfig(patch) {
     const next = parseConfigPatch(patch)
@@ -231,7 +241,7 @@ class UsageService {
     return { ...next, writable: true }
   }
 
-  /** Token usage rolled up for one range, plus the sidebar card for one config. */
+  /** Token usage rolled up for one range, plus the configured windows for one config. */
   async summary(filter) {
     const started = Date.now()
     const accepted = parseFilter(filter)

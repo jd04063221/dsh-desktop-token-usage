@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
 
-    /** UI key: owns the `main` slot, the sidebar card and the panel selection. */
+    /** UI key: owns the `main` slot, the sidebar panel entry and the panel selection. */
     const PANEL_ID = 'dsh-desktop-token-usage'
     /** npm package name: addresses the Remote and keys this plugin's config card. */
     const REMOTE_PACKAGE = 'dsh-desktop-token-usage'
@@ -270,6 +270,10 @@ window.__ModuleLoader__.load({
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary);display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-chart{position:relative;height:260px;margin-top:4px}
+/* The daily-total line shares the bars' plot insets, so both read off the same
+   token axis; the dots are positioned in % so they stay round. */
+.dtu-lineKey{display:inline-block;width:14px;height:2px;border-radius:1px;background:var(--dsw-alias-label-primary);margin-right:5px;vertical-align:middle}
+.dtu-point{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--dsw-alias-label-primary)}
 .dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
@@ -279,9 +283,7 @@ window.__ModuleLoader__.load({
 .dtu-axisX{position:absolute;left:52px;right:44px;bottom:0;height:18px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisX span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .dtu-axisY{position:absolute;left:0;top:0;bottom:22px;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
-.dtu-axisY span,.dtu-axisYr span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
-.dtu-axisYr{position:absolute;right:0;top:0;bottom:22px;width:42px;color:var(--dsw-alias-label-secondary);font-size:11px}
-.dtu-axisYr span{right:auto;left:4px}
+.dtu-axisY span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
 .dtu-grid{position:absolute;left:52px;right:44px;top:0;bottom:22px}
 .dtu-gridline{position:absolute;left:0;right:0;border-top:1px solid var(--dsw-alias-border-l1);opacity:.6}
 .dtu-models{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:20px;align-items:start}
@@ -299,6 +301,14 @@ window.__ModuleLoader__.load({
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
 .dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-wrap:wrap;gap:12px}
 .dtu-footEntry{min-width:0;max-width:360px}
+.dtu-footTop{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.dtu-footValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.dtu-footRow{display:flex;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.dtu-window{display:flex;flex-direction:column;gap:1px;padding:4px 0 5px;border-top:1px solid var(--dsw-alias-border-l1)}
+.dtu-window:first-of-type{border-top:0;padding-top:2px}
+.dtu-windowLabel{color:var(--dsw-alias-label-secondary);font-size:11.5px;font-weight:600}
+.dtu-windowValue{color:var(--dsw-alias-label-primary);font-size:12.5px;font-variant-numeric:tabular-nums}
+.dtu-windowMeta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
 .dtu-form{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1);max-width:560px}
 .dtu-formTitle{font-weight:600}
 .dtu-hint{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}
@@ -310,12 +320,14 @@ window.__ModuleLoader__.load({
 .dtu-save:disabled{opacity:.5;cursor:default}
 .dtu-formStatus{color:var(--dsw-alias-label-secondary);font-size:12px}
 .dtu-formStatus[data-tone="error"]{color:var(--dsw-alias-state-error-primary)}
-/* The seat is a horizontal row shared with other plugins' actions, so the entry
-   sizes to its content instead of claiming the full width a stacked card wants. */
-.dtu-footChip{appearance:none;font:inherit;cursor:pointer;flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
-.dtu-footChip:hover{background:var(--dsw-alias-bg-layer-2)}
-.dtu-footChipLabel{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
-.dtu-footChipValue{flex:none;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+/* The seat lays every occupant on one horizontal line, yet every plugin in it
+   declares width:100% — so they can never share it, and each one ends up
+   squeezed against its neighbours. The :has() selector addresses the seat by its
+   child, which keeps this independent of DSH's hashed class names; the wrap then
+   gives every occupant the full-width row it was written for. */
+:has(> .dtu-footCard){flex-wrap:wrap}
+.dtu-footCard{appearance:none;text-align:left;font:inherit;cursor:pointer;flex:1 1 100%;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:inherit}
+.dtu-footCard:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-rail{appearance:none;font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 .dtu-rail:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-icon{width:16px;height:16px;flex:none}
@@ -420,6 +432,30 @@ window.__ModuleLoader__.load({
     // ── sidebar entry ───────────────────────────────────────────────────────
 
     /**
+     * One card row: the configured window's own label, its input/output split
+     * and its cache hit rate. Input counts everything the provider was sent —
+     * the cache-missing part plus the cached reads — so the pair reads the way a
+     * user thinks about a request.
+     */
+    function CardWindow({ block }) {
+      return h(
+        'div',
+        { className: 'dtu-window' },
+        h('div', { className: 'dtu-windowLabel' }, block.label),
+        h(
+          'div',
+          { className: 'dtu-windowValue' },
+          `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)}`,
+        ),
+        h(
+          'div',
+          { className: 'dtu-windowMeta' },
+          `缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
+        ),
+      )
+    }
+
+    /**
      * The all-time block, rebuilt from `totals` when the Host answered without a
      * `card`. A Client newer than its Host is a normal upgrade state, and the
      * card must still show figures rather than wait for a field that will only
@@ -442,28 +478,14 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The chip's tooltip: every configured window's own label, its input/output
-     * split, its cache hit rate and its turn count. Input counts everything the
-     * provider was sent — the cache-missing part plus the cached reads — so the
-     * pair reads the way a user thinks about a request.
+     * The usage card in the sidebar foot (`sidebar.footer.action`), and the icon
+     * button the collapsed rail gets instead.
+     *
+     * That seat is a single horizontal row, and every plugin in it declares
+     * `width: 100%`, so no two of them can share it — see the `:has()` rule in the
+     * stylesheet, which makes the seat wrap so each occupant gets the full-width
+     * row it was written for.
      */
-    function describeEntry(blocks, all, status) {
-      if (status === 'error') return 'Token 用量 · 读取失败，点开查看原因'
-      const rows = blocks.length > 0 ? blocks : all ? [all] : []
-      if (rows.length === 0) {
-        // "No records" is only the truth once the read actually finished; before
-        // that the honest label is the loading one.
-        return status === 'ready'
-          ? 'Token 用量 · 该筛选条件下没有用量记录'
-          : 'Token 用量 · 正在读取本地会话日志…'
-      }
-      const parts = rows.map(
-        (block) =>
-          `${block.label} 输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
-      )
-      return `Token 用量 · ${parts.join(' ｜ ')}`
-    }
-
     function SidebarEntry(props) {
       const state = useStore()
       const card = state.data ? state.data.card : null
@@ -478,19 +500,42 @@ window.__ModuleLoader__.load({
           h(Icon, { size: 16 }),
         )
       }
-      // The seat is a horizontal row of actions shared with whatever other
-      // plugins registered there, so the entry sizes to its content instead of
-      // pretending to own the full width; the per-window numbers move into the
-      // tooltip and the full breakdown stays in the central panel.
-      const value =
-        state.status === 'error' ? '—' : !state.data ? '…' : blocks.length > 0 || all ? compact(headline) : '0'
-      const detail = describeEntry(blocks, all, state.status)
+      let body
+      if (state.status === 'error') {
+        body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
+      } else if (!state.data) {
+        body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
+      } else if (blocks.length > 0) {
+        body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
+      } else if (!all) {
+        body = h('div', { className: 'dtu-windowMeta' }, '该筛选条件下没有用量记录。')
+      } else {
+        body = [
+          h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
+          h(
+            'div',
+            { key: 'split', className: 'dtu-footRow' },
+            h('span', null, `输入 ${compact(all.inputTokens)} · 输出 ${compact(all.outputTokens)}`),
+          ),
+          h(
+            'div',
+            { key: 'meta', className: 'dtu-footRow' },
+            h('span', null, `缓存命中 ${percent(all.cacheHitRate)}`),
+            h('span', null, `${all.turns} 轮`),
+          ),
+        ]
+      }
       return h(
         'button',
-        { type: 'button', className: 'dtu-footChip', title: detail, 'aria-label': detail, onClick: props.open },
-        h(Icon, { size: 16 }),
-        h('span', { className: 'dtu-footChipLabel' }, 'Token 用量'),
-        h('span', { className: 'dtu-footChipValue' }, value),
+        { type: 'button', className: 'dtu-footCard', title: '打开 Token 用量看板', onClick: props.open },
+        h(
+          'div',
+          { className: 'dtu-footTop' },
+          h(Icon, { size: 14 }),
+          h('span', null, 'Token 用量'),
+          h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
+        ),
+        body,
       )
     }
 
@@ -524,11 +569,11 @@ window.__ModuleLoader__.load({
       return h(
         'div',
         { className: 'dtu-form' },
-        h('div', { className: 'dtu-formTitle' }, '侧边栏卡片显示的时间跨度'),
+        h('div', { className: 'dtu-formTitle' }, '看板「配置窗口」的时间跨度'),
         h(
           'div',
           { className: 'dtu-hint' },
-          '0 表示关闭该窗口；两个都关闭时卡片显示累计值。窗口按本地时间取整到小时，保存后立即生效。',
+          '0 表示关闭该窗口；两个都关闭时只显示累计值。窗口按本地时间取整到小时，保存后立即生效；它们不随看板上方的来源筛选变化。',
         ),
         h(
           'label',
@@ -773,10 +818,50 @@ window.__ModuleLoader__.load({
       const max = niceMax(columns.reduce((peak, column) => Math.max(peak, column.total), 0))
       const labelled = columns.length <= 16 ? columns.map((_, index) => index) : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
       const ticks = [0, 0.25, 0.5, 0.75, 1]
-      const points = columns
-        .map((column, index) => (column.hit === null ? null : `${((index + 0.5) / columns.length) * 100},${100 - column.hit * 100}`))
-        .filter(Boolean)
-        .join(' ')
+      const pointX = (index) => ((index + 0.5) / columns.length) * 100
+      const pointY = (column) => (1 - column.total / max) * 100
+      // Daily totals joined by a monotone cubic (Fritsch-Carlson), so the line
+      // flows through the days instead of cornering at each one. Monotone rather
+      // than a plain spline on purpose: a plain one overshoots, and next to a day
+      // with no usage that means dipping past the axis.
+      const curvePath = (() => {
+        const xs = columns.map((_, index) => pointX(index))
+        const ys = columns.map((column) => pointY(column))
+        const n = xs.length
+        const round = (value) => Math.round(value * 100) / 100
+        if (n === 0) return ''
+        if (n === 1) return `M${round(xs[0])},${round(ys[0])}`
+        const slopes = []
+        for (let i = 0; i < n - 1; i += 1) slopes.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]))
+        const tangents = [slopes[0]]
+        for (let i = 1; i < n - 1; i += 1) {
+          tangents.push(slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2)
+        }
+        tangents.push(slopes[n - 2])
+        for (let i = 0; i < n - 1; i += 1) {
+          if (slopes[i] === 0) {
+            tangents[i] = 0
+            tangents[i + 1] = 0
+            continue
+          }
+          const before = tangents[i] / slopes[i]
+          const after = tangents[i + 1] / slopes[i]
+          const sum = before * before + after * after
+          if (sum > 9) {
+            const scale = 3 / Math.sqrt(sum)
+            tangents[i] = scale * before * slopes[i]
+            tangents[i + 1] = scale * after * slopes[i]
+          }
+        }
+        let d = `M${round(xs[0])},${round(ys[0])}`
+        for (let i = 0; i < n - 1; i += 1) {
+          const span = (xs[i + 1] - xs[i]) / 3
+          const c1 = `${round(xs[i] + span)},${round(ys[i] + tangents[i] * span)}`
+          const c2 = `${round(xs[i + 1] - span)},${round(ys[i + 1] - tangents[i + 1] * span)}`
+          d += ` C${c1} ${c2} ${round(xs[i + 1])},${round(ys[i + 1])}`
+        }
+        return d
+      })()
       return h(
         'div',
         null,
@@ -797,12 +882,7 @@ window.__ModuleLoader__.load({
             h('span', { className: 'dtu-dot', style: { background: OTHER } }),
             '其他',
           ),
-          h(
-            'span',
-            null,
-            h('span', { className: 'dtu-dot', style: { background: 'var(--dsw-alias-state-warn-primary)', borderRadius: '50%' } }),
-            '缓存命中率',
-          ),
+          h('span', null, h('span', { className: 'dtu-lineKey' }), '每日合计'),
         ),
         h(
           'div',
@@ -818,11 +898,6 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dtu-axisY' },
             ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, compact(max * (1 - tick)))),
-          ),
-          h(
-            'div',
-            { className: 'dtu-axisYr' },
-            ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, `${Math.round((1 - tick) * 100)}%`)),
           ),
           h(
             'div',
@@ -850,28 +925,34 @@ window.__ModuleLoader__.load({
               ),
             ),
           ),
-          points
-            ? h(
-                'div',
-                { className: 'dtu-line' },
-                h(
-                  'svg',
-                  { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
-                  h('polyline', {
-                    points,
-                    fill: 'none',
-                    stroke: 'var(--dsw-alias-state-warn-primary)',
-                    strokeWidth: 1.5,
-                    vectorEffect: 'non-scaling-stroke',
-                  }),
-                ),
-              )
-            : null,
+          h(
+            'div',
+            { className: 'dtu-line' },
+            h(
+              'svg',
+              { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
+              h('path', {
+                d: curvePath,
+                fill: 'none',
+                stroke: 'var(--dsw-alias-label-primary)',
+                strokeWidth: 1.5,
+                strokeLinecap: 'round',
+                vectorEffect: 'non-scaling-stroke',
+              }),
+            ),
+            columns.map((column, index) =>
+              h('span', {
+                key: column.day,
+                className: 'dtu-point',
+                style: { left: `${pointX(index)}%`, top: `${pointY(column)}%` },
+              }),
+            ),
+          ),
           h(
             'div',
             { className: 'dtu-axisX' },
             labelled.map((index) =>
-              h('span', { key: index, style: { left: `${((index + 0.5) / columns.length) * 100}%` } }, columns[index].day.slice(5)),
+              h('span', { key: index, style: { left: `${pointX(index)}%` } }, columns[index].day.slice(5)),
             ),
           ),
         ),
@@ -1013,6 +1094,34 @@ window.__ModuleLoader__.load({
               title: totals.topModel ?? undefined,
             }),
           ),
+          // The configured windows are wall-clock recency figures: the Host
+          // builds them from `{root, useCache, now}` alone, so unlike every other
+          // section here they do not follow the source filter. Say so.
+          data.card
+            ? h(
+                Section,
+                {
+                  title: '配置窗口',
+                  extra: h(
+                    'span',
+                    { className: 'dtu-hint' },
+                    '固定回溯窗口，不随上方来源筛选变化；在 插件 → Token 用量 里调整',
+                  ),
+                },
+                h(
+                  'div',
+                  { className: 'dtu-cards' },
+                  (data.card.blocks.length > 0 ? data.card.blocks : data.card.all ? [data.card.all] : []).map((block) =>
+                    h(Card, {
+                      key: block.id,
+                      label: block.label,
+                      value: grouped(block.totalTokens),
+                      sub: `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${grouped(block.turns)} 轮`,
+                    }),
+                  ),
+                ),
+              )
+            : null,
           h(
             Section,
             { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
@@ -1065,13 +1174,6 @@ window.__ModuleLoader__.load({
             h('span', null, `数据源：本地会话日志（${data ? data.coverage.files : 0} 个文件，未联网）`),
             h(
               'span',
-              null,
-              data && data.card
-                ? `侧边栏卡片：${data.card.blocks.map((block) => block.label).join(' + ') || '累计'}（在 插件 → Token 用量 里调整）`
-                : null,
-            ),
-            h(
-              'span',
               { className: 'dtu-footEntry' },
               '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归「桌面·网页」；「命令行·机器人」指无客户端的会话。',
             ),
@@ -1087,7 +1189,7 @@ window.__ModuleLoader__.load({
       return h(Boundary, { label: '中央看板' }, h(DashboardBody, props))
     }
 
-    /** Sidebar footer card, guarded for the same reason. */
+    /** Sidebar foot card, guarded for the same reason. */
     function UsageEntry(props) {
       return h(Boundary, { label: '侧边栏卡片' }, h(SidebarEntry, props))
     }
@@ -1195,6 +1297,10 @@ window.__ModuleLoader__.load({
       ctx.slots.inject('plugins.bundle.config', () =>
         ctx.slots.register({ name: 'plugins.bundle.config', key: REMOTE_PACKAGE }, ConfigForm),
       )
+      // `sidebar.footer.action`: the usage card the user reads at a glance. The
+      // seat is one horizontal row and every plugin in it declares width:100%, so
+      // the stylesheet's `:has()` rule makes it wrap and each occupant gets its
+      // own full-width line.
       ctx.inject(['layout'], (layoutCtx) => {
         layoutCtx.slots.inject('sidebar.footer.action', () =>
           layoutCtx.slots.register({ name: 'sidebar.footer.action', id: PANEL_ID, order: 5, inject: face }, UsageEntry),

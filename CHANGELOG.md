@@ -16,20 +16,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- **The sidebar entry is a compact chip now, not a full-width card.** The `sidebar.footer.action` seat is a
-  horizontal row of actions shared with every other plugin registered there — `dsh-opencode-go-usage`,
-  `cordis-panel` and `commandcode-panel` all occupy it on a stock install — and the seat's own rule is
-  `.footerActions { display: flex }` with no wrapping. An entry that claims `width: 100%` has to fight the others
-  for that single row and ends up squeezed beside them. The entry now sizes to its content (`flex: 0 1 auto`) and
-  carries one number: the first enabled window's total, or the cumulative total when both windows are off.
-  Hovering it reveals every window's input volume, output volume, cache hit rate and turn count in the tooltip;
-  the full breakdown stays in the central dashboard. The `CardWindow` component and the rules it alone used
-  (`.dtu-window*`, `.dtu-footTop`, `.dtu-footValue`, `.dtu-footRow`, `.dtu-footCard`) went with it.
+- **The sidebar card now gets a full-width line of its own in the footer seat.** `sidebar.footer.action` is a single
+  horizontal row (`display: flex`, no wrapping) and on a stock install `dsh-opencode-go-usage`, `cordis-panel` and
+  `commandcode-panel` sit in it too — and every one of them declares `width: 100%`. Measured, that means two of them
+  take the whole 254px row without shrinking and push the rest out of the column, and no `flex` value on this plugin's
+  own card can change the fact that they are all on one line. The card now makes the seat wrap instead, addressing the
+  seat through its child (`:has(> .dtu-footCard)`) so nothing depends on DSH's hashed class names; every occupant then
+  gets the full-width line it was written for. This needs `:has()`, which is why the compatibility table below now
+  records the bundled Chromium.
+- **The same windows are shown in the dashboard too**, in a `配置窗口` row: label, total, input/output split, cache hit
+  rate and turns. They are wall-clock recency — the Host builds them from `{root, useCache, now}` alone — and
+  deliberately ignore the source filter, so that row says so instead of sitting among the filter-following stat cards.
+  With both windows off it falls back to a single cumulative card.
+- **The per-day trend no longer puts two scales on one plot.** The cache hit rate was a line drawn over the token bars
+  with its own 0-100% right-hand axis; since it normally sits above 90%, the line floated along the top of the plot
+  with no visible relation to the bars under it. The hit rate is already given per window in the stat cards and the
+  `配置窗口` row, so that curve is gone: the chart now overlays the **daily token total** on the bars instead, sharing
+  the one left-hand token axis, its vertices landing on each stacked column's top so the composition and the trend read
+  together. Days with no usage drop the line to the baseline, which makes the empty-then-spike shape clearer. The
+  legend's hit-rate entry became `每日合计`.
+- **The curve flows instead of cornering.** Neighbouring days are joined by a **monotone cubic** (Fritsch-Carlson)
+  interpolation, so the tangent is continuous at every data point. Monotone rather than a plain spline on purpose: a
+  plain spline overshoots between points, and right next to a day with no usage that means dipping below the axis.
+- **Writes are atomic, bounded, and switchable off.** Both writers now write a `<name>.<pid>.tmp` sibling and rename it
+  over the target, so a concurrent reader never sees a partial file and a killed process cannot leave a truncated one.
+  The session index is capped at 800 entries (oldest dropped, re-scanned on demand) and any `.tmp` a crash left behind
+  is swept on the next write. The Host's diagnostics (`calls.json`, `boot.json`) can be turned off entirely with
+  `DSH_TOKEN_USAGE_DIAG=0`. Everything is written inside `$DSH_HOME/cache/dsh-desktop-token-usage/`; the README now
+  documents each file, what it is for, and how to turn it off.
 - **Compatibility is declared for DSH Desktop 0.2.0-rc.1.** The plugin still declares no `@deepseek-ai/dsh*` peer
   dependency, which is what DSH actually validates; `engines.dsh` is widened to `^0.1.7-rc.2 || ^0.2.0-rc.1` for
   readers only. Every published package this plugin touches was diffed across the two releases: `dsh-plugin-manager`
   is byte-identical, and `dsh-client-ui-sidebar`, `dsh-client-ui-layout` and `dsh-client-ui-cordis` differ only in the
-  version string, one analytics call and title-bar CSS. The slot contract and its `{ wide }` owner props are unchanged.
+  version string, one analytics call and title-bar CSS. The slot contract is unchanged.
+
+### Note
+
+- The entry briefly moved to `sidebar.panellist`, which gives a full-width row the sidebar owns — but that seat renders
+  an icon and a label only, so the usage numbers the card exists to show would have had nowhere to go. It came back.
 
 ## [0.1.3] - 2026-09-28
 

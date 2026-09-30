@@ -13,6 +13,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import {
   DAY_MS,
@@ -312,6 +313,33 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.equal(last.sessions, payload.totals.sessions)
   assert.deepEqual(last.filter, { sinceMs: null, untilMs: null, sources: ['client'] })
   assert.deepEqual(last.cardBlocks, ['hours', 'days'])
+  // The write is atomic — it goes through a `.tmp` sibling and is renamed — so a
+  // committed call must leave no temp file behind for a reader to trip over.
+  assert.ok(
+    !fs.readdirSync(process.env.DSH_TOKEN_USAGE_DIAG_DIR).some((name) => name.endsWith('.tmp')),
+    'a committed diagnostic write must leave no .tmp file behind',
+  )
+})
+
+test('every path the plugin persists stays inside its one cache directory', async () => {
+  const { PLUGIN_CACHE_DIR, DSH_HOME, CACHE_FILE, SESSIONS_ROOT } = await import('../lib/session-usage.js')
+  assert.equal(PLUGIN_CACHE_DIR, path.join(DSH_HOME, 'cache', 'dsh-desktop-token-usage'))
+  assert.equal(CACHE_FILE, path.join(PLUGIN_CACHE_DIR, 'sessions-index.json'))
+  assert.equal(SESSIONS_ROOT, path.join(DSH_HOME, 'sessions'), 'sessions are read, never written')
+  assert.ok(CACHE_FILE.startsWith(PLUGIN_CACHE_DIR + path.sep), 'the cache must live in that directory')
+  // The Host writes nothing but into `PLUGIN_CACHE_DIR`; grep the sources rather
+  // than trusting this list to stay complete.
+  const root = path.dirname(fileURLToPath(import.meta.url))
+  for (const file of ['../index.js', '../lib/session-usage.js']) {
+    const source = fs.readFileSync(path.join(root, file), 'utf8')
+    for (const match of source.matchAll(/writeFileSync\(\s*([A-Za-z_$][\w$]*)/g)) {
+      const target = match[1]
+      assert.ok(
+        ['tmp'].includes(target),
+        `${file} must only ever writeFileSync to a temp path, not to ${target}`,
+      )
+    }
+  }
 })
 
 test('the Loader row is found by id even when its name is not the scoped package', async () => {
