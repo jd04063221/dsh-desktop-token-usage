@@ -130,7 +130,8 @@ def main():
             page = browser.new_page(viewport={"width": 1400, "height": 1600}, device_scale_factor=2)
             page.set_content(html, wait_until="load")
             if theme == "dark":
-                page.emulate_media(color_scheme="dark")
+                # The shell's marker is what the plugin reads; the OS preference is
+                # deliberately not emulated, so the shot proves which one wins.
                 page.evaluate("document.body.setAttribute('data-ds-dark-theme','')")
             page.wait_for_timeout(400)
             print(theme + ":")

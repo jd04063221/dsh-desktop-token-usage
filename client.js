@@ -228,33 +228,37 @@ window.__ModuleLoader__.load({
     // ── styles ──────────────────────────────────────────────────────────────
 
     const CSS = `
+/* The shell owns the theme switch: DSH marks dark with body[data-ds-dark-theme]
+   and leaves <body> bare in light mode, so that marker — not the OS preference —
+   decides which half of every light-dark() pair is used. Following
+   prefers-color-scheme alone would leave the charts light whenever DSH is dark
+   on a light desktop (and vice versa). */
 .dtu-root{
+  color-scheme:light dark;
   --dtu-s1:#4c8dff; --dtu-s2:#3fb950; --dtu-s3:#d29922; --dtu-s4:#a371f7; --dtu-s5:#ec6a5e;
-  --dtu-other:#6e7681; --dtu-hit:#57606a;
-  --dtu-heat-0:#ebedf0; --dtu-heat-1:#9be9a8; --dtu-heat-2:#40c463; --dtu-heat-3:#30a14e; --dtu-heat-4:#216e39;
+  --dtu-other:light-dark(#6e7681,#8b949e); --dtu-hit:light-dark(#57606a,#8b949e);
+  --dtu-heat-0:light-dark(#ebedf0,#161b22); --dtu-heat-1:light-dark(#9be9a8,#0e4429);
+  --dtu-heat-2:light-dark(#40c463,#006d32); --dtu-heat-3:light-dark(#30a14e,#26a641);
+  --dtu-heat-4:light-dark(#216e39,#39d353);
   display:block;height:100%;overflow:auto;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}
+body[data-ds-dark-theme] .dtu-root{color-scheme:dark}
+body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 .dtu-root[data-dtu-palette="cvd"]{
-  --dtu-s1:#0072b2; --dtu-s2:#e69f00; --dtu-s3:#009e73; --dtu-s4:#cc79a7; --dtu-s5:#56b4e9;
-  --dtu-other:#7b8794; --dtu-hit:#0072b2;
-  --dtu-heat-0:#eef4fa; --dtu-heat-1:#c6dbef; --dtu-heat-2:#7fb3d9; --dtu-heat-3:#3d85c6; --dtu-heat-4:#084594}
+  --dtu-s1:light-dark(#0072b2,#58a6ff); --dtu-s2:light-dark(#e69f00,#ffc857);
+  --dtu-s3:light-dark(#009e73,#4dd4ac); --dtu-s4:light-dark(#cc79a7,#f0a6c8);
+  --dtu-s5:light-dark(#56b4e9,#83c9f4);
+  --dtu-other:light-dark(#7b8794,#9aa5b1); --dtu-hit:light-dark(#0072b2,#58a6ff);
+  --dtu-heat-0:light-dark(#eef4fa,#111823); --dtu-heat-1:light-dark(#c6dbef,#12395c);
+  --dtu-heat-2:light-dark(#7fb3d9,#1b5a8a); --dtu-heat-3:light-dark(#3d85c6,#2f7fbd);
+  --dtu-heat-4:light-dark(#084594,#5fb0e8)}
 .dtu-root[data-dtu-palette="muted"]{
-  --dtu-s1:#4c6a92; --dtu-s2:#6e9c7a; --dtu-s3:#c9a227; --dtu-s4:#9a6b8f; --dtu-s5:#7a8ca3;
-  --dtu-other:#8a857c; --dtu-hit:#4c6a92;
-  --dtu-heat-0:#f0efe9; --dtu-heat-1:#cfd8c4; --dtu-heat-2:#a8bb98; --dtu-heat-3:#7d9a6d; --dtu-heat-4:#547049}
-@media (prefers-color-scheme: dark){
-  .dtu-root{
-    --dtu-s1:#4c8dff; --dtu-s2:#3fb950; --dtu-s3:#d29922; --dtu-s4:#a371f7; --dtu-s5:#ec6a5e;
-    --dtu-other:#8b949e; --dtu-hit:#8b949e;
-    --dtu-heat-0:#161b22; --dtu-heat-1:#0e4429; --dtu-heat-2:#006d32; --dtu-heat-3:#26a641; --dtu-heat-4:#39d353}
-  .dtu-root[data-dtu-palette="cvd"]{
-    --dtu-s1:#58a6ff; --dtu-s2:#ffc857; --dtu-s3:#4dd4ac; --dtu-s4:#f0a6c8; --dtu-s5:#83c9f4;
-    --dtu-other:#9aa5b1; --dtu-hit:#58a6ff;
-    --dtu-heat-0:#111823; --dtu-heat-1:#12395c; --dtu-heat-2:#1b5a8a; --dtu-heat-3:#2f7fbd; --dtu-heat-4:#5fb0e8}
-  .dtu-root[data-dtu-palette="muted"]{
-    --dtu-s1:#8fa8c8; --dtu-s2:#9dc0a6; --dtu-s3:#e0c46a; --dtu-s4:#c49ab8; --dtu-s5:#a8b6c6;
-    --dtu-other:#a8a196; --dtu-hit:#8fa8c8;
-    --dtu-heat-0:#1a1a17; --dtu-heat-1:#2c3a28; --dtu-heat-2:#47603e; --dtu-heat-3:#688a56; --dtu-heat-4:#8fb273}
-}
+  --dtu-s1:light-dark(#4c6a92,#8fa8c8); --dtu-s2:light-dark(#6e9c7a,#9dc0a6);
+  --dtu-s3:light-dark(#c9a227,#e0c46a); --dtu-s4:light-dark(#9a6b8f,#c49ab8);
+  --dtu-s5:light-dark(#7a8ca3,#a8b6c6);
+  --dtu-other:light-dark(#8a857c,#a8a196); --dtu-hit:light-dark(#4c6a92,#8fa8c8);
+  --dtu-heat-0:light-dark(#f0efe9,#1a1a17); --dtu-heat-1:light-dark(#cfd8c4,#2c3a28);
+  --dtu-heat-2:light-dark(#a8bb98,#47603e); --dtu-heat-3:light-dark(#7d9a6d,#688a56);
+  --dtu-heat-4:light-dark(#547049,#8fb273)}
 .dtu-head{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--dsw-alias-bg-base);border-bottom:1px solid var(--dsw-alias-border-l1)}
 .dtu-title{font-size:15px;font-weight:600}
 .dtu-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}

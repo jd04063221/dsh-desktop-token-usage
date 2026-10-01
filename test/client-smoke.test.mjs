@@ -560,8 +560,23 @@ test('the dashboard carries its palette on the root and ships three light/dark s
   for (const palette of ['cvd', 'muted']) {
     assert.ok(styles.includes('[data-dtu-palette="' + palette + '"]'), palette + ' must have a variable block')
   }
-  assert.ok(styles.includes('prefers-color-scheme: dark'), 'light/dark switch is a media query')
-  assert.ok(styles.includes('--dtu-s1:#0072b2'), 'the cvd series colour must be a variable value')
+  // The switch is the shell's own marker, not the OS preference: DSH sets
+  // body[data-ds-dark-theme] when it is dark and leaves the body bare in light
+  // mode, so both directions have to be pinned or one of them stays wrong.
+  assert.ok(
+    styles.includes('body[data-ds-dark-theme] .dtu-root{color-scheme:dark}'),
+    'a dark shell must force the dark half of every light-dark() pair',
+  )
+  assert.ok(
+    styles.includes('body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}'),
+    'a light shell must stay light even when the OS is dark',
+  )
+  assert.ok(
+    !/@media\s*\(prefers-color-scheme/.test(styles),
+    'the OS media query is no longer the switch (the stylesheet comment may still name it)',
+  )
+  assert.ok(styles.includes('light-dark('), 'each colour carries both halves in one place')
+  assert.ok(styles.includes('--dtu-s1:light-dark(#0072b2,#58a6ff)'), 'the cvd series colour picks per theme')
   assert.ok(styles.includes('--dtu-other:'), 'the folded bucket keeps its own grey')
 })
 
