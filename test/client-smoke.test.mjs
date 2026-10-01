@@ -686,6 +686,82 @@ test('the hit-rate strip scales to the visible days with 10% headroom', async ()
   assert.deepEqual(dayY, [8.33, 91.67, 8.33], '95% near the top, 90% near the bottom')
 })
 
+test('the hit-rate dots and the hover line each live in their own inset plot frame', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: trendPayload() }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+
+  // Walk a rendered tree, remembering each node's chain of class names.
+  const framesOf = (tree) => {
+    const frames = []
+    const walk = (node, chain) => {
+      if (node === null || node === undefined || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach((child) => walk(child, chain))
+      const names = typeof node.props?.className === 'string' ? node.props.className.split(' ') : []
+      const next = names.length > 0 ? [...chain, ...names] : chain
+      if (names.length > 0 || node.tag === 'svg') frames.push({ node, chain: next })
+      walk(node.children, next)
+    }
+    walk(tree, [])
+    return frames
+  }
+  // The curve and the dots share the bars' inset frame, or they drift off it.
+  const idle = framesOf(render({ type: main.component, props: main.options.inject() }))
+  const dots = idle.filter((frame) => frame.chain.includes('dtu-hitDot'))
+  assert.equal(dots.length, 5, 'one dot per column, empty days included')
+  for (const dot of dots) assert.ok(dot.chain.includes('dtu-hitPlot'), 'a dot outside .dtu-hitPlot would not sit on the curve')
+  const curve = idle.find((frame) => frame.node.tag === 'svg' && frame.node.props.preserveAspectRatio === 'none')
+  assert.ok(curve, 'the hit-rate curve must be drawn')
+  assert.ok(curve.chain.includes('dtu-hitPlot'), 'the curve lives in the same inset frame as the dots')
+
+  // Drive TrendSection directly to observe the hover tree: real React re-renders
+  // after onMouseEnter, and the fake harness keeps hook state only across
+  // back-to-back invocations of the same component.
+  const findElement = (node, predicate) => {
+    if (node === null || node === undefined || typeof node !== 'object') return null
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const hit = findElement(child, predicate)
+        if (hit) return hit
+      }
+      return null
+    }
+    if (node.type !== undefined && predicate(node)) return node
+    return findElement(node.props?.children, predicate)
+  }
+  const dash = main.component(main.options.inject())
+  const body = dash.props.children
+  hooks = []
+  hookIndex = 0
+  const trendElement = findElement(
+    body.type(body.props),
+    (el) => typeof el.type === 'function' && el.props?.days && el.props?.groups && el.props?.groupBy !== undefined,
+  )
+  assert.ok(trendElement, 'the trend section element must be reachable for the hover drive')
+  hooks = []
+  hookIndex = 0
+  const beforeHover = trendElement.type(trendElement.props)
+  const column = findElement(beforeHover, (el) => el.props?.className === 'dtu-col')
+  assert.ok(column, 'a column must carry the hover handler')
+  column.props.onMouseEnter()
+  hookIndex = 0 // replay the component with the hook state the handler just set
+  const hovered = framesOf(render(trendElement.type(trendElement.props)))
+  const cursor = hovered.find((frame) => frame.chain.includes('dtu-cursor'))
+  assert.ok(cursor, 'hovering a column must render the cursor line')
+  assert.ok(cursor.chain.includes('dtu-plotLine'), 'the cursor line must live inside the inset .dtu-plotLine frame')
+  assert.ok(cursor.chain.includes('dtu-trend'), 'and the frame hangs off the trend section')
+  const tip = hovered.find((frame) => frame.chain.includes('dtu-tip'))
+  assert.ok(tip, 'the tooltip follows the cursor')
+  assert.ok(tip.chain.includes('dtu-cursor'), 'the tooltip hangs off the cursor line')
+
+  // Structure alone cannot prove the insets: lock the geometry in CSS too.
+  const styles = document.head.children[0].textContent
+  assert.ok(styles.includes('.dtu-hitPlot{position:absolute;left:52px;right:44px'), "the dot frame must share the bars' insets")
+  assert.ok(styles.includes('.dtu-plotLine{position:absolute;left:52px;right:44px'), "the cursor frame must share the bars' insets")
+})
+
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {
   const { plugin } = loadClient()
   const { ctx, record } = fakeContext()
@@ -731,6 +807,21 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
   }
   collectWeekdays(tree)
   assert.deepEqual(weekday, ['一', '', '三', '', '五', '', ''])
+
+  // The five-colour scale paints directly; opacity would grade it a second time.
+  const fills = []
+  const collectFills = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectFills)
+    if (node.props?.className === 'dtu-cellFill') fills.push(node)
+    collectFills(node.children)
+  }
+  collectFills(tree)
+  assert.ok(fills.length > 0, 'the legend and the active days must paint their swatches')
+  for (const fill of fills) {
+    assert.match(String(fill.props.style.background), /^var\(--dtu-heat-[0-4]\)$/, 'each swatch paints a scale colour directly')
+    assert.ok(!('opacity' in fill.props.style), 'the colour scale must not be graded a second time by opacity')
+  }
 })
 
 test('the Host descriptor and the Client contribution agree', async () => {
