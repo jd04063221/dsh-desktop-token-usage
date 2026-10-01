@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **The hit-rate curve overlays the bars**: the token stacked bars and the cache hit-rate curve share one chart (the
   curve is mapped over the plot area by the period's min−10% span ~ max+10% span, with real percentages labelled on the
   right), instead of taking a strip of its own.
-- **The hit-rate strip's Y axis is data-driven**: the period's min/max set the range with 10% of the span padded at
+- **The hit-rate curve's Y axis is data-driven**: the period's min/max set the range with 10% of the span padded at
   each end; the curve keeps the monotone cubic interpolation.
 - **Hit-rate semantics**: miss now includes cacheWrite (hit / (hit + miss)), matching the official definition; on this
   machine cacheWrite is always 0, so no number changes.
