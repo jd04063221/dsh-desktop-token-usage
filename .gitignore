@@ -7,6 +7,9 @@ docs/research/.cache/
 # 仅本地的维护者文档（不进 git，也不进 npm 包）
 *.local.md
 
+# 头脑风暴浏览器伴侣的临时产物
+.superpowers/
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db
