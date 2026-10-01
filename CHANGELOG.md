@@ -47,7 +47,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   (panel colour outside, label colour inside) that stays visible on the palest and the darkest step alike; and hovering a
   day now raises the dashboard's own tooltip — the same box the trend chart shows, clamped to the plot by a share of the
   column centre, and laid out as four lines: date / Tokens / turns / requests — instead of the delayed, unstylable
-  native `title`.
+  native `title`. The heatmap area now scrolls **sideways only** as well: the hover box is about a pixel taller than
+  the shortest calendar, and that pixel was enough for the scroll box to grow a vertical scrollbar — which narrowed the
+  area and dragged a horizontal scrollbar in at the bottom. Vertical overflow is `hidden` now, with bottom headroom
+  reserved for the tooltip.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
