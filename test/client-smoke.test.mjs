@@ -1101,6 +1101,17 @@ test('the rendered hit rate matches the Host formula, cache writes included', as
     'the total moved into its own row, and no line glues the date to it',
   )
   assert.ok(withWrite.includes('缓存命中率'), 'the tooltip must carry the rate row')
+  // The model name is its own element so it can be ellipsised: as a bare text node
+  // a narrow box pushes it onto a second line.
+  const classes = []
+  const walkClasses = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walkClasses)
+    if (typeof node.props?.className === 'string') classes.push(node.props.className)
+    walkClasses(node.children)
+  }
+  walkClasses(render(driveComponent(trendElementOf(record), 'column 2026-09-21', pickColumn('2026-09-21'))))
+  assert.ok(classes.includes('dtu-tipKey'), 'each model row labels its name in its own nowrap element')
   assert.ok(withWrite.includes(expected), `the rendered rate must equal the Host hitRateOf, got: ${withWrite.join(' ')}`)
   const empty = shown('2026-09-22')
   assert.ok(empty.includes('—'), 'a day with no prompt tokens renders an em dash, not a fake 0%')
@@ -1254,7 +1265,7 @@ test('the hit-rate axis handles a flat series and a rateless range', async () =>
   }
 })
 
-test('the tooltip anchor clamps away from the panel edges', async () => {
+test('the tooltip hangs off the hovered column instead of centring on it', async () => {
   const { plugin } = loadClient()
   const payload = summaryPayload()
   const day = (name, total) => {
@@ -1281,21 +1292,29 @@ test('the tooltip anchor clamps away from the panel edges', async () => {
   plugin.apply(ctx)
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  const tipLeft = (columnName) => {
+  const tip = (columnName) => {
     const driven = driveComponent(trendElementOf(record), `column ${columnName}`, pickColumn(columnName))
-    let left = null
+    let style = null
     const walk = (node) => {
       if (!node || typeof node !== 'object') return
       if (Array.isArray(node)) return node.forEach(walk)
-      if (node.props?.className === 'dtu-tip') left = node.props.style?.left
+      if (node.props?.className === 'dtu-tip') style = node.props.style
       walk(node.children)
     }
     walk(render(driven))
-    return left
+    return style
   }
-  // seven columns: axisX(0) = 7.14%, axisX(6) = 92.86% — both outside the rails
-  assert.equal(tipLeft('2026-09-19'), '8%', 'the first column clamps to the 8% rail')
-  assert.equal(tipLeft('2026-09-25'), '92%', 'the last column clamps to the 92% rail')
+  const centreOf = (index) => ((index + 0.5) / 7) * 100
+  // Centring the box on the first/last column squeezed a long model name onto a
+  // second line, so the box is anchored to the column and grows away from the edge.
+  const first = tip('2026-09-19')
+  assert.equal(first.left, centreOf(0) + '%', 'the box is anchored on its own column, not clamped')
+  assert.equal(first.transform, 'none', 'a column in the left half grows rightwards')
+  const last = tip('2026-09-25')
+  assert.equal(last.left, centreOf(6) + '%')
+  assert.equal(last.transform, 'translateX(-100%)', 'a column in the right half grows leftwards')
+  assert.equal(tip('2026-09-21').transform, 'none', 'the left half stays left-anchored')
+  assert.equal(tip('2026-09-22').transform, 'translateX(-100%)', 'the flip happens at the half-way column')
 })
 
 // ── the trend line ──────────────────────────────────────────────────────────
@@ -1577,6 +1596,15 @@ test('the curve, the dots and the hover line stay inside the shared inset frames
   )
   assert.ok(ruleBody('dtu-axisX').includes('bottom:2px;height:14px'), 'the date band must sit below the plot area, not under it')
   assert.ok(ruleBody('dtu-plotLine').includes('top:0;bottom:20px'), 'the cursor spans the plot and stops where the axis band starts')
+  // The hover box follows its content and never wraps a long model name.
+  const tipRule = ruleBody('dtu-tip')
+  assert.ok(tipRule.includes('width:max-content'), 'the box follows its content instead of squeezing it')
+  assert.ok(tipRule.includes('max-width:calc(100% - 16px)'), 'and never grows past the plot')
+  const keyRule = ruleBody('dtu-tipKey')
+  assert.ok(
+    keyRule.includes('white-space:nowrap') && keyRule.includes('text-overflow:ellipsis'),
+    'a long model name is ellipsised on one line, never wrapped',
+  )
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

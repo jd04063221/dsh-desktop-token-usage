@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **The trend tooltip reads like the heatmap's**: its title no longer glues the date to the token total — the date
   stands alone and the total is a `Tokens` row of its own (compact form), so one line is one figure.
+- **Nothing wraps inside a tooltip any more**: the box follows its content (`width:max-content`) and hangs off the
+  hovered column — left-anchored in the left half, right-anchored in the right half — instead of centring inside a
+  clamped box, and a long model name such as `deepseek-v4.1-flash` is ellipsised on one line instead of being pushed
+  onto a second.
 
 ### Planned
 

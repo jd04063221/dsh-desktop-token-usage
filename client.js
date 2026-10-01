@@ -336,7 +336,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 .dtu-hitDot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--dtu-hit);transform:translate(-50%,-50%);pointer-events:auto}
 .dtu-hitDotEmpty{background:transparent}
 .dtu-cursor{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--dsw-alias-border-l1)}
-.dtu-tip{position:absolute;top:6px;left:0;transform:translateX(-50%);min-width:160px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12px;pointer-events:none;z-index:3}
+.dtu-tip{position:absolute;top:6px;left:0;width:max-content;max-width:calc(100% - 16px);min-width:160px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12px;pointer-events:none;z-index:3}
 /* The heatmap tooltip leans away from the edge it is near instead of centring on
    the column. Half the column span is what one anchor can cover, and the caliper
    below is what makes that exact: left-anchored at the half-way column it ends at
@@ -345,6 +345,8 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 .dtu-tipHeat{top:22px;max-width:calc(50% - 25px)}
 .dtu-tipTitle{font-weight:600;margin-bottom:4px}
 .dtu-tipRow{display:flex;align-items:center;gap:6px}
+/* A long model name is ellipsised, never wrapped: label and figure stay on one line. */
+.dtu-tipKey{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dtu-tipRow b{margin-left:auto;font-weight:600}
 .dtu-bars{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
@@ -1068,9 +1070,11 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           ? columns.map((_, index) => index)
           : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
       const hovered = hover === null ? null : columns[hover]
-      // Centred on the cursor, the first/last column's tip would hang past
-      // .dtu-root's overflow and scroll the panel sideways — clamp the anchor.
-      const tipAnchor = hovered === null ? null : Math.min(92, Math.max(8, axisX(hover)))
+      // The box hangs off the hovered column rather than centring on it: half the
+      // plot is what one anchor can cover, so a long model name grows away from
+      // the edge it is near. Centring inside a clamped box is exactly what used to
+      // squeeze a long model id such as deepseek-v4.1-flash onto a second line.
+      const tipFlips = hover !== null && axisX(hover) >= 50
       return h(
         'div',
         { className: 'dtu-trend' },
@@ -1209,7 +1213,11 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                 h('div', { className: 'dtu-cursor', style: { left: axisX(hover) + '%' } }),
                 h(
                   'div',
-                  { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipAnchor + '%' } },
+                  {
+                    className: 'dtu-tip',
+                    'data-day': hovered.day,
+                    style: { left: axisX(hover) + '%', transform: tipFlips ? 'translateX(-100%)' : 'none' },
+                  },
                   // Same shape as the heatmap's box: the date on its own, then one
                   // figure per row — gluing the date to a number reads as one string,
                   // and a long total would widen the box past its rails.
@@ -1225,7 +1233,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                           className: 'dtu-dot',
                           style: { background: segmentColor(segment.key) },
                         }),
-                        segment.key === OTHER_KEY ? '其他' : segment.key,
+                        // A long model name is ellipsised, never wrapped: the label
+                        // and its figure have to stay on the same line to be readable.
+                        h('span', { className: 'dtu-tipKey' }, segment.key === OTHER_KEY ? '其他' : segment.key),
                         h('b', null, compact(segment.value)),
                       ),
                     ),
