@@ -39,7 +39,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **The activity heatmap fills its row**: the fixed 53 weeks no longer stop part-way across the card. All 53 columns now
   share the available width on one 11px basis (cells stay square, and the month axis and weekday bands stretch with
   them); only a card too narrow for an 11px cell falls back to scrolling, and that scroll opens on the newest week
-  instead of the oldest (on this machine, empty) ones.
+  instead of the oldest (on this machine, empty) ones. Corners are rounded by 24% of the cell rather than a fixed
+  2px, a palette or metric switch cross-fades over 0.18s, hovering brightens a day through `filter: brightness()`
+  (no layout shift, no reflow), and `prefers-reduced-motion` turns the transitions off.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
