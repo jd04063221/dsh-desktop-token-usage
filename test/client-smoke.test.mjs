@@ -1665,9 +1665,14 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
   // box pins its own width so the 50%-offset clamp is exact rather than a guess.
   assert.ok(!styles2.includes('.dtu-heatScroll'), 'the scrolling box is gone')
   const tipRule = (styles2.match(/\.dtu-tipHeat\{([^}]*)\}/) ?? [])[1]
+  assert.ok(tipRule?.includes('top:22px'), 'the box sits just under the month axis')
+  // A flip stays inside only while one anchor can cover the box: this cap is the
+  // caliper. Left-anchored at the half-way column the box ends at 25px + span,
+  // right-anchored it starts at 25px — inside the calendar either way, whatever
+  // width the content asks for.
   assert.ok(
-    tipRule?.includes('width:190px') && tipRule.includes('box-sizing:border-box'),
-    'the heatmap tooltip pins its width, so its clamp cannot be outgrown',
+    tipRule.includes('max-width:calc(50% - 25px)'),
+    'the box may never be wider than the half-span it leans across',
   )
 
   const styles = document.head.children[0].textContent
@@ -1738,13 +1743,36 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
     [today, 'Tokens 200', '轮次 4', '请求 5'],
     'four lines: the date on its own, then one figure per row, like the trend tooltip',
   )
-  // The anchor is the trend chart's rule: the column centre as a fraction of the
-  // plot, clamped so the box can never leave it.
+  // Today is in the last of three columns, so its box hangs off the column's
+  // right edge and grows leftwards — it can never cross the calendar's edge.
   assert.equal(
     tip.props.style.left,
-    'clamp(101px, calc(25px + (100% - 25px) * 0.833333), calc(100% - 101px))',
-    'the last of three columns anchors on that column, clamped to the plot',
+    'calc(25px + (100% - 25px) * 0.833333)',
+    'the box is anchored on the hovered column, not centred on it',
   )
+  assert.equal(
+    tip.props.style.transform,
+    'translateX(-100%)',
+    'a column in the right half grows leftwards, away from the edge it is near',
+  )
+
+  // The leftmost column anchors the other way round: same anchor point, but the
+  // box grows rightwards instead.
+  tip = null
+  findTip(
+    render(
+      driveComponent(
+        heatmapElementOf(record),
+        'first day',
+        // The legend swatches share the class, so the first *calendar* cell is
+        // the one that carries a date (and a hover handler).
+        (tree) => findElement(tree, (el) => el.props?.className === 'dtu-cell' && el.props?.['data-day']),
+      ),
+    ),
+  )
+  assert.ok(tip, 'the leftmost column raises the same box')
+  assert.equal(tip.props.style.left, 'calc(25px + (100% - 25px) * 0.166667)', 'anchored on its own column')
+  assert.equal(tip.props.style.transform, 'none', 'a column in the left half grows rightwards')
 
   // One mount, two steps: hovering raises the box, moving off the cell clears it.
   const heat = heatmapElementOf(record)

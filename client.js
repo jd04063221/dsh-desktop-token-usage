@@ -333,11 +333,12 @@ window.__ModuleLoader__.load({
 .dtu-hitDotEmpty{background:transparent}
 .dtu-cursor{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--dsw-alias-border-l1)}
 .dtu-tip{position:absolute;top:6px;left:0;transform:translateX(-50%);min-width:160px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12px;pointer-events:none;z-index:3}
-/* The heatmap's tooltip pins its own width: the anchor is a 50%-offset clamp, so
-   a box that grew with a long token count could not be clamped exactly — and an
-   inexact clamp is what poked out of the scrolling box. It sits just under the
-   month axis and may hang past the calendar, which clips nothing now. */
-.dtu-tipHeat{top:22px;width:190px;box-sizing:border-box;max-width:calc(100% - 12px)}
+/* The heatmap tooltip leans away from the edge it is near instead of centring on
+   the column. Half the column span is what one anchor can cover, and the caliper
+   below is what makes that exact: left-anchored at the half-way column it ends at
+   25px + span, right-anchored it starts at 25px — inside the calendar either way,
+   whatever the box's width turns out to be. */
+.dtu-tipHeat{top:22px;max-width:calc(50% - 25px)}
 .dtu-tipTitle{font-weight:600;margin-bottom:4px}
 .dtu-tipRow{display:flex;align-items:center;gap:6px}
 .dtu-tipRow b{margin-left:auto;font-weight:600}
@@ -810,12 +811,15 @@ window.__ModuleLoader__.load({
         columns.push({ key: `w${week}`, days, monthLabel })
       }
 
-      // Anchored the way the trend chart anchors its tooltip — a pure share of the
-      // hovered column — and clamped so the box never leaves the calendar. The
-      // 25px is the weekday axis and its gap, which the columns start after; the
-      // 101px is half of the tooltip's fixed 190px plus a 6px margin.
-      const tipLeft = (week) =>
-        'clamp(101px, calc(25px + (100% - 25px) * ' + Number((week + 0.5) / weeks).toFixed(6) + '), calc(100% - 101px))'
+      // The box cannot measure itself, so it never tries to centre: the first half
+      // of the calendar anchors its LEFT edge to the hovered column and grows to
+      // the right, the second half anchors its RIGHT edge and grows to the left.
+      // Either way it stays inside the calendar, and its width stays free to
+      // follow a long token count — a centred clamp has to guess that width, which
+      // is exactly how it used to poke out and raise a scrollbar. The 25px is the
+      // weekday axis and its gap, which the columns start after.
+      const tipLeft = (week) => 'calc(25px + (100% - 25px) * ' + Number((week + 0.5) / weeks).toFixed(6) + ')'
+      const tipFlips = (week) => (week + 0.5) / weeks >= 0.5
 
       const values = entries
         .map((day) => day[metric] ?? 0)
@@ -924,7 +928,14 @@ window.__ModuleLoader__.load({
             hovered
               ? h(
                   'div',
-                  { className: 'dtu-tip dtu-tipHeat', 'data-day': hovered.day, style: { left: tipLeft(hovered.week) } },
+                  {
+                    className: 'dtu-tip dtu-tipHeat',
+                    'data-day': hovered.day,
+                    style: {
+                      left: tipLeft(hovered.week),
+                      transform: tipFlips(hovered.week) ? 'translateX(-100%)' : 'none',
+                    },
+                  },
                   // Four lines, one number each: the date on its own, then the
                   // same label/value row the trend tooltip uses for every figure.
                   h('div', { className: 'dtu-tipTitle' }, hovered.day),
