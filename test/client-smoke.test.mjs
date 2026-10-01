@@ -50,6 +50,14 @@ const React = {
     return [hooks[slot], (next) => { hooks[slot] = next }]
   },
   useEffect() {},
+  // There is no commit phase here, so effects never run — but a component that
+  // reads `ref.current` still needs the object to exist.
+  useRef(initial) {
+    const slot = hookIndex
+    hookIndex += 1
+    if (hooks[slot] === undefined) hooks[slot] = { current: initial }
+    return hooks[slot]
+  },
   useSyncExternalStore(_subscribe, getSnapshot) {
     return getSnapshot()
   },
@@ -1113,6 +1121,65 @@ test('the legacy rebuild matches Host split and ranking semantics', async () => 
   assert.match(collect(drivenTree).join(' '), /最常用供应商/, 'the driven card names the top provider')
 })
 
+test('the legacy rebuild keeps one row for a model its providers spell differently', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  delete payload.groups
+  // The live pair, verbatim: the same model, one provider reporting a bare id
+  // and the other reporting a vendor-qualified one.
+  const bare = [100, 0, 0, 0, 0]
+  const vendored = [200, 0, 0, 0, 0]
+  payload.models = [
+    { route: 'opencode-go/deepseek-v4.1-flash', provider: 'opencode-go', model: 'deepseek-v4.1-flash', buckets: bare, totalTokens: 100 },
+    {
+      route: 'commandcode/deepseek/deepseek-v4.1-flash',
+      provider: 'commandcode',
+      model: 'deepseek/deepseek-v4.1-flash',
+      buckets: vendored,
+      totalTokens: 200,
+    },
+  ]
+  payload.days = [
+    {
+      day: '2026-09-25',
+      buckets: [300, 0, 0, 0, 0],
+      turns: 2,
+      requests: 2,
+      byModel: { 'opencode-go/deepseek-v4.1-flash': bare, 'commandcode/deepseek/deepseek-v4.1-flash': vendored },
+    },
+  ]
+  payload.totals.totalTokens = 300
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const rowsOf = (tree) => {
+    const names = []
+    const shares = []
+    const walk = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(walk)
+      if (node.props?.className === 'dtu-rowName') names.push(collect(node).join(''))
+      if (node.props?.className === 'dtu-rowShare') shares.push(collect(node).join(''))
+      walk(node.children)
+    }
+    walk(tree)
+    return { names, shares }
+  }
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const model = rowsOf(render({ type: main.component, props: main.options.inject() }))
+  assert.deepEqual(model.names, ['deepseek-v4.1-flash'], 'the two spellings are one model row, not two')
+  assert.deepEqual(model.shares, ['100.0%'], 'and that one row carries the tokens of both providers')
+
+  const driven = render(driveComponent(bodyElementOf(record), '拆分口径/按供应商', pickChip('拆分口径', '按供应商')))
+  assert.deepEqual(
+    rowsOf(driven).names,
+    ['commandcode', 'opencode-go'],
+    'the by-provider view still tells whoever served the model apart',
+  )
+})
+
 test('the hit-rate axis handles a flat series and a rateless range', async () => {
   const singleDay = summaryPayload()
   const one = [100, 0, 900, 0, 0]
@@ -1530,6 +1597,69 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
   assert.ok(
     fills.some((fill) => String(fill.props.style.background) === 'var(--dtu-heat-0)'),
     'empty days paint scale step 0, so the lowest step is neither dead nor restyled',
+  )
+
+  // 53 fixed-size weeks do not fit every card, and this machine's activity sits
+  // in the last few of them: a box anchored left shows the empty half and hides
+  // the recent weeks, which is the wrong end for a recent-activity calendar.
+  let scrollBox = null
+  const findScroll = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(findScroll)
+    if (node.props?.className === 'dtu-heatScroll') scrollBox = node
+    findScroll(node.children)
+  }
+  findScroll(tree)
+  assert.ok(scrollBox, 'the calendar keeps its own scroll box')
+  assert.ok(
+    scrollBox.props.ref && typeof scrollBox.props.ref === 'object' && 'current' in scrollBox.props.ref,
+    'the effect needs a ref on that box to jump it to the newest week',
+  )
+  const styles = document.head.children[0].textContent
+  const innerRule = (styles.match(/\.dtu-heatInner\{([^}]*)\}/) ?? [])[1]
+  assert.ok(
+    innerRule?.includes('margin-left:auto'),
+    'a card wider than the calendar anchors it to the right edge, not to the left one',
+  )
+})
+
+test('the footer stacks one fact per line and never splits a quoted term', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const tree = render({ type: main.component, props: main.options.inject() })
+
+  const lines = []
+  const quoted = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-foot') lines.push(...[node.children].flat())
+    if (node.props?.className === 'dtu-nb') quoted.push(collect(node).join(''))
+    walk(node.children)
+  }
+  walk(tree)
+
+  assert.equal(lines.length, 3, 'one fact per line, instead of three ragged wrapping items')
+  assert.deepEqual(
+    quoted,
+    ['「桌面·网页」', '「命令行·机器人」'],
+    'each quoted term is nowrap, so 「 or 」 can never end up alone at a line edge',
+  )
+  assert.match(collect(lines[2]).join(''), /^来源按本地可观测信号推断：/, 'the note still reads as one sentence')
+  assert.match(collect(lines[2]).join(''), /指无客户端的会话。$/, 'and still ends where it used to')
+
+  const styles = document.head.children[0].textContent
+  const footRule = (styles.match(/\.dtu-foot\{([^}]*)\}/) ?? [])[1]
+  assert.ok(footRule?.includes('flex-direction:column'), 'the rule stacks the three facts')
+  assert.ok(!footRule.includes('flex-wrap'), 'wrap is what produced the ragged line breaks')
+  assert.ok(!styles.includes('max-width:360px'), 'the arbitrary 360px clamp on the note is gone')
+  assert.ok(
+    (styles.match(/\.dtu-nb\{([^}]*)\}/) ?? [])[1]?.includes('white-space:nowrap'),
+    'and the guard class the markup relies on really exists',
   )
 })
 

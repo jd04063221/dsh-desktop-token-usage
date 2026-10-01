@@ -282,7 +282,7 @@ window.__ModuleLoader__.load({
 .dtu-heatHead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dtu-heatControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .dtu-heatScroll{overflow-x:auto;padding-bottom:4px}
-.dtu-heatInner{width:max-content}
+.dtu-heatInner{width:max-content;margin-left:auto}
 .dtu-heatMonths{display:flex;gap:3px;height:15px;margin-bottom:4px;color:var(--dsw-alias-label-secondary);font-size:10.5px}
 .dtu-monthSpace{width:22px;flex:none}
 .dtu-monthCell{width:11px;flex:none;white-space:nowrap;overflow:visible}
@@ -337,8 +337,11 @@ window.__ModuleLoader__.load({
 .dtu-rowShare{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .dtu-rowTotal{font-variant-numeric:tabular-nums;font-weight:600}
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
-.dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-wrap:wrap;gap:12px}
-.dtu-footEntry{min-width:0;max-width:360px}
+/* One fact per line: three flex items of very different lengths read as a ragged
+   paragraph when they wrap, and the long one broke mid-sentence inside 「…」. */
+.dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-direction:column;gap:3px;line-height:1.6}
+.dtu-footEntry{min-width:0}
+.dtu-nb{white-space:nowrap}
 .dtu-footTop{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-footValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
 .dtu-footRow{display:flex;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
@@ -736,6 +739,7 @@ window.__ModuleLoader__.load({
      */
     function Heatmap({ heatmap, days }) {
       const [chosen, setMetric] = React.useState(null)
+      const scrollRef = React.useRef(null)
       // A Host older than this Client answers without `heatmap`; the requested
       // range's days still fill the calendar rather than leaving it blank.
       const entries = heatmap
@@ -757,6 +761,16 @@ window.__ModuleLoader__.load({
       const tokenDays = entries.filter((day) => (day.tokens ?? 0) > 0).length
       const turnDays = entries.filter((day) => (day.turns ?? 0) > 0).length
       const metric = chosen ?? (tokenDays >= turnDays ? 'tokens' : 'turns')
+
+      // 53 fixed-size weeks do not fit every card, and a scroll box that starts
+      // at the oldest week hides the recent ones behind the empty half of the
+      // calendar — exactly the wrong end for a "recent activity" heatmap. Jump
+      // to the newest week on mount and whenever the metric changes; the column
+      // count never moves, so nothing else can shift the anchor.
+      React.useEffect(() => {
+        const node = scrollRef.current
+        if (node) node.scrollLeft = node.scrollWidth
+      }, [metric])
 
       const columns = []
       let previousMonth = -1
@@ -826,7 +840,7 @@ window.__ModuleLoader__.load({
         ),
         h(
           'div',
-          { className: 'dtu-heatScroll' },
+          { className: 'dtu-heatScroll', ref: scrollRef },
           h(
             'div',
             { className: 'dtu-heatInner' },
@@ -1213,7 +1227,17 @@ window.__ModuleLoader__.load({
      * bar and an empty breakdown. Mirrors the Host's split (provider/model of the
      * route, provider = model = route without a slash) and its ranking:
      * totalTokens desc, then key asc.
+     *
+     * The by-model key also mirrors the Host's `modelKeyOf`: one model reaches
+     * us both as `deepseek-v4.1-flash` and as `deepseek/deepseek-v4.1-flash`,
+     * and keying on the raw half would split it into two rows.
      */
+    function modelKeyOf(model) {
+      const text = String(model ?? '')
+      const tail = text.slice(text.lastIndexOf('/') + 1)
+      return tail === '' ? text : tail
+    }
+
     function normalizeGrouping(data) {
       if (!data) return { days: [], groups: null }
       if (!Array.isArray(data.days)) return { days: data.days, groups: data.groups ?? null }
@@ -1227,9 +1251,9 @@ window.__ModuleLoader__.load({
       }
       const keysOf = (route) => {
         const known = routeKeys.get(route)
-        if (known) return [known.model, known.provider]
+        if (known) return [modelKeyOf(known.model), known.provider]
         const slash = route.indexOf('/')
-        return slash > 0 ? [route.slice(slash + 1), route.slice(0, slash)] : [route, route]
+        return slash > 0 ? [modelKeyOf(route.slice(slash + 1)), route.slice(0, slash)] : [route, route]
       }
       const groupMaps = { model: new Map(), provider: new Map() }
       const groupedDays = days.map((day) => {
@@ -1463,7 +1487,13 @@ window.__ModuleLoader__.load({
             h(
               'span',
               { className: 'dtu-footEntry' },
-              '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归「桌面·网页」；「命令行·机器人」指无客户端的会话。',
+              '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归',
+              // Keep each 「…」 term whole; CJK text may otherwise break between
+              // any two characters, leaving 「 or 」 dangling at a line edge.
+              h('span', { className: 'dtu-nb' }, '「桌面·网页」'),
+              '；',
+              h('span', { className: 'dtu-nb' }, '「命令行·机器人」'),
+              '指无客户端的会话。',
             ),
           ),
         ),
