@@ -36,8 +36,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **One model, one row**: providers disagree about model ids — `commandcode` reports `deepseek/deepseek-v4.1-flash` where
   `opencode-go` reports `deepseek-v4.1-flash`, and the by-model view listed that one model twice. The by-model key is now
   the id's trailing segment; the by-provider view still tells the two apart.
-- **The activity heatmap no longer leans left**: the fixed 53 weeks are right-aligned in the card, and when they do not
-  fit, the calendar opens on the newest week instead of the oldest (on this machine, empty) ones.
+- **The activity heatmap fills its row**: the fixed 53 weeks no longer stop part-way across the card. All 53 columns now
+  share the available width on one 11px basis (cells stay square, and the month axis and weekday bands stretch with
+  them); only a card too narrow for an 11px cell falls back to scrolling, and that scroll opens on the newest week
+  instead of the oldest (on this machine, empty) ones.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
