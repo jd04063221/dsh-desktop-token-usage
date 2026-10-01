@@ -25,6 +25,10 @@ window.__ModuleLoader__.load({
     const OTHER = 'var(--dtu-other)'
     /** The folded bucket key: its label is 其他 everywhere. */
     const OTHER_KEY = '__other__'
+    /** Ranks beyond this fold into the grey bucket. */
+    const TOP_N = 5
+    /** Series colour for a rank; ranks >= TOP_N render as the folded grey. */
+    const seriesAt = (index) => (index < TOP_N ? SERIES[index] : OTHER)
     /** Quiet refresh period; keeps hour windows honest without polling hard. */
     const REFRESH_MS = 5 * 60_000
 
@@ -290,7 +294,8 @@ window.__ModuleLoader__.load({
 .dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.dtu-trend{position:relative;padding-bottom:20px}
+.dtu-trend{position:relative;--dtu-plot-l:52px;--dtu-plot-r:44px}
+.dtu-plot{position:relative;padding-bottom:20px}
 .dtu-trendHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .dtu-chartBars{position:relative;height:190px;margin-top:4px}
 .dtu-chartHit{position:relative;height:44px;margin-top:16px}
@@ -298,9 +303,9 @@ window.__ModuleLoader__.load({
 .dtu-axisHit span{position:absolute;right:6px;transform:translateY(-50%)}
 /* The curve, the dots and the hover line share the bars' plot insets (52/44),
    so one percentage scale positions all three in the same coordinate system. */
-.dtu-hitPlot{position:absolute;left:52px;right:44px;top:0;bottom:0;pointer-events:none}
-.dtu-hitPlot svg{position:absolute;left:0;right:0;top:0;width:100%;height:44px}
-.dtu-plotLine{position:absolute;left:52px;right:44px;top:0;bottom:20px;pointer-events:none}
+.dtu-hitPlot{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0;pointer-events:none}
+.dtu-hitPlot svg{position:absolute;left:0;right:0;top:0;width:100%;height:100%}
+.dtu-plotLine{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:20px;pointer-events:none}
 .dtu-lineKey{display:inline-block;width:14px;height:2px;background:var(--dtu-hit);border-radius:2px;margin-right:5px;vertical-align:middle}
 .dtu-hitDot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--dtu-hit);transform:translate(-50%,-50%);pointer-events:auto}
 .dtu-hitDotEmpty{background:transparent}
@@ -309,15 +314,15 @@ window.__ModuleLoader__.load({
 .dtu-tipTitle{font-weight:600;margin-bottom:4px}
 .dtu-tipRow{display:flex;align-items:center;gap:6px}
 .dtu-tipRow b{margin-left:auto;font-weight:600}
-.dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:0;display:flex;align-items:flex-end;gap:2px}
+.dtu-bars{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
 .dtu-seg{width:100%}
-.dtu-axisX{position:absolute;left:52px;right:44px;bottom:2px;height:14px;color:var(--dsw-alias-label-secondary);font-size:11px}
+.dtu-axisX{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);bottom:2px;height:14px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisX span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .dtu-axisY{position:absolute;left:0;top:0;bottom:0;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisY span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
-.dtu-grid{position:absolute;left:52px;right:44px;top:0;bottom:0}
+.dtu-grid{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0}
 .dtu-gridline{position:absolute;left:0;right:0;border-top:1px solid var(--dsw-alias-border-l1);opacity:.6}
 .dtu-models{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:20px;align-items:start}
 .dtu-donut{position:relative;width:100%;max-width:240px;aspect-ratio:1/1;margin:0 auto}
@@ -347,6 +352,7 @@ window.__ModuleLoader__.load({
 .dtu-field{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
 .dtu-input{width:96px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary);border-radius:6px;padding:4px 8px;font:inherit;text-align:right}
 .dtu-input:disabled{opacity:.55}
+.dtu-select{width:190px;text-align:left}
 .dtu-formActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .dtu-save{appearance:none;border:1px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font:inherit;font-weight:600;padding:5px 16px;border-radius:8px;cursor:pointer}
 .dtu-save:disabled{opacity:.5;cursor:default}
@@ -656,7 +662,7 @@ window.__ModuleLoader__.load({
           h(
             'select',
             {
-              className: 'dtu-input',
+              className: 'dtu-input dtu-select',
               value: values.groupBy,
               disabled: locked,
               onChange: (event) => setDraft({ ...values, groupBy: event.target.value }),
@@ -673,7 +679,7 @@ window.__ModuleLoader__.load({
           h(
             'select',
             {
-              className: 'dtu-input',
+              className: 'dtu-input dtu-select',
               value: values.palette,
               disabled: locked,
               onChange: (event) => setDraft({ ...values, palette: event.target.value }),
@@ -856,12 +862,10 @@ window.__ModuleLoader__.load({
                             ? `${day.key} · ${grouped(entry.tokens)} tokens · ${entry.turns} 轮 · ${entry.requests} 次请求`
                             : day.key,
                         },
-                        levelOf(value) > 0
-                          ? h('span', {
-                              className: 'dtu-cellFill',
-                              style: { background: 'var(--dtu-heat-' + levelOf(value) + ')' },
-                            })
-                          : null,
+                        h('span', {
+                          className: 'dtu-cellFill',
+                          style: { background: 'var(--dtu-heat-' + levelOf(value) + ')' },
+                        }),
                       )
                     }),
                   ),
@@ -959,8 +963,9 @@ window.__ModuleLoader__.load({
       const [hover, setHover] = React.useState(null)
       const active = groupBy === 'both' ? mode : groupBy
       const entries = (groups && groups[active]) || []
-      const top = entries.slice(0, 5)
-      const colorOf = new Map(top.map((entry, index) => [entry.key, SERIES[index % SERIES.length]]))
+      const top = entries.slice(0, TOP_N)
+      const colorOf = new Map(top.map((entry, index) => [entry.key, seriesAt(index)]))
+      const segmentColor = (key) => (key === OTHER_KEY ? OTHER : colorOf.get(key) ?? OTHER)
       const columns = days.map((day) => {
         const grouped = (day.byGroup && day.byGroup[active]) || {}
         const total = totalOf(day.buckets)
@@ -983,6 +988,9 @@ window.__ModuleLoader__.load({
           ? columns.map((_, index) => index)
           : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
       const hovered = hover === null ? null : columns[hover]
+      // Centred on the cursor, the first/last column's tip would hang past
+      // .dtu-root's overflow and scroll the panel sideways — clamp the anchor.
+      const tipAnchor = hovered === null ? null : Math.min(92, Math.max(8, axisX(hover)))
       return h(
         'div',
         { className: 'dtu-trend' },
@@ -1000,7 +1008,7 @@ window.__ModuleLoader__.load({
           top.map((entry) =>
             h(
               'span',
-              { key: entry.key, title: entry.key },
+              { key: entry.key },
               h('span', { className: 'dtu-dot', style: { background: colorOf.get(entry.key) } }),
               entry.key,
             ),
@@ -1010,97 +1018,98 @@ window.__ModuleLoader__.load({
         ),
         h(
           'div',
-          { className: 'dtu-chartBars' },
+          { className: 'dtu-plot' },
           h(
             'div',
-            { className: 'dtu-axisY' },
-            [0, 0.25, 0.5, 0.75, 1].map((tick) =>
-              h('span', { key: tick, style: { top: tick * 100 + '%' } }, compact(max * (1 - tick))),
+            { className: 'dtu-chartBars' },
+            h(
+              'div',
+              { className: 'dtu-axisY' },
+              [0, 0.25, 0.5, 0.75, 1].map((tick) =>
+                h('span', { key: tick, style: { top: tick * 100 + '%' } }, compact(max * (1 - tick))),
+              ),
             ),
-          ),
-          h(
-            'div',
-            { className: 'dtu-grid' },
-            [0, 0.25, 0.5, 0.75, 1].map((tick) =>
-              h('div', { key: tick, className: 'dtu-gridline', style: { top: tick * 100 + '%' } }),
+            h(
+              'div',
+              { className: 'dtu-grid' },
+              [0, 0.25, 0.5, 0.75, 1].map((tick) =>
+                h('div', { key: tick, className: 'dtu-gridline', style: { top: tick * 100 + '%' } }),
+              ),
             ),
-          ),
-          h(
-            'div',
-            { className: 'dtu-bars' },
-            columns.map((column, index) =>
-              h(
-                'div',
-                {
-                  key: column.day,
-                  className: 'dtu-col',
-                  'data-day': column.day,
-                  onMouseEnter: () => setHover(index),
-                  onMouseLeave: () => setHover(null),
-                },
-                column.segments.map((segment, segmentIndex) =>
-                  h('div', {
-                    key: segment.key + '-' + segmentIndex,
-                    className: 'dtu-seg',
-                    style: {
-                      height: (segment.value / max) * 100 + '%',
-                      background: segment.key === OTHER_KEY ? OTHER : colorOf.get(segment.key),
-                    },
-                  }),
+            h(
+              'div',
+              { className: 'dtu-bars' },
+              columns.map((column, index) =>
+                h(
+                  'div',
+                  {
+                    key: column.day,
+                    className: 'dtu-col',
+                    'data-day': column.day,
+                    onMouseEnter: () => setHover(index),
+                    onMouseLeave: () => setHover(null),
+                  },
+                  column.segments.map((segment, segmentIndex) =>
+                    h('div', {
+                      key: segment.key + '-' + segmentIndex,
+                      className: 'dtu-seg',
+                      style: {
+                        height: (segment.value / max) * 100 + '%',
+                        background: segmentColor(segment.key),
+                      },
+                    }),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        h(
-          'div',
-          { className: 'dtu-chartHit' },
           h(
             'div',
-            { className: 'dtu-axisHit' },
-            bandTicks.map((tick) => h('span', { key: tick, style: { top: hitY(tick / 100) + '%' } }, tick.toFixed(1) + '%')),
-          ),
-          h(
-            'div',
-            { className: 'dtu-hitPlot' },
+            { className: 'dtu-chartHit' },
             h(
-              'svg',
-              { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
-              h('path', {
-                d: hitPath,
-                fill: 'none',
-                stroke: 'var(--dtu-hit)',
-                strokeWidth: 1.5,
-                strokeLinecap: 'round',
-                vectorEffect: 'non-scaling-stroke',
-              }),
+              'div',
+              { className: 'dtu-axisHit' },
+              bandTicks.map((tick) => h('span', { key: tick, style: { top: hitY(tick / 100) + '%' } }, tick.toFixed(1) + '%')),
             ),
-            columns.map((column, index) =>
-              h('span', {
-                key: column.day,
-                className: column.hit === null ? 'dtu-hitDot dtu-hitDotEmpty' : 'dtu-hitDot',
-                style: { left: axisX(index) + '%', top: column.hit === null ? '100%' : hitY(column.hit) + '%' },
-                onMouseEnter: () => setHover(index),
-                onMouseLeave: () => setHover(null),
-              }),
+            h(
+              'div',
+              { className: 'dtu-hitPlot' },
+              h(
+                'svg',
+                { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
+                h('path', {
+                  d: hitPath,
+                  fill: 'none',
+                  stroke: 'var(--dtu-hit)',
+                  strokeWidth: 1.5,
+                  strokeLinecap: 'round',
+                  vectorEffect: 'non-scaling-stroke',
+                }),
+              ),
+              columns.map((column, index) =>
+                h('span', {
+                  key: column.day,
+                  className: column.hit === null ? 'dtu-hitDot dtu-hitDotEmpty' : 'dtu-hitDot',
+                  style: { left: axisX(index) + '%', top: column.hit === null ? '100%' : hitY(column.hit) + '%' },
+                  onMouseEnter: () => setHover(index),
+                  onMouseLeave: () => setHover(null),
+                }),
+              ),
             ),
           ),
-        ),
-        h(
-          'div',
-          { className: 'dtu-axisX' },
-          labelled.map((index) => h('span', { key: index, style: { left: axisX(index) + '%' } }, columns[index].day.slice(5))),
-        ),
-        hovered
-          ? h(
-              'div',
-              { className: 'dtu-plotLine' },
-              h(
+          h(
+            'div',
+            { className: 'dtu-axisX' },
+            labelled.map((index) => h('span', { key: index, style: { left: axisX(index) + '%' } }, columns[index].day.slice(5))),
+          ),
+          hovered
+            ? h(
                 'div',
-                { className: 'dtu-cursor', style: { left: axisX(hover) + '%' } },
+                { className: 'dtu-plotLine' },
+                h('div', { className: 'dtu-cursor', style: { left: axisX(hover) + '%' } }),
                 h(
                   'div',
-                  { className: 'dtu-tip', 'data-day': hovered.day },
+                  { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipAnchor + '%' } },
                   h('div', { className: 'dtu-tipTitle' }, hovered.day + ' · ' + grouped(hovered.total) + ' tokens'),
                   hovered.segments
                     .filter((segment) => segment.value > 0)
@@ -1110,7 +1119,7 @@ window.__ModuleLoader__.load({
                         { key: segment.key, className: 'dtu-tipRow' },
                         h('span', {
                           className: 'dtu-dot',
-                          style: { background: segment.key === OTHER_KEY ? OTHER : colorOf.get(segment.key) },
+                          style: { background: segmentColor(segment.key) },
                         }),
                         segment.key === OTHER_KEY ? '其他' : segment.key,
                         h('b', null, compact(segment.value)),
@@ -1118,9 +1127,9 @@ window.__ModuleLoader__.load({
                     ),
                   h('div', { className: 'dtu-tipRow' }, '缓存命中率', h('b', null, hovered.hit === null ? '—' : percent(hovered.hit))),
                 ),
-              ),
-            )
-          : null,
+              )
+            : null,
+        ),
       )
     }
 
@@ -1131,7 +1140,7 @@ window.__ModuleLoader__.load({
       const slices = entries.map((entry, index) => {
         const share = totalTokens > 0 ? entry.totalTokens / totalTokens : 0
         const length = share * circumference
-        const slice = { entry, share, length, offset, color: index < 5 ? SERIES[index] : OTHER }
+        const slice = { entry, share, length, offset, color: seriesAt(index) }
         offset += length
         return slice
       })
@@ -1385,7 +1394,7 @@ window.__ModuleLoader__.load({
                     h(
                       'div',
                       { className: 'dtu-rowName', title: entry.key },
-                      h('span', { className: 'dtu-dot', style: { background: index < 5 ? SERIES[index] : OTHER } }),
+                      h('span', { className: 'dtu-dot', style: { background: seriesAt(index) } }),
                       entry.key,
                     ),
                     h('div', { className: 'dtu-rowTotal' }, compact(entry.totalTokens)),

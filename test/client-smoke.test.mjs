@@ -121,6 +121,80 @@ function collect(node, out = []) {
   return out
 }
 
+// ── driving components directly ─────────────────────────────────────────────
+
+/** Walk an element tree (props — not rendered nodes) for a predicate. */
+function findElement(node, predicate) {
+  if (node === null || node === undefined || typeof node !== 'object') return null
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const hit = findElement(child, predicate)
+      if (hit) return hit
+    }
+    return null
+  }
+  // Elements carry .type, rendered nodes carry .tag — both carry .props.
+  if (node.props !== undefined && predicate(node)) return node
+  if (node.props) {
+    // Sections carry their switch in the "extra" prop, not in children.
+    for (const value of Object.values(node.props)) {
+      const hit = findElement(value, predicate)
+      if (hit) return hit
+    }
+  }
+  // Rendered nodes keep the expanded subtree in .children (the props copy is
+  // the pre-expansion element tree, where ChipGroup is still folded).
+  if (node.children !== undefined) return findElement(node.children, predicate)
+  return null
+}
+
+/** The DashboardBody element behind the registered main slot. */
+function bodyElementOf(record) {
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const dash = main.component(main.options.inject())
+  return dash.props.children
+}
+
+/** The TrendSection element inside that body (identified by its three props). */
+function trendElementOf(record) {
+  const body = bodyElementOf(record)
+  hooks = []
+  hookIndex = 0
+  return findElement(
+    body.type(body.props),
+    (el) => typeof el.type === 'function' && el.props?.days && el.props?.groups && el.props?.groupBy !== undefined,
+  )
+}
+
+/** Fire a handler on the element tree, then replay the component with the hook
+ *  state it just set — the fake React keeps hooks only across back-to-back
+ *  invocations of the same component, which is exactly one re-render. */
+function driveComponent(element, label, pick) {
+  hooks = []
+  hookIndex = 0
+  const first = element.type(element.props)
+  const target = pick(first)
+  if (!target) throw new Error(`drive target not found: ${label}`)
+  const fire = target.props.onClick ?? target.props.onMouseEnter
+  fire()
+  hookIndex = 0
+  return element.type(element.props)
+}
+
+const pickChip = (groupLabel, itemLabel) => (tree) => {
+  // In an element tree the switch is an unexpanded ChipGroup element (its
+  // "label" prop names it); ChipGroup owns no hooks, so expand it directly.
+  const group = findElement(tree, (el) => typeof el.type === 'function' && el.props?.label === groupLabel)
+  if (!group) return null
+  return findElement(
+    group.type(group.props),
+    (el) => el.props?.className === 'dtu-chip' && el.props?.children === itemLabel,
+  )
+}
+
+const pickColumn = (day) => (tree) =>
+  findElement(tree, (el) => el.props?.className === 'dtu-col' && el.props?.['data-day'] === day)
+
 // ── loading the Client half ─────────────────────────────────────────────────
 
 function loadClient() {
@@ -566,6 +640,14 @@ test('the configuration card renders the windows and saves them to the Host', as
   assert.equal(inputs[0].props.disabled, false)
   assert.equal(selects.length, 2, 'one enum field per new option')
   assert.deepEqual(selects.map((select) => select.props.value), ['both', 'primer'])
+  assert.ok(
+    selects.every((select) => String(select.props.className).includes('dtu-select')),
+    'both selects must carry the wide-select class or the labels get clipped',
+  )
+  assert.ok(
+    document.head.children[0].textContent.includes('.dtu-select{width:190px;text-align:left}'),
+    'the wide-select rule must exist',
+  )
 
   const button = find(tree, (node) => node.tag === 'button' && node.props.className === 'dtu-save')
   assert.ok(button, 'the card must have a save control')
@@ -623,7 +705,41 @@ test('the breakdown offers its own chip and the last stat card speaks its langua
     walk(node.children)
   }
   walk(tree)
-  assert.ok(labels.includes('按供应商'), 'the breakdown section must offer the provider switch')
+  // Scoped: each section carries its own switch, and nothing else does.
+  const sectionByTitle = (node, title) => {
+    if (!node || typeof node !== 'object') return null
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const hit = sectionByTitle(child, title)
+        if (hit) return hit
+      }
+      return null
+    }
+    if (node.props?.className === 'dtu-section' && collect(node).includes(title)) return node
+    return sectionByTitle(node.children, title)
+  }
+  const chipsIn = (section) => {
+    const found = []
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(visit)
+      if (node.props?.className === 'dtu-chip') found.push(collect(node).join(''))
+      visit(node.children)
+    }
+    visit(section)
+    return found
+  }
+  const breakdownSection = sectionByTitle(tree, '用量拆分')
+  assert.ok(breakdownSection, 'the breakdown section must exist')
+  assert.ok(chipsIn(breakdownSection).includes('按供应商'), 'the breakdown section must offer the provider switch')
+  const trendSection = sectionByTitle(tree, '按天 Token 趋势')
+  assert.ok(trendSection, 'the trend section must exist')
+  assert.ok(chipsIn(trendSection).includes('按供应商'), 'the trend section carries its own switch')
+  assert.equal(
+    labels.filter((label) => label === '按供应商').length,
+    2,
+    'groupBy=both shows exactly one provider switch per section, nowhere else',
+  )
 })
 
 test('a locked groupBy hides both switches and the breakdown follows the lock', async () => {
@@ -687,6 +803,347 @@ test('an older Host without groups still fills the breakdown and stacks named ba
     named.length > 0,
     'bars must keep a real series colour — folding everything into 其他 is the failure mode',
   )
+})
+
+test('the trend chip re-keys the stack and legend to providers', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const driven = driveComponent(trendElementOf(record), '统计口径/按供应商', pickChip('统计口径', '按供应商'))
+  const tree = render(driven)
+
+  const legendNodes = []
+  const collectLegends = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectLegends)
+    if (node.props?.className === 'dtu-legend') legendNodes.push(node)
+    collectLegends(node.children)
+  }
+  collectLegends(tree)
+  const legend = legendNodes.find((node) => collect(node).includes('其他'))
+  assert.ok(legend, 'the trend must still carry its legend after the switch')
+  const legendTexts = collect(legend)
+  assert.ok(legendTexts.includes('p') && legendTexts.includes('q'), 'the legend re-keys to provider ids')
+  assert.ok(!legendTexts.includes('a') && !legendTexts.includes('b'), 'model ids must leave the legend')
+
+  const segKeys = []
+  const segColors = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-seg') {
+      segKeys.push(String(node.props.key))
+      segColors.push(node.props.style?.background)
+    }
+    walk(node.children)
+  }
+  walk(tree)
+  assert.ok(segKeys.length > 0 && segKeys.every((key) => /^[pq]-/.test(key)), 'every segment is keyed by provider')
+  assert.ok(
+    segColors.includes('var(--dtu-s1)') && segColors.includes('var(--dtu-s2)'),
+    'the two providers take the first two series colours',
+  )
+})
+
+test('the breakdown chip drives its rows and the stat card', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const driven = driveComponent(bodyElementOf(record), '拆分口径/按供应商', pickChip('拆分口径', '按供应商'))
+  const tree = render(driven)
+  assert.match(collect(tree).join(' '), /最常用供应商/, 'the stat card follows the driven mode')
+  const rowNames = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-rowName') rowNames.push(collect(node).join(''))
+    walk(node.children)
+  }
+  walk(tree)
+  assert.deepEqual(rowNames, ['p', 'q'], 'the rows follow the driven mode')
+
+  // The chip itself reflects the driven state: 按供应商 pressed, 按模型 released.
+  const pressed = []
+  const group = findElement(tree, (el) => el.props?.['aria-label'] === '拆分口径')
+  assert.ok(group, 'the breakdown switch must still render after the drive')
+  const collectPressed = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectPressed)
+    if (node.props?.className === 'dtu-chip') pressed.push([collect(node).join(''), node.props['aria-pressed']])
+    collectPressed(node.children)
+  }
+  collectPressed(group)
+  assert.deepEqual(pressed, [['按模型', false], ['按供应商', true]], 'the chip shows the driven selection')
+})
+
+test('beyond five groups the stack folds the tail into 其他', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  const keys = ['a', 'b', 'c', 'd', 'e', 'f']
+  const sizes = [5000, 4000, 3000, 2000, 1000, 500]
+  const modelBuckets = Object.fromEntries(keys.map((key, index) => [key, [sizes[index], 0, 0, 0, 0]]))
+  payload.groups = {
+    model: keys.map((key, index) => ({ key, buckets: [sizes[index], 0, 0, 0, 0], totalTokens: sizes[index] })),
+    provider: [{ key: 'p', buckets: [15500, 0, 0, 0, 0], totalTokens: 15500 }],
+  }
+  payload.days = [
+    {
+      day: '2026-09-25',
+      buckets: [15500, 0, 0, 0, 0],
+      turns: 1,
+      requests: 1,
+      byModel: Object.fromEntries(keys.map((key, index) => [`p/${key}`, [sizes[index], 0, 0, 0, 0]])),
+      byGroup: { model: modelBuckets, provider: { p: [15500, 0, 0, 0, 0] } },
+    },
+  ]
+  payload.totals.totalTokens = 15500
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+
+  const tree = render({ type: main.component, props: main.options.inject() })
+  // (1) the6th group folds: a grey segment must exist.
+  const segColors = []
+  // (4) beyond five, the donut ring and the list dot go grey too.
+  const donutColors = []
+  const rowDots = []
+  let currentRow = null
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-seg') segColors.push(node.props.style?.background)
+    if (node.tag === 'circle' && node.props.stroke) donutColors.push(node.props.stroke)
+    if (node.props?.className === 'dtu-row') currentRow = []
+    if (node.props?.className === 'dtu-dot' && currentRow) rowDots.push(node.props.style?.background)
+    if (node.props?.className === 'dtu-rowName' && currentRow) currentRow.push(collect(node).join(''))
+    walk(node.children)
+    if (node.props?.className === 'dtu-row') currentRow = null
+  }
+  walk(tree)
+  assert.ok(segColors.includes('var(--dtu-other)'), 'the6th group must fold into the grey bucket')
+  assert.ok(donutColors.includes('var(--dtu-other)'), 'the donut ring greys out beyond five slices')
+  assert.equal(
+    rowDots.filter((color) => color === 'var(--dtu-other)').length,
+    1,
+    'exactly the sixth list row paints grey',
+  )
+
+  // (2) the legend's 其他 dot is the grey one.
+  const legendNodes = []
+  const collectLegends = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectLegends)
+    if (node.props?.className === 'dtu-legend') legendNodes.push(node)
+    collectLegends(node.children)
+  }
+  collectLegends(tree)
+  const legend = legendNodes.find((node) => collect(node).includes('其他'))
+  assert.ok(legend, 'the legend must carry the folded key')
+  let legendGrey = false
+  const scanLegend = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(scanLegend)
+    if (node.props?.className === 'dtu-dot' && node.props.style?.background === 'var(--dtu-other)') legendGrey = true
+    scanLegend(node.children)
+  }
+  scanLegend(legend)
+  assert.ok(legendGrey, 'the legend draws 其他 with the grey dot')
+
+  // (3) the tooltip spells the folded row and its value.
+  const driven = driveComponent(trendElementOf(record), 'column 2026-09-25', pickColumn('2026-09-25'))
+  const hoverTree = render(driven)
+  const tips = []
+  const findTips = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(findTips)
+    if (node.props?.className === 'dtu-tip') tips.push(node)
+    findTips(node.children)
+  }
+  findTips(hoverTree)
+  assert.equal(tips.length, 1, 'hovering the day must show its detail tooltip')
+  const tipTexts = collect(tips[0])
+  assert.ok(tipTexts.includes('其他'), 'the detail rows must name the folded bucket')
+  assert.ok(tipTexts.includes('500'), 'and show the folded value')
+})
+
+test('the rendered hit rate matches the Host formula, cache writes included', async () => {
+  const { hitRateOf } = await import('../lib/session-usage.js')
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  const dayOf = (name, buckets) => ({
+    day: name,
+    buckets,
+    turns: 1,
+    requests: 1,
+    byModel: { 'p/a': buckets },
+    byGroup: { model: { a: buckets }, provider: { p: buckets } },
+  })
+  const written = [100, 0, 900, 100, 0]
+  payload.days = [dayOf('2026-09-21', written), dayOf('2026-09-22', [0, 0, 0, 0, 0])]
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  // Hand check: 900 / (900 + 100 uncached + 100 cacheWrite) = 81.818…%.
+  const expected = (hitRateOf(written) * 100).toFixed(1) + '%'
+  assert.equal(expected, '81.8%')
+
+  const shown = (day) => {
+    const driven = driveComponent(trendElementOf(record), `column ${day}`, pickColumn(day))
+    const tips = []
+    const walk = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(walk)
+      if (node.props?.className === 'dtu-tip') tips.push(node)
+      walk(node.children)
+    }
+    walk(render(driven))
+    assert.equal(tips.length, 1, `expected one tooltip for ${day}`)
+    return collect(tips[0])
+  }
+  const withWrite = shown('2026-09-21')
+  assert.ok(withWrite.includes('缓存命中率'), 'the tooltip must carry the rate row')
+  assert.ok(withWrite.includes(expected), `the rendered rate must equal the Host hitRateOf, got: ${withWrite.join(' ')}`)
+  const empty = shown('2026-09-22')
+  assert.ok(empty.includes('—'), 'a day with no prompt tokens renders an em dash, not a fake 0%')
+})
+
+test('the legacy rebuild matches Host split and ranking semantics', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  delete payload.groups
+  const pShared = [100, 0, 0, 0, 0]
+  const qShared = [200, 0, 0, 0, 0]
+  const pSolo = [150, 0, 0, 0, 0]
+  const stray = [150, 0, 0, 0, 0]
+  payload.models = [
+    { route: 'p/shared', provider: 'p', model: 'shared', buckets: pShared, totalTokens: 100 },
+    { route: 'q/shared', provider: 'q', model: 'shared', buckets: qShared, totalTokens: 200 },
+    { route: 'p/solo', provider: 'p', model: 'solo', buckets: pSolo, totalTokens: 150 },
+    { route: 'unknown', provider: 'unknown', model: 'unknown', buckets: stray, totalTokens: 150 },
+  ]
+  payload.days = [
+    {
+      day: '2026-09-25',
+      buckets: [600, 0, 0, 0, 0],
+      turns: 4,
+      requests: 4,
+      byModel: { 'p/shared': pShared, 'q/shared': qShared, 'p/solo': pSolo, unknown: stray },
+    },
+  ]
+  payload.totals.totalTokens = 600
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const rowsOf = (tree) => {
+    const names = []
+    const shares = []
+    const walk = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(walk)
+      if (node.props?.className === 'dtu-rowName') names.push(collect(node).join(''))
+      if (node.props?.className === 'dtu-rowShare') shares.push(collect(node).join(''))
+      walk(node.children)
+    }
+    walk(tree)
+    return { names, shares }
+  }
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const model = rowsOf(render({ type: main.component, props: main.options.inject() }))
+  assert.deepEqual(
+    model.names,
+    ['shared', 'solo', 'unknown'],
+    'same-named models merge across providers; a slashless route becomes its own key',
+  )
+  assert.deepEqual(model.shares, ['50.0%', '25.0%', '25.0%'], 'the 150/150 tie breaks by key asc: solo before unknown')
+
+  const drivenTree = render(
+    driveComponent(bodyElementOf(record), '拆分口径/按供应商', pickChip('拆分口径', '按供应商')),
+  )
+  const provider = rowsOf(drivenTree)
+  assert.deepEqual(provider.names, ['p', 'q', 'unknown'], 'providers rank by their own rebuilt totals')
+  assert.deepEqual(provider.shares, ['41.7%', '33.3%', '25.0%'], '250/200/150 of 600')
+  assert.match(collect(drivenTree).join(' '), /最常用供应商/, 'the driven card names the top provider')
+})
+
+test('the hit-rate axis handles a flat series and a rateless range', async () => {
+  const singleDay = summaryPayload()
+  const one = [100, 0, 900, 0, 0]
+  singleDay.days = [
+    { day: '2026-09-25', buckets: one, turns: 1, requests: 1, byModel: { 'p/a': one }, byGroup: { model: { a: one }, provider: { p: one } } },
+  ]
+  const flat = await renderTrend(singleDay)
+  // one rate: min = max = 90 -> +/-1pp -> 89.0 / 90.0 / 91.0
+  for (const tick of ['89.0%', '90.0%', '91.0%']) {
+    assert.ok(flat.texts.includes(tick), `a single rate gets ±1pp of headroom, expected ${tick}`)
+  }
+
+  const zero = (name) => ({
+    day: name,
+    buckets: [0, 0, 0, 0, 0],
+    turns: 0,
+    requests: 0,
+    byModel: {},
+    byGroup: { model: {}, provider: {} },
+  })
+  const rateless = summaryPayload()
+  rateless.days = [zero('2026-09-24'), zero('2026-09-25')]
+  const empty = await renderTrend(rateless)
+  // no rate at all: fall back to the full 0-100 axis
+  for (const tick of ['0.0%', '50.0%', '100.0%']) {
+    assert.ok(empty.texts.includes(tick), `no rate falls back to 0-100, expected ${tick}`)
+  }
+})
+
+test('the tooltip anchor clamps away from the panel edges', async () => {
+  const { plugin } = loadClient()
+  const payload = summaryPayload()
+  const day = (name, total) => {
+    const buckets = [total, 0, 0, 0, 0]
+    return {
+      day: name,
+      buckets,
+      turns: 1,
+      requests: 1,
+      byModel: { 'p/a': buckets },
+      byGroup: { model: { a: buckets }, provider: { p: buckets } },
+    }
+  }
+  payload.days = [
+    '2026-09-19',
+    '2026-09-20',
+    '2026-09-21',
+    '2026-09-22',
+    '2026-09-23',
+    '2026-09-24',
+    '2026-09-25',
+  ].map((name, index) => day(name, 100 * (index + 1)))
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const tipLeft = (columnName) => {
+    const driven = driveComponent(trendElementOf(record), `column ${columnName}`, pickColumn(columnName))
+    let left = null
+    const walk = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(walk)
+      if (node.props?.className === 'dtu-tip') left = node.props.style?.left
+      walk(node.children)
+    }
+    walk(render(driven))
+    return left
+  }
+  // seven columns: axisX(0) = 7.14%, axisX(6) = 92.86% — both outside the rails
+  assert.equal(tipLeft('2026-09-19'), '8%', 'the first column clamps to the 8% rail')
+  assert.equal(tipLeft('2026-09-25'), '92%', 'the last column clamps to the 92% rail')
 })
 
 // ── the trend line ──────────────────────────────────────────────────────────
@@ -772,7 +1229,7 @@ test('the hit-rate strip scales to the visible days with 10% headroom', async ()
   // sits at index 1 and at 2 + 6 * segment + 5; the in-between y's are control
   // points and must not be mistaken for plotted days.
   const dayY = [numbers[1], ...[0, 1].map((segment) => numbers[2 + 6 * segment + 5])]
-  assert.ok(dayY.every((y) => y >= 0 && y <= 100), 'the curve stays inside the strip')
+  assert.ok(dayY.every((y) => y >= 0 && y <= 100), 'every plotted day sits inside the strip')
   // the two empty days carry no rate, so only three points are plotted; 95% sits 8.33%
   // down from the band top (89.5-95.5) and 90% sits 91.67% down
   assert.deepEqual(dayY, [8.33, 91.67, 8.33], '95% near the top, 90% near the bottom')
@@ -842,29 +1299,45 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
   const hovered = framesOf(render(trendElement.type(trendElement.props)))
   const cursor = hovered.find((frame) => frame.chain.includes('dtu-cursor'))
   assert.ok(cursor, 'hovering a column must render the cursor line')
-  assert.ok(cursor.chain.includes('dtu-plotLine'), 'the cursor line must live inside the inset .dtu-plotLine frame')
-  assert.ok(cursor.chain.includes('dtu-trend'), 'and the frame hangs off the trend section')
+  assert.deepEqual(
+    cursor.chain.slice(-4),
+    ['dtu-trend', 'dtu-plot', 'dtu-plotLine', 'dtu-cursor'],
+    'the cursor hangs off the segment frame — never across the head/legend rows',
+  )
   const tip = hovered.find((frame) => frame.chain.includes('dtu-tip'))
   assert.ok(tip, 'the tooltip follows the cursor')
-  assert.ok(tip.chain.includes('dtu-cursor'), 'the tooltip hangs off the cursor line')
+  assert.deepEqual(
+    tip.chain.slice(-3),
+    ['dtu-plot', 'dtu-plotLine', 'dtu-tip'],
+    'the tooltip hangs off the plot frame beside the cursor line',
+  )
+  const axisFrame = idle.find((frame) => frame.chain.includes('dtu-axisX'))
+  assert.ok(axisFrame, 'the date band must be drawn')
+  assert.deepEqual(
+    axisFrame.chain.slice(-2),
+    ['dtu-plot', 'dtu-axisX'],
+    'the date band belongs to the segment frame, under both segments',
+  )
 
-  // Structure alone cannot prove the insets: lock the geometry in CSS too.
+  // Structure alone cannot prove the insets: parse the rules and compare them.
   const styles = document.head.children[0].textContent
-  assert.ok(styles.includes('.dtu-hitPlot{position:absolute;left:52px;right:44px'), "the dot frame must share the bars' insets")
-  assert.ok(styles.includes('.dtu-plotLine{position:absolute;left:52px;right:44px'), "the cursor frame must share the bars' insets")
+  const ruleBody = (name) => (styles.match(new RegExp('\\.' + name + '\\{([^}]*)\\}')) ?? [])[1]
+  const trendRule = ruleBody('dtu-trend')
   assert.ok(
-    styles.includes('.dtu-trend{position:relative;padding-bottom:20px}'),
-    'the date band needs its own space below both segments',
+    trendRule && trendRule.includes('--dtu-plot-l:52px') && trendRule.includes('--dtu-plot-r:44px'),
+    'the plot insets are defined once, on the trend',
   )
-  assert.ok(
-    styles.includes('.dtu-axisX{position:absolute;left:52px;right:44px;bottom:2px;height:14px'),
-    'the date band must sit below the hit strip, not under it',
-  )
-  assert.ok(
-    styles.includes('.dtu-plotLine{position:absolute;left:52px;right:44px;top:0;bottom:20px'),
-    'the cursor spans both segments and stops where the axis band starts',
-  )
-  assert.ok(!styles.includes('bottom:22px'), 'the dead 22px axis reserve inside the bars panel is gone')
+  for (const name of ['dtu-hitPlot', 'dtu-plotLine', 'dtu-bars', 'dtu-axisX', 'dtu-grid']) {
+    const body = ruleBody(name)
+    assert.ok(body, `.${name} must exist`)
+    assert.ok(
+      body.includes('left:var(--dtu-plot-l);right:var(--dtu-plot-r)'),
+      `.${name} must take its insets from the shared variables, or the pieces drift apart`,
+    )
+  }
+  assert.ok(ruleBody('dtu-plot').includes('padding-bottom:20px'), 'the segment frame reserves the date band below both segments')
+  assert.ok(ruleBody('dtu-axisX').includes('bottom:2px;height:14px'), 'the date band must sit below the hit strip, not under it')
+  assert.ok(ruleBody('dtu-plotLine').includes('top:0;bottom:20px'), 'the cursor spans both segments and stops where the axis band starts')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {
