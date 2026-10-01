@@ -20,6 +20,8 @@
     "assets",
     "README.md",
     "CHANGELOG.md",
+    "translations/README-zh.md",
+    "translations/CHANGELOG-zh.md",
     "!docs"
   ],
   "scripts": {
