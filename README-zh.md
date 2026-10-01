@@ -52,7 +52,7 @@
 | 项目 | 实测环境 |
 |---|---|
 | DSH | Desktop `0.1.7-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对）与 `0.2.0-rc.2`（`0.1.3` 版手工试用） |
-| 内置运行时 | Electron 44 / Chromium 152 / Node 24.18.1（把席位改成纵向列需要 `:has()`，Chrome 105+） |
+| 内置运行时 | Electron 44 / Chromium 152 / Node 24.18.1（把席位改成纵向列需要 `:has()`，Chrome 105+；配色跟随明暗需要 `light-dark()`，Chrome 123+） |
 | 操作系统 | Windows 11 专业版，build 26200，AMD64 |
 | Node（跑测试用） | v25.2.1、v26.7.0 |
 

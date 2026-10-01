@@ -59,7 +59,7 @@ The same dashboard on the dark theme — each palette ships a light and a dark s
 | Item | Tested environment |
 |---|---|
 | DSH | Desktop `0.1.7-rc.2` (full verification), `0.2.0-rc.1` (compatibility check) and `0.2.0-rc.2` (manual trial of `0.1.3`) |
-| Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+) |
+| Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+; palette theming needs `light-dark()`, Chrome 123+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
 
