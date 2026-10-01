@@ -359,6 +359,10 @@ Host 会把自诊断写到 `$DSH_HOME/cache/dsh-desktop-token-usage/`：
 
 ## 6. 后续可做
 
+- **多语言（i18n）**：设计已定稿、**待实现**——[spec](superpowers/specs/2026-10-01-i18n-design.md)。要点：语言跟随
+  DSH 的语言服务（`ctx.locale`，插件不自带选择器）、15 个语言代码 / 3 梯队（`en`/`zh` 为 DSH 内置，其余 14 个用
+  `addLanguage` 语言包扩展）、16 本字典由 `locales/<id>.json` 生成进 `client.js`（保持无构建）、`ar` 需 RTL、
+  数字/日期/复数全部按 `Intl` 本地化。注意：选中语言包后 **DSH 自身界面仍回落 `zh`/`en`**，只有本插件切换。
 - 会话明细表（数据已在 `summarize` 的中间结构里，只是没有暴露到 payload）；
 - 成本估算（需要单价表，会引入外部数据，与"不联网"取舍冲突）；
 - 若将来 DSH 的会话 header 增加客户端来源字段，把来源筛选扩到六项，判定函数集中在 `inferSurface`。

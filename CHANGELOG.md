@@ -14,6 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Planned
+
+- **Localization (i18n)**: designed, not implemented yet — the dashboard follows DSH's own language setting, with
+  15 language codes across three tiers (`en`/`zh` built in; `zh-TW` `zh-HK` `de` `fr` `es` `it` `ja` `ko` `pt-BR`
+  `ru` `vi` `th` `id` `ar` as language packs), `ar` right-to-left, and localized numbers/dates/plurals. See
+  [the design](docs/superpowers/specs/2026-10-01-i18n-design.md). Note: selecting a language pack leaves DSH's own
+  interface on `zh`/`en`; only this plugin switches.
+
 ### Added
 
 - **A grouping option**: by actual model (same-named models merged across providers), by API provider, or both. With
