@@ -155,7 +155,7 @@ DSH **不会**从 `Config` schema 自动生成编辑器——自己带配置的�
 | **输出量**（卡片） | `usage.outputTokens`（`reasoningTokens` 是它的**子集**，绝不重复计入） |
 | 未缓存输入 | `usage.inputTokens`——**provider 原生字段里它就是「未命中缓存」的那部分**，DSH 自己的投影把它重命名为 `uncachedInputTokens` |
 | 缓存读取 / 写入 | `usage.cacheReadTokens` / `usage.cacheWriteTokens` |
-| 平均缓存命中率 | `缓存读取 ÷ (缓存读取 + 未缓存输入)` |
+| 平均缓存命中率 | `缓存读取 ÷ (缓存读取 + 未缓存输入 + 缓存写入)`——未命中侧含缓存写入 |
 | 请求数量 | 结算后的模型调用次数（见下面的「折叠」） |
 | 完成轮次 | `turn/end` 事件数 |
 | 活跃天数 | 有 token 或轮次的本地日期数（按**本地时区**，不是 UTC） |

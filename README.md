@@ -179,7 +179,7 @@ This section matters — what the numbers mean is determined entirely by DSH's l
 | **Output volume** (card) | `usage.outputTokens` (`reasoningTokens` is a **subset** of it and is never counted twice) |
 | Uncached input | `usage.inputTokens` — **in the provider's native fields this is already the part that missed the cache**; DSH's own projection renames it to `uncachedInputTokens` |
 | Cache read / write | `usage.cacheReadTokens` / `usage.cacheWriteTokens` |
-| Average cache hit rate | `cache read ÷ (cache read + uncached input)` |
+| Average cache hit rate | `cache read ÷ (cache read + uncached input + cache write)` — the miss side includes cache writes |
 | Request count | Number of model calls after settlement (see "fold" below) |
 | Completed turns | Number of `turn/end` events |
 | Active days | Number of local dates that have tokens or turns (in the **local timezone**, not UTC) |
