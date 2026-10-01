@@ -1234,7 +1234,7 @@ async function renderTrend(payload) {
       classes.push(name)
       if (name === 'dtu-bars') frames.bars = next
       if (name.split(' ').includes('dtu-hitDot')) {
-        frames.dots.push({ empty: name.includes('dtu-hitDotEmpty'), border: node.props.style?.border })
+        frames.dots.push({ empty: name.includes('dtu-hitDotEmpty'), boxShadow: node.props.style?.boxShadow })
       }
       if (name === 'dtu-axisHit') {
         frames.rateLabels = []
@@ -1292,25 +1292,27 @@ test('the trend overlays the hit-rate curve on the bars under one shared axis', 
   assert.ok(frames.haloProps.strokeWidth >= 3, 'the halo is wider than the line it surrounds')
   assert.equal(frames.haloProps.opacity, 0.75, 'the halo is translucent')
   assert.equal(frames.haloProps.pointerEvents, 'none', 'the halo never eats a hover')
+  assert.equal(frames.haloProps.strokeLinecap, 'round', 'the halo ends round, like the line it lifts')
   assert.equal(frames.haloProps.fill, 'none', 'the halo is a stroke, not a shape')
   assert.deepEqual(
     frames.pathOrder,
     ['var(--dsw-alias-bg-layer-1)', 'var(--dtu-hit)'],
     'the halo is painted first, the hit-rate line on top of it',
   )
-  // The markers float too: a panel-coloured ring on real days, never on empty ones.
+  // The markers float too: a panel-coloured ring on real days, never on empty
+  // ones — and it rides on box-shadow, so the 5px dot keeps its size and hit area.
   const realDots = frames.dots.filter((dot) => !dot.empty)
   assert.equal(realDots.length, 3, 'three of the five days carry a real marker')
   for (const dot of realDots) {
     assert.ok(
-      /var\(--dsw-alias-bg-layer-1\)/.test(dot.border ?? ''),
-      `each marker is ringed in the panel colour, got ${dot.border}`,
+      /var\(--dsw-alias-bg-layer-1\)/.test(dot.boxShadow ?? ''),
+      `each marker is ringed in the panel colour, got ${dot.boxShadow}`,
     )
   }
   const emptyDots = frames.dots.filter((dot) => dot.empty)
   assert.equal(emptyDots.length, 2, 'the two rateless days keep a marker for hover')
   for (const dot of emptyDots) {
-    assert.equal(dot.border, undefined, 'the empty-day marker stays transparent and borderless')
+    assert.equal(dot.boxShadow, undefined, 'the empty-day marker stays transparent and unringed')
   }
   assert.ok(
     texts.includes('柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）'),

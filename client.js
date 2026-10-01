@@ -1088,6 +1088,7 @@ window.__ModuleLoader__.load({
                   strokeWidth: 3.5,
                   opacity: 0.75,
                   pointerEvents: 'none',
+                  strokeLinecap: 'round',
                   vectorEffect: 'non-scaling-stroke',
                 }),
                 h('path', {
@@ -1107,9 +1108,10 @@ window.__ModuleLoader__.load({
                   style: {
                     left: axisX(index) + '%',
                     top: column.hit === null ? '100%' : hitY(column.hit) + '%',
-                    // A panel-coloured ring lifts the marker off the bars; the
-                    // empty-day marker stays transparent and borderless.
-                    border: column.hit === null ? undefined : '1.5px solid var(--dsw-alias-bg-layer-1)',
+                    // A panel-coloured ring lifts the marker off the bars without
+                    // growing the 5px dot or its hit area; the empty-day marker
+                    // stays transparent and unringed.
+                    boxShadow: column.hit === null ? undefined : '0 0 0 1.5px var(--dsw-alias-bg-layer-1)',
                   },
                   onMouseEnter: () => setHover(index),
                   onMouseLeave: () => setHover(null),
