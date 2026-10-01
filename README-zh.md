@@ -26,6 +26,24 @@
 
 不联网、不上报、不调用任何 API：所有数字都来自本机已有的会话日志。
 
+## 界面截图
+
+用本插件**自己的组件**渲染，数据是**示例数据**：截图由 [`scripts/render-shots.mjs`](scripts/render-shots.mjs)
+（真实 `client.js` + 真实 CSS，接一个假 Host）与 [`scripts/render-shots.py`](scripts/render-shots.py)
+（无头 Chrome）离线生成，不涉及任何会话日志、路径或账号信息。先是浅色，再是深色。
+
+![看板·浅色](assets/dashboard-light.png)
+
+6 张统计卡、「配置窗口」一行、活跃热力图、按天 Token 趋势（命中率曲线叠加在柱上）、模型用量拆分。
+
+![看板·深色](assets/dashboard-dark.png)
+
+同一张看板的深色主题——三套配色各自都有浅色与深色两份。
+
+| 活跃热力图 | 按天趋势 |
+|---|---|
+| ![活跃热力图](assets/heatmap-light.png) | ![按天趋势](assets/trend-light.png) |
+
 ## 兼容性与测试环境
 
 **已在 DSH Desktop 0.1.7-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对；插件 0.1.3 也在 0.2.0-rc.2 上手工试用通过。**

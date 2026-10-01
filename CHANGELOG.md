@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   [the design](docs/superpowers/specs/2026-10-01-i18n-design.md). Note: selecting a language pack leaves DSH's own
   interface on `zh`/`en`; only this plugin switches.
 
+## [0.1.5] - 2026-10-01
+
 ### Added
 
 - **A grouping option**: by actual model (same-named models merged across providers), by API provider, or both. With

@@ -31,6 +31,26 @@ beside its neighbour instead. That needs `:has()`; see the compatibility table b
 
 No network access, no telemetry, no API calls: every number comes from session logs that are already on your machine.
 
+## Screenshots
+
+Rendered from this plugin's own components with **sample data** — the shots are produced offline by
+[`scripts/render-shots.mjs`](scripts/render-shots.mjs) (the real `client.js` and CSS against a fake Host) plus
+[`scripts/render-shots.py`](scripts/render-shots.py) (headless Chrome), so no session logs, paths or account
+details are involved. Light theme first, dark theme second.
+
+![Dashboard, light theme](assets/dashboard-light.png)
+
+Six stat cards, the configured-windows row, the activity heatmap, the per-day token trend with the cache hit-rate
+curve overlaid on the bars, and the model usage breakdown.
+
+![Dashboard, dark theme](assets/dashboard-dark.png)
+
+The same dashboard on the dark theme — each palette ships a light and a dark set.
+
+| Activity heatmap | Per-day trend |
+|---|---|
+| ![Activity heatmap](assets/heatmap-light.png) | ![Per-day trend](assets/trend-light.png) |
+
 ## Compatibility and tested environment
 
 **Fully verified on DSH Desktop 0.1.7-rc.2, checked for compatibility with 0.2.0-rc.1, and plugin 0.1.3 was tried by hand on 0.2.0-rc.2 with no problems.**
