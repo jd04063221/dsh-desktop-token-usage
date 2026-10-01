@@ -31,6 +31,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Hit-rate semantics**: miss now includes cacheWrite (hit / (hit + miss)), matching the official definition; on this
   machine cacheWrite is always 0, so no number changes.
 
+### Fixed
+
+- **One model, one row**: providers disagree about model ids — `commandcode` reports `deepseek/deepseek-v4.1-flash` where
+  `opencode-go` reports `deepseek-v4.1-flash`, and the by-model view listed that one model twice. The by-model key is now
+  the id's trailing segment; the by-provider view still tells the two apart.
+- **The activity heatmap no longer leans left**: the fixed 53 weeks are right-aligned in the card, and when they do not
+  fit, the calendar opens on the newest week instead of the oldest (on this machine, empty) ones.
+- **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
+  paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
+
 ## [0.1.4] - 2026-09-30
 
 ### Changed

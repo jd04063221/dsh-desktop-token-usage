@@ -159,6 +159,7 @@ DSH **不会**从 `Config` schema 自动生成编辑器——自己带配置的�
 | 请求数量 | 结算后的模型调用次数（见下面的「折叠」） |
 | 完成轮次 | `turn/end` 事件数 |
 | 活跃天数 | 有 token 或轮次的本地日期数（按**本地时区**，不是 UTC） |
+| 按模型分组 | 取模型 id 的**最后一段**：同一个模型，`commandcode` 报成 `deepseek/deepseek-v4.1-flash`，`opencode-go` 报成 `deepseek-v4.1-flash`，两者合成一行；按供应商分组仍把两家分开 |
 
 **折叠语义（容易算错的地方）**：同一条 `(turn, step)` 内后一条 usage 会**替换**前一条——流式数字被最终
 结算覆盖；只有 `llm/retry-started` 关掉槽位之后，重试的另一次调用才**累加**。所以「总量 = 所有 usage 求和」
