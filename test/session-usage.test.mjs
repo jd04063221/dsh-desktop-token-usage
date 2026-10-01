@@ -26,6 +26,7 @@ import {
   foldGroups,
   foldUsage,
   localDayStart,
+  modelKeyOf,
   readSessionRecords,
   scanZstdFrames,
   splitRoute,
@@ -479,4 +480,28 @@ test('foldGroups merges a model name seen under different providers', () => {
   assert.equal(groups.provider.size, 2, 'the two providers stay apart')
   assert.deepEqual(groups.provider.get('p'), [101, 2, 3, 4, 5])
   assert.deepEqual(groups.provider.get('q'), [10, 20, 30, 40, 50])
+})
+
+test('modelKeyOf keeps only the segment the providers actually agree on', () => {
+  assert.equal(modelKeyOf('deepseek-v4.1-flash'), 'deepseek-v4.1-flash', 'a bare id is its own key')
+  assert.equal(modelKeyOf('deepseek/deepseek-v4.1-flash'), 'deepseek-v4.1-flash', 'a vendor-qualified id keeps its tail')
+  assert.equal(modelKeyOf('commandcode/stealth/ox-alpha'), 'ox-alpha', 'every prefix goes, not just the first')
+  assert.equal(modelKeyOf('deepseek/'), 'deepseek/', 'a trailing slash is not a segment worth keeping')
+  assert.equal(modelKeyOf(''), '', 'an unknown model stays empty instead of throwing')
+})
+
+test('one model spelled two ways folds into a single by-model row', () => {
+  // The live shape, verbatim: these two routes carry the same model, one with
+  // the vendor baked into the id. Two rows here is the bug being fixed.
+  const groups = foldGroups([
+    { route: 'opencode-go/deepseek-v4.1-flash', buckets: [100, 0, 0, 0, 0] },
+    { route: 'commandcode/deepseek/deepseek-v4.1-flash', buckets: [200, 0, 0, 0, 0] },
+  ])
+  assert.deepEqual([...groups.model.keys()], ['deepseek-v4.1-flash'], 'both spellings land on one model key')
+  assert.deepEqual(groups.model.get('deepseek-v4.1-flash'), [300, 0, 0, 0, 0], 'and their tokens are summed, never dropped')
+  assert.deepEqual(
+    [...groups.provider.keys()].sort(),
+    ['commandcode', 'opencode-go'],
+    'the by-provider view still separates whoever served it',
+  )
 })
