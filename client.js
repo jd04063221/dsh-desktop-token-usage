@@ -177,7 +177,7 @@ window.__ModuleLoader__.load({
       if (!namespace) return
       patch({ configStatus: 'saving', configError: null })
       try {
-        await namespace.setConfig({ hours: next.hours, days: next.days })
+        await namespace.setConfig({ hours: next.hours, days: next.days, groupBy: next.groupBy, palette: next.palette })
       } catch (error) {
         patch({ configError: messageOf(error) })
       }
@@ -220,13 +220,6 @@ window.__ModuleLoader__.load({
     const percent = (ratio) => `${(ratio * 100).toFixed(1)}%`
 
     const totalOf = (buckets) => buckets[0] + buckets[1] + buckets[2] + buckets[3]
-
-    /** `provider/model`, shortened for display: the vendor prefix repeats a lot. */
-    function shortRoute(route) {
-      const parts = route.split('/')
-      if (parts.length <= 2) return route
-      return `${parts[0]}/…/${parts[parts.length - 1]}`
-    }
 
     // ── styles ──────────────────────────────────────────────────────────────
 
@@ -330,7 +323,6 @@ window.__ModuleLoader__.load({
 .dtu-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:7px 8px;border-radius:6px}
 .dtu-row:hover{background:var(--dsw-alias-bg-layer-2)}
 .dtu-rowName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dtu-rowProvider{color:var(--dsw-alias-label-secondary);font-size:11.5px;margin-left:6px}
 .dtu-rowShare{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .dtu-rowTotal{font-variant-numeric:tabular-nums;font-weight:600}
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
@@ -603,7 +595,12 @@ window.__ModuleLoader__.load({
       const state = useStore()
       const [draft, setDraft] = React.useState(null)
       const current = state.config ?? { hours: 0, days: 0, writable: false }
-      const values = draft ?? { hours: current.hours, days: current.days }
+      const values = draft ?? {
+        hours: current.hours,
+        days: current.days,
+        groupBy: current.groupBy ?? 'both',
+        palette: current.palette ?? 'primer',
+      }
       const busy = state.configStatus === 'saving'
       const locked = busy || current.writable === false
       const edit = (key, raw) => {
@@ -646,6 +643,40 @@ window.__ModuleLoader__.load({
             disabled: locked,
             onChange: (event) => edit('days', event.target.value),
           }),
+        ),
+        h(
+          'label',
+          { className: 'dtu-field' },
+          h('span', null, '统计口径'),
+          h(
+            'select',
+            {
+              className: 'dtu-input',
+              value: values.groupBy,
+              disabled: locked,
+              onChange: (event) => setDraft({ ...values, groupBy: event.target.value }),
+            },
+            h('option', { value: 'both' }, '都统计（图表上可切换）'),
+            h('option', { value: 'model' }, '按实际模型'),
+            h('option', { value: 'provider' }, '按 API 供应商'),
+          ),
+        ),
+        h(
+          'label',
+          { className: 'dtu-field' },
+          h('span', null, '配色方案'),
+          h(
+            'select',
+            {
+              className: 'dtu-input',
+              value: values.palette,
+              disabled: locked,
+              onChange: (event) => setDraft({ ...values, palette: event.target.value }),
+            },
+            h('option', { value: 'primer' }, 'Primer（GitHub 默认）'),
+            h('option', { value: 'cvd' }, '色盲友好（Okabe–Ito）'),
+            h('option', { value: 'muted' }, '低饱和雾面'),
+          ),
         ),
         h(
           'div',
@@ -1068,14 +1099,14 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Donut({ models, totalTokens, selected, onSelect }) {
+    function Donut({ entries, totalTokens, selected, onSelect }) {
       const radius = 42
       const circumference = 2 * Math.PI * radius
       let offset = 0
-      const slices = models.map((model, index) => {
-        const share = totalTokens > 0 ? model.totalTokens / totalTokens : 0
+      const slices = entries.map((entry, index) => {
+        const share = totalTokens > 0 ? entry.totalTokens / totalTokens : 0
         const length = share * circumference
-        const slice = { model, share, length, offset, color: SERIES[index % SERIES.length] }
+        const slice = { entry, share, length, offset, color: index < 5 ? SERIES[index] : OTHER }
         offset += length
         return slice
       })
@@ -1091,7 +1122,7 @@ window.__ModuleLoader__.load({
             { transform: 'rotate(-90 50 50)' },
             slices.map((slice) =>
               h('circle', {
-                key: slice.model.route,
+                key: slice.entry.key,
                 cx: 50,
                 cy: 50,
                 r: radius,
@@ -1100,8 +1131,8 @@ window.__ModuleLoader__.load({
                 strokeWidth: 12,
                 strokeDasharray: `${slice.length} ${circumference - slice.length}`,
                 strokeDashoffset: -slice.offset,
-                style: { cursor: 'pointer', opacity: selected && selected !== slice.model.route ? 0.35 : 1 },
-                onMouseEnter: () => onSelect(slice.model.route),
+                style: { cursor: 'pointer', opacity: selected && selected !== slice.entry.key ? 0.35 : 1 },
+                onMouseEnter: () => onSelect(slice.entry.key),
                 onMouseLeave: () => onSelect(null),
               }),
             ),
@@ -1127,9 +1158,10 @@ window.__ModuleLoader__.load({
       const custom = filter.range === 'custom'
       const totals = data ? data.totals : null
       const buckets = totals ? totals.buckets : [0, 0, 0, 0, 0]
-      const topShare = totals && totals.totalTokens > 0 && data.models.length > 0 ? data.models[0].totalTokens / totals.totalTokens : 0
-      // Task 6 swaps this for the configured groupBy; fixed to models for now.
-      const groupByMode = 'model'
+      const [breakdownMode, setBreakdownMode] = React.useState('model')
+      const groupByMode = state.config?.groupBy ?? 'both'
+      const activeGroups = (data && data.groups && data.groups[breakdownMode]) || []
+      const topGroup = activeGroups.length > 0 ? activeGroups[0] : null
 
       const head = h(
         'div',
@@ -1199,10 +1231,10 @@ window.__ModuleLoader__.load({
               sub: '缓存读取 / (缓存读取 + 未缓存输入)',
             }),
             h(Card, {
-              label: '最常用模型',
-              value: totals.topModel ? shortRoute(totals.topModel) : '—',
-              sub: totals.topModel ? `占比 ${percent(topShare)}` : null,
-              title: totals.topModel ?? undefined,
+              label: breakdownMode === 'provider' ? '最常用供应商' : '最常用模型',
+              value: topGroup ? topGroup.key : '—',
+              sub: topGroup ? '占比 ' + percent(topGroup.totalTokens / Math.max(1, totals.totalTokens)) : null,
+              title: topGroup ? topGroup.key : undefined,
             }),
           ),
           // The configured windows are wall-clock recency figures: the Host
@@ -1241,27 +1273,37 @@ window.__ModuleLoader__.load({
           h(Section, { title: '按天 Token 趋势' }, h(TrendSection, { days: data.days, groups: data.groups, groupBy: groupByMode })),
           h(
             Section,
-            { title: '模型用量' },
+            {
+              title: '用量拆分',
+              extra:
+                groupByMode === 'both'
+                  ? h(ChipGroup, { items: CHIP_GROUPS, value: breakdownMode, onSelect: setBreakdownMode, label: '拆分口径' })
+                  : h('span', { className: 'dtu-hint' }, breakdownMode === 'provider' ? '按供应商' : '按模型'),
+            },
             h(
               'div',
               { className: 'dtu-models' },
-              h(Donut, { models: data.models, totalTokens: totals.totalTokens, selected: hovered, onSelect: setHovered }),
+              h(Donut, { entries: activeGroups, totalTokens: totals.totalTokens, selected: hovered, onSelect: setHovered }),
               h(
                 'div',
                 { className: 'dtu-rows' },
-                data.models.map((model, index) =>
+                activeGroups.map((entry, index) =>
                   h(
                     'div',
-                    { key: model.route, className: 'dtu-row', onMouseEnter: () => setHovered(model.route), onMouseLeave: () => setHovered(null) },
+                    {
+                      key: entry.key,
+                      className: 'dtu-row',
+                      onMouseEnter: () => setHovered(entry.key),
+                      onMouseLeave: () => setHovered(null),
+                    },
                     h(
                       'div',
-                      { className: 'dtu-rowName', title: model.route },
-                      h('span', { className: 'dtu-dot', style: { background: SERIES[index % SERIES.length] } }),
-                      shortRoute(model.route),
-                      h('span', { className: 'dtu-rowProvider' }, model.provider),
+                      { className: 'dtu-rowName', title: entry.key },
+                      h('span', { className: 'dtu-dot', style: { background: index < 5 ? SERIES[index] : OTHER } }),
+                      entry.key,
                     ),
-                    h('div', { className: 'dtu-rowTotal' }, compact(model.totalTokens)),
-                    h('div', { className: 'dtu-rowShare' }, totals.totalTokens > 0 ? percent(model.totalTokens / totals.totalTokens) : '0%'),
+                    h('div', { className: 'dtu-rowTotal' }, compact(entry.totalTokens)),
+                    h('div', { className: 'dtu-rowShare' }, totals.totalTokens > 0 ? percent(entry.totalTokens / totals.totalTokens) : '0%'),
                   ),
                 ),
               ),

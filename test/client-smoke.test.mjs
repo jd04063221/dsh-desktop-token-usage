@@ -381,7 +381,7 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
     '最常用模型',
     '活跃热力图',
     '按天 Token 趋势',
-    '模型用量',
+    '用量拆分',
     '缓存命中率',
     '未联网',
   ]) {
@@ -509,7 +509,6 @@ test('the configuration card renders the windows and saves them to the Host', as
   assert.match(text, /当前：近 6 小时 \+ 近 7 天/)
   assert.match(text, /不随看板上方的来源筛选变化/, 'the form must say the windows ignore the filter')
 
-  const inputs = []
   const find = (node, match) => {
     if (!node || typeof node !== 'object') return null
     if (Array.isArray(node)) {
@@ -522,25 +521,32 @@ test('the configuration card renders the windows and saves them to the Host', as
     if (match(node)) return node
     return find(node.children, match)
   }
-  const walk = (node, visit) => {
+  const inputs = []
+  const selects = []
+  const walkInputs = (node) => {
     if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) return node.forEach((child) => walk(child, visit))
-    visit(node)
-    walk(node.children, visit)
-  }
-  walk(tree, (node) => {
+    if (Array.isArray(node)) return node.forEach(walkInputs)
     if (node.tag === 'input') inputs.push(node)
-  })
-  assert.equal(inputs.length, 2, 'one field per window')
+    if (node.tag === 'select') selects.push(node)
+    walkInputs(node.children)
+  }
+  walkInputs(tree)
+  assert.equal(inputs.length, 2, 'one number field per window')
   assert.deepEqual(inputs.map((input) => input.props.value), [6, 7])
   assert.deepEqual(inputs.map((input) => input.props.max), [23, 30])
   assert.equal(inputs[0].props.disabled, false)
+  assert.equal(selects.length, 2, 'one enum field per new option')
+  assert.deepEqual(selects.map((select) => select.props.value), ['both', 'primer'])
 
   const button = find(tree, (node) => node.tag === 'button' && node.props.className === 'dtu-save')
   assert.ok(button, 'the card must have a save control')
   button.props.onClick()
   await new Promise((resolve) => setTimeout(resolve, 0))
-  assert.deepEqual(plain(record.saved), [{ hours: 6, days: 7 }], 'save must send both windows')
+  assert.deepEqual(
+    plain(record.saved),
+    [{ hours: 6, days: 7, groupBy: 'both', palette: 'primer' }],
+    'save must send both windows and both enum options',
+  )
 })
 
 test('without a Host config editor the card is read-only and says so', async () => {
@@ -566,6 +572,29 @@ test('without a Host config editor the card is read-only and says so', async () 
   }
   walk(tree)
   assert.ok(inputs.every((input) => input.props.disabled === true), 'fields must be disabled')
+})
+
+test('the breakdown offers its own chip and the last stat card speaks its language', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const text = collect(tree).join(' ')
+  assert.match(text, /用量拆分/)
+  assert.match(text, /最常用模型/, 'by default the card speaks of models')
+
+  const labels = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-chip') labels.push(collect(node).join(''))
+    walk(node.children)
+  }
+  walk(tree)
+  assert.ok(labels.includes('按供应商'), 'the breakdown section must offer the provider switch')
 })
 
 // ── the trend line ──────────────────────────────────────────────────────────
