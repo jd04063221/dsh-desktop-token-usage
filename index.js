@@ -53,10 +53,10 @@ export const Config = Schema.object({
     .max(30)
     .default(0)
     .description('看板「配置窗口」里最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
-  groupBy: Schema.union(['model', 'provider', 'both'])
+  groupBy: Schema.union([...GROUP_BY])
     .default('both')
     .description('看板统计口径：按实际模型 / 按 API 供应商 / 都统计（都统计时图表上出现切换 chip）。'),
-  palette: Schema.union(['primer', 'cvd', 'muted'])
+  palette: Schema.union([...PALETTES])
     .default('primer')
     .description('看板配色：primer（GitHub 默认）/ cvd（色盲友好）/ muted（低饱和）。浅色与深色由系统主题决定。'),
 })

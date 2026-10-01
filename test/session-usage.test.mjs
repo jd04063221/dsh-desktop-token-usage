@@ -273,6 +273,12 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.ok(standard.validate({ hours: 24 }).issues, 'hours above 23 must be refused')
   assert.ok(standard.validate({ days: 31 }).issues, 'days above 30 must be refused')
 
+  const enumDefaults = standard.validate({})
+  assert.equal(enumDefaults.value.groupBy, 'both', 'the default grouping is both')
+  assert.equal(enumDefaults.value.palette, 'primer', 'the default palette is primer')
+  assert.ok(standard.validate({ groupBy: 'bogus' }).issues, 'an unknown groupBy must be refused by the schema')
+  assert.ok(standard.validate({ palette: 'bogus' }).issues, 'an unknown palette must be refused by the schema')
+
   const edits = []
   const configEditor = {
     configuration: () => [
@@ -280,7 +286,7 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
       { entry: { id: 'include:dsh-desktop-token-usage', options: { name: 'dsh-desktop-token-usage' } }, inherited: {}, override: {} },
     ],
     edit: async (entry, change) => {
-      edits.push({ entryId: entry.id, next: change({ hours: 0, days: 0 }, {}) })
+      edits.push({ entryId: entry.id, next: change({ hours: 0, days: 0, groupBy: 'cvd', palette: 'muted' }, {}) })
     },
   }
   apply(
@@ -316,7 +322,11 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   assert.deepEqual(await service.setConfig({ hours: 12, days: -4 }), { hours: 12, days: 0, writable: true, groupBy: 'both', palette: 'primer' })
   assert.equal(edits.length, 1)
   assert.equal(edits[0].entryId, 'include:dsh-desktop-token-usage')
-  assert.deepEqual(edits[0].next, { hours: 12, days: 0 })
+  assert.deepEqual(
+    edits[0].next,
+    { hours: 12, days: 0, groupBy: 'cvd', palette: 'muted' },
+    'a partial save must not reset keys it did not send',
+  )
 
   // The same call must leave a diagnostic trail the shell can read back.
   const logPath = path.join(process.env.DSH_TOKEN_USAGE_DIAG_DIR, 'calls.json')
