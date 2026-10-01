@@ -35,6 +35,10 @@ const REMOTE_NAMESPACE = 'dshUsage'
 
 const SURFACES = ['client', 'cli', 'subagent', 'none']
 
+const GROUP_BY = ['model', 'provider', 'both']
+const PALETTES = ['primer', 'cvd', 'muted']
+const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback)
+
 /**
  * The dashboard's configured-window rollup, editable in Settings → Plugins.
  * `0` disables a window; with both disabled the rollup falls back to the
@@ -49,6 +53,12 @@ export const Config = Schema.object({
     .max(30)
     .default(0)
     .description('看板「配置窗口」里最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
+  groupBy: Schema.union(['model', 'provider', 'both'])
+    .default('both')
+    .description('看板统计口径：按实际模型 / 按 API 供应商 / 都统计（都统计时图表上出现切换 chip）。'),
+  palette: Schema.union(['primer', 'cvd', 'muted'])
+    .default('primer')
+    .description('看板配色：primer（GitHub 默认）/ cvd（色盲友好）/ muted（低饱和）。浅色与深色由系统主题决定。'),
 })
 
 /**
@@ -173,15 +183,24 @@ function parseConfigView(value) {
   if (typeof value.hours !== 'number' || typeof value.days !== 'number') {
     throw new TypeError('dshUsage/config result: missing hours or days')
   }
-  return value
+  return {
+    ...value,
+    groupBy: oneOf(value.groupBy, GROUP_BY, 'both'),
+    palette: oneOf(value.palette, PALETTES, 'primer'),
+  }
 }
 
-/** The form's save payload: two integers, clamped here rather than trusted. */
+/** The form save payload: numbers clamped, enums whitelisted, absent keys untouched. */
 function parseConfigPatch(value) {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new TypeError('dshUsage/setConfig patch: not an object')
   }
-  return { hours: clamp(value.hours, 23), days: clamp(value.days, 30) }
+  const patch = {}
+  if (value.hours !== undefined) patch.hours = clamp(value.hours, 23)
+  if (value.days !== undefined) patch.days = clamp(value.days, 30)
+  if (value.groupBy !== undefined) patch.groupBy = oneOf(value.groupBy, GROUP_BY, 'both')
+  if (value.palette !== undefined) patch.palette = oneOf(value.palette, PALETTES, 'primer')
+  return patch
 }
 
 const CONFIG_DESCRIPTOR = descriptor('config', [], 'UsageConfig', parseConfigView)
@@ -237,8 +256,8 @@ class UsageService {
     const next = parseConfigPatch(patch)
     const entry = this.entry()
     if (entry === undefined) throw new Error('找不到本插件的 Loader 条目，无法写入配置')
-    await this.configEditor.edit(entry, (current) => ({ ...current, hours: next.hours, days: next.days }))
-    return { ...next, writable: true }
+    await this.configEditor.edit(entry, (current) => ({ ...current, ...next }))
+    return { ...this.windows, ...next, writable: true }
   }
 
   /** Token usage rolled up for one range, plus the configured windows for one config. */
@@ -276,7 +295,12 @@ class UsageService {
  * fiber's lifetime, so unloading the plugin withdraws the endpoints.
  */
 export function apply(ctx, config) {
-  const windows = { hours: clamp(config?.hours, 23), days: clamp(config?.days, 30) }
+  const windows = {
+    hours: clamp(config?.hours, 23),
+    days: clamp(config?.days, 30),
+    groupBy: oneOf(config?.groupBy, GROUP_BY, 'both'),
+    palette: oneOf(config?.palette, PALETTES, 'primer'),
+  }
   const boot = { appliedAt: Date.now(), windows }
   writeJson(BOOT_LOG, boot)
   ctx.inject(['typert'], (remoteCtx) => {

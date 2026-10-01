@@ -747,10 +747,23 @@ test('the Host descriptor and the Client contribution agree', async () => {
   // The result codec must accept what the Host's summarizer returns.
   assert.ok(summary.result.create().parse(summaryPayload()))
 
-  // The write codec clamps rather than trusting the browser.
+  // The write codec clamps numbers and whitelists the two enums.
   const patch = hostDescriptor('setConfig').parameters[0].codec.create().parse
   assert.deepEqual(plain(patch({ hours: 99, days: -3 })), { hours: 23, days: 0 })
   assert.deepEqual(plain(patch({ hours: 6, days: 7 })), { hours: 6, days: 7 })
+  assert.deepEqual(plain(patch({ hours: 6, days: 7, groupBy: 'provider', palette: 'cvd' })), {
+    hours: 6,
+    days: 7,
+    groupBy: 'provider',
+    palette: 'cvd',
+  })
+  assert.deepEqual(plain(patch({ groupBy: 'nonsense', palette: 'nope' })), { groupBy: 'both', palette: 'primer' })
   assert.throws(() => patch('nope'))
-  assert.ok(hostDescriptor('config').result.create().parse({ hours: 6, days: 7, writable: true }))
+  assert.ok(
+    hostDescriptor('config').result.create().parse({ hours: 6, days: 7, groupBy: 'both', palette: 'primer', writable: true }),
+  )
+  assert.ok(
+    hostDescriptor('config').result.create().parse({ hours: 0, days: 0, writable: false }),
+    'an older Host without the two new keys must still parse',
+  )
 })
