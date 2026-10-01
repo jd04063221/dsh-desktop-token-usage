@@ -52,6 +52,13 @@ The same dashboard on the dark theme — each palette ships a light and a dark s
 |---|---|
 | ![Activity heatmap](assets/heatmap-light.png) | ![Per-day trend](assets/trend-light.png) |
 
+| The sidebar card | Its page in the Plugins manager |
+|---|---|
+| ![Sidebar card](assets/sidebar-dark.png) | ![Settings](assets/settings-light.png) |
+
+The card at the foot of the sidebar shows the two configured windows; clicking it opens the dashboard above. The plugin's
+page in the Plugins manager carries the window spans, the grouping and the palette.
+
 ## Compatibility and tested environment
 
 **Fully verified on DSH Desktop 0.1.7-rc.2, checked for compatibility with 0.2.0-rc.1, and plugin 0.1.3 was tried by hand on 0.2.0-rc.2 with no problems.**

@@ -214,7 +214,7 @@ const summary = {
   },
 }
 
-const config = { hours: 6, days: 7, groupBy: 'both', palette: 'primer' }
+const config = { hours: 6, days: 7, groupBy: 'both', palette: 'primer', writable: true }
 
 // ---- render -----------------------------------------------------------------
 const source = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
@@ -261,7 +261,9 @@ const css = style ? style.textContent : ''
 const treeOf = (name) => {
   const entry = record[name]
   if (!entry) throw new Error('slot not registered: ' + name)
-  return render({ type: entry.component, props: entry.options.inject() })
+  // Not every seat asks for injected props (the config card reads the store itself).
+  const props = typeof entry.options.inject === 'function' ? entry.options.inject() : {}
+  return render({ type: entry.component, props })
 }
 
 const payload = {
@@ -294,7 +296,12 @@ const payload = {
       '--dsw-alias-state-error-primary': '#f25a5a',
     },
   },
-  trees: { dashboard: treeOf('main'), sidebar: treeOf('sidebar.footer.action') },
+  trees: {
+    dashboard: treeOf('main'),
+    sidebar: treeOf('sidebar.footer.action'),
+    // The config card the shell renders on this plugin's page in the Plugins manager.
+    settings: treeOf('plugins.bundle.config'),
+  },
 }
 
 fs.mkdirSync(path.dirname(out), { recursive: true })
