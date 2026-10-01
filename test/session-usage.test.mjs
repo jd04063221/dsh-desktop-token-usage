@@ -413,3 +413,28 @@ test('the cache-hit rate puts cache writes on the miss side', () => {
   assert.equal(hitRateOf([100, 10, 0, 0, 0]), 0, 'prompt tokens but no cache hit reads as 0')
   assert.equal(hitRateOf([0, 0, 0, 0, 0]), null, 'and an empty range is null, not a fake 0')
 })
+
+test('the summarizer groups every day by model and by provider', { skip: !haveSessions }, () => {
+  const payload = summarize({ useCache: false })
+  assert.ok(payload.groups, 'the payload must carry the two groupings')
+
+  for (const day of payload.days) {
+    for (const mode of ['model', 'provider']) {
+      const sum = Object.values(day.byGroup[mode]).reduce(
+        (acc, buckets) => acc.map((value, index) => value + buckets[index]),
+        [0, 0, 0, 0, 0],
+      )
+      assert.deepEqual(sum, day.buckets, day.day + ' ' + mode + ' must re-add to the day buckets')
+    }
+  }
+
+  const groupTotal = (entries) => entries.reduce((sum, entry) => sum + entry.totalTokens, 0)
+  assert.equal(groupTotal(payload.groups.model), payload.totals.totalTokens)
+  assert.equal(groupTotal(payload.groups.provider), payload.totals.totalTokens)
+  assert.ok(payload.groups.model.length <= payload.models.length, 'models merge across providers')
+  assert.deepEqual(
+    payload.groups.provider.map((entry) => entry.key).sort(),
+    [...new Set(payload.models.map((model) => model.provider))].sort(),
+    'every provider seen in the range appears exactly once',
+  )
+})
