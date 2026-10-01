@@ -1140,7 +1140,7 @@ window.__ModuleLoader__.load({
       const slices = entries.map((entry, index) => {
         const share = totalTokens > 0 ? entry.totalTokens / totalTokens : 0
         const length = share * circumference
-        const slice = { entry, share, length, offset, color: seriesAt(index) }
+        const slice = { entry, share, length, offset, color: entry.key === OTHER_KEY ? OTHER : seriesAt(index) }
         offset += length
         return slice
       })
@@ -1257,6 +1257,17 @@ window.__ModuleLoader__.load({
       const grouping = normalizeGrouping(data)
       const activeGroups = (grouping.groups && grouping.groups[activeBreakdown]) || []
       const topGroup = activeGroups.length > 0 ? activeGroups[0] : null
+      // Spec §2.3: the donut and the detail list fold to Top5 + 其他. The stat
+      // card keeps the true #1 (topGroup), the trend folds its own stack.
+      const shown = activeGroups.slice(0, TOP_N)
+      if (activeGroups.length > TOP_N) {
+        const folded = activeGroups.slice(TOP_N)
+        shown.push({
+          key: OTHER_KEY,
+          totalTokens: folded.reduce((sum, entry) => sum + entry.totalTokens, 0),
+          folded: folded.map((entry) => entry.key),
+        })
+      }
 
       const head = h(
         'div',
@@ -1378,11 +1389,11 @@ window.__ModuleLoader__.load({
             h(
               'div',
               { className: 'dtu-models' },
-              h(Donut, { entries: activeGroups, totalTokens: totals.totalTokens, selected: hovered, onSelect: setHovered }),
+              h(Donut, { entries: shown, totalTokens: totals.totalTokens, selected: hovered, onSelect: setHovered }),
               h(
                 'div',
                 { className: 'dtu-rows' },
-                activeGroups.map((entry, index) =>
+                shown.map((entry, index) =>
                   h(
                     'div',
                     {
@@ -1393,9 +1404,15 @@ window.__ModuleLoader__.load({
                     },
                     h(
                       'div',
-                      { className: 'dtu-rowName', title: entry.key },
-                      h('span', { className: 'dtu-dot', style: { background: seriesAt(index) } }),
-                      entry.key,
+                      {
+                        className: 'dtu-rowName',
+                        title: entry.key === OTHER_KEY ? (entry.folded ?? []).join('、') : entry.key,
+                      },
+                      h('span', {
+                        className: 'dtu-dot',
+                        style: { background: entry.key === OTHER_KEY ? OTHER : seriesAt(index) },
+                      }),
+                      entry.key === OTHER_KEY ? '其他' : entry.key,
                     ),
                     h('div', { className: 'dtu-rowTotal' }, compact(entry.totalTokens)),
                     h('div', { className: 'dtu-rowShare' }, totals.totalTokens > 0 ? percent(entry.totalTokens / totals.totalTokens) : '0%'),

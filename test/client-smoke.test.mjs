@@ -698,13 +698,17 @@ test('the breakdown offers its own chip and the last stat card speaks its langua
   assert.match(text, /最常用模型/, 'by default the card speaks of models')
 
   const labels = []
+  const rowNames = []
   const walk = (node) => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) return node.forEach(walk)
     if (node.props?.className === 'dtu-chip') labels.push(collect(node).join(''))
+    if (node.props?.className === 'dtu-rowName') rowNames.push(collect(node).join(''))
     walk(node.children)
   }
   walk(tree)
+  // Reverse of the fold: with two groups there is nothing to collapse.
+  assert.deepEqual(rowNames, ['a', 'b'], 'two groups need no folding — no 其他 row appears')
   // Scoped: each section carries its own switch, and nothing else does.
   const sectionByTitle = (node, title) => {
     if (!node || typeof node !== 'object') return null
@@ -907,31 +911,67 @@ test('beyond five groups the stack folds the tail into 其他', async () => {
   const main = record.slots.find((item) => item.options?.name === 'main')
 
   const tree = render({ type: main.component, props: main.options.inject() })
-  // (1) the6th group folds: a grey segment must exist.
+  // The trend folds its own stack: a grey segment must exist there.
   const segColors = []
-  // (4) beyond five, the donut ring and the list dot go grey too.
   const donutColors = []
-  const rowDots = []
-  let currentRow = null
+  const donutKeys = []
+  const rows = []
   const walk = (node) => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) return node.forEach(walk)
     if (node.props?.className === 'dtu-seg') segColors.push(node.props.style?.background)
-    if (node.tag === 'circle' && node.props.stroke) donutColors.push(node.props.stroke)
-    if (node.props?.className === 'dtu-row') currentRow = []
-    if (node.props?.className === 'dtu-dot' && currentRow) rowDots.push(node.props.style?.background)
-    if (node.props?.className === 'dtu-rowName' && currentRow) currentRow.push(collect(node).join(''))
+    if (node.tag === 'circle' && node.props.stroke) {
+      donutColors.push(node.props.stroke)
+      if (node.props.key !== undefined) donutKeys.push(String(node.props.key))
+    }
+    if (node.props?.className === 'dtu-row') rows.push(node)
     walk(node.children)
-    if (node.props?.className === 'dtu-row') currentRow = null
   }
   walk(tree)
-  assert.ok(segColors.includes('var(--dtu-other)'), 'the6th group must fold into the grey bucket')
-  assert.ok(donutColors.includes('var(--dtu-other)'), 'the donut ring greys out beyond five slices')
+  assert.ok(segColors.includes('var(--dtu-other)'), 'the trend folds its own 6th group into the grey bucket')
   assert.equal(
-    rowDots.filter((color) => color === 'var(--dtu-other)').length,
+    donutColors.filter((color) => color === 'var(--dtu-other)').length,
     1,
-    'exactly the sixth list row paints grey',
+    'exactly one grey donut slice — the folded bucket',
   )
+  assert.deepEqual(donutKeys, ['a', 'b', 'c', 'd', 'e', '__other__'], 'the ring slices Top5 + 其他')
+
+  const rowInfo = rows.map((row) => {
+    let name = null
+    let title = null
+    let dot = null
+    let total = null
+    let share = null
+    const sub = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) return node.forEach(sub)
+      if (node.props?.className === 'dtu-rowName') {
+        name = collect(node).join('')
+        title = node.props.title
+      }
+      if (node.props?.className === 'dtu-dot' && dot === null) dot = node.props.style?.background
+      if (node.props?.className === 'dtu-rowTotal') total = collect(node).join('')
+      if (node.props?.className === 'dtu-rowShare') share = collect(node).join('')
+      sub(node.children)
+    }
+    sub(row)
+    return { name, title, dot, total, share }
+  })
+  assert.deepEqual(
+    rowInfo.map((row) => row.name),
+    ['a', 'b', 'c', 'd', 'e', '其他'],
+    'five named rows plus the folded row — six rows in total',
+  )
+  assert.ok(
+    !rowInfo.some((row) => row.name === 'f'),
+    'the folded group keeps neither its own row nor its tokens as a name',
+  )
+  const foldedRow = rowInfo[5]
+  assert.equal(foldedRow.dot, 'var(--dtu-other)', 'the 其他 row paints its dot grey')
+  assert.equal(rowInfo.filter((row) => row.dot === 'var(--dtu-other)').length, 1, 'exactly one grey row dot')
+  assert.equal(foldedRow.title, 'f', 'the row title names what got folded in')
+  assert.equal(foldedRow.total, '500', 'the folded row shows the merged tokens')
+  assert.equal(foldedRow.share, '3.2%', 'share = folded tokens / range total (500 / 15500)')
 
   // (2) the legend's 其他 dot is the grey one.
   const legendNodes = []
