@@ -42,6 +42,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   instead of the oldest (on this machine, empty) ones. Corners are rounded by 24% of the cell rather than a fixed
   2px, a palette or metric switch cross-fades over 0.18s, hovering brightens a day through `filter: brightness()`
   (no layout shift, no reflow), and `prefers-reduced-motion` turns the transitions off.
+- **Three readability fixes in the heatmap**: a day with no activity keeps a 1px step-0 hairline instead of a solid block
+  (once the calendar spans the card, a wall of solid grey reads as data); today is marked with a two-tone inset ring
+  (panel colour outside, label colour inside) that stays visible on the palest and the darkest step alike; and hovering a
+  day now raises the dashboard's own tooltip — the same box the trend chart shows, clamped to the plot by a share of the
+  column centre — instead of the delayed, unstylable native `title`.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
