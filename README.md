@@ -18,7 +18,8 @@ Those windows are wall-clock recency and deliberately ignore the dashboard's sou
 their own rather than among the filter-following stat cards.
 The same settings page also picks the **grouping** — by model, by provider, or both (with both, the trend section
 and the breakdown section, `用量拆分`, each get a switchable chip) — and the **color palette** — primer, cvd or muted,
-each with a light and a dark set that follows the system theme.
+each with a light and a dark set that follows DSH's own light/dark switch (`body[data-ds-dark-theme]`), so the
+charts never disagree with the shell.
 
 The sidebar foot is one horizontal row shared with every other plugin registered there, and every one of them declares
 `width: 100%` — so no two of them can share it. Measured live, with nothing intervening this card is squeezed to

@@ -35,6 +35,9 @@
 
 ### 修复
 
+- **色板跟随 DSH 自身的主题开关**，而不是操作系统：DSH 用 `body[data-ds-dark-theme]` 标记深色、浅色时 `<body>`
+  上不带该标记，因此色板改为读这个标记（走 `light-dark()` + `color-scheme`），不再依赖 `prefers-color-scheme`。
+  此前「系统浅色 + DSH 深色」会让所有图表停在浅色，「系统深色 + DSH 浅色」则相反。
 - **同一个模型不再算成两行**：各 provider 报的模型 id 不一样——`commandcode` 报 `deepseek/deepseek-v4.1-flash`，
   `opencode-go` 报 `deepseek-v4.1-flash`，原先「按模型」会把它列成两行。现在按模型分组取 id 的**最后一段**；
   「按供应商」仍然把两家分开。

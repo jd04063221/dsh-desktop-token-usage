@@ -43,6 +43,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **The chart palettes follow DSH's own theme switch**, not the operating system's: DSH marks dark with
+  `body[data-ds-dark-theme]` and leaves `<body>` bare in light mode, so the palettes now read that marker (through
+  `light-dark()` + `color-scheme`) instead of `prefers-color-scheme`. A dark shell on a light desktop used to leave
+  every chart light — and a light shell on a dark desktop did the reverse.
 - **One model, one row**: providers disagree about model ids — `commandcode` reports `deepseek/deepseek-v4.1-flash` where
   `opencode-go` reports `deepseek-v4.1-flash`, and the by-model view listed that one model twice. The by-model key is now
   the id's trailing segment; the by-provider view still tells the two apart.
