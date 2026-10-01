@@ -1222,60 +1222,92 @@ async function renderTrend(payload) {
 
   const main = record.slots.find((item) => item.options?.name === 'main')
   const classes = []
-  const curves = {}
   const texts = []
-  const walk = (node) => {
+  /** Class-name chains plus the captured nodes the trend assertions lean on. */
+  const frames = {}
+  const walk = (node, chain) => {
     if (node === null || node === undefined || typeof node !== 'object') return
-    if (Array.isArray(node)) return node.forEach(walk)
+    if (Array.isArray(node)) return node.forEach((child) => walk(child, chain))
     const name = typeof node.props?.className === 'string' ? node.props.className : null
+    const next = name ? [...chain, ...name.split(' ')] : chain
     if (name) {
       classes.push(name)
-      if (name === 'dtu-chartHit') {
+      if (name === 'dtu-bars') frames.bars = next
+      if (name === 'dtu-axisHit') {
+        frames.rateLabels = []
         const sweep = (child) => {
           if (child === null || child === undefined || typeof child !== 'object') return
           if (Array.isArray(child)) return child.forEach(sweep)
-          if (child.tag === 'path') curves.hit = child.props.d
+          if (child.tag === 'span') frames.rateLabels.push({ text: String(child.children), top: child.props.style?.top })
           sweep(child.children)
         }
         sweep(node)
       }
     }
+    // The hit-rate curve is the only path under .dtu-hitPlot; the sidebar icons
+    // carry paths of their own, so the frame is what identifies this one.
+    if (node.tag === 'path' && next.includes('dtu-hitPlot')) {
+      frames.curve = next
+      frames.curveD = node.props.d
+      frames.curveProps = node.props
+    }
     if (typeof node.children === 'string' || typeof node.children === 'number') texts.push(String(node.children))
-    walk(node.children)
+    walk(node.children, next)
   }
-  walk(render({ type: main.component, props: main.options.inject() }))
-  return { classes, curves, texts }
+  walk(render({ type: main.component, props: main.options.inject() }), [])
+  return { classes, texts, frames }
 }
 
-test('the trend stacks bars and a hit-rate strip under one shared axis', async () => {
-  const { classes, curves } = await renderTrend(trendPayload())
+test('the trend overlays the hit-rate curve on the bars under one shared axis', async () => {
+  const { classes, texts, frames } = await renderTrend(trendPayload())
 
   assert.equal(classes.filter((name) => name === 'dtu-chartBars').length, 1, 'the bars keep one plot')
-  assert.equal(classes.filter((name) => name === 'dtu-chartHit').length, 1, 'the hit rate gets its own strip')
+  assert.equal(classes.filter((name) => name === 'dtu-chartHit').length, 0, 'the standalone hit-rate strip is gone')
   assert.equal(classes.filter((name) => name === 'dtu-line').length, 0, 'the daily-total curve is gone')
-  assert.equal(classes.filter((name) => name === 'dtu-axisX').length, 1, 'the X axis is drawn once, under both')
-  assert.equal(classes.filter((name) => name === 'dtu-axisHit').length, 1, 'the strip carries its own labels')
-  assert.match(curves.hit, /^M/, 'the hit rate is one smooth path, not a polyline')
+  assert.equal(classes.filter((name) => name === 'dtu-axisX').length, 1, 'the X axis is drawn once, under the one plot')
+  assert.equal(classes.filter((name) => name === 'dtu-axisHit').length, 1, 'the band labels sit on the right of that plot')
+  // Bars and curve in one plot frame: a strip of its own would break the overlay.
+  assert.ok(frames.bars?.includes('dtu-chartBars'), 'the bars sit inside the plot area')
+  assert.ok(frames.curve?.includes('dtu-chartBars'), 'the curve overlays the bars in that same plot area')
+  assert.ok(frames.curve?.includes('dtu-hitPlot'), 'the curve keeps the shared inset frame')
+  assert.match(frames.curveD, /^M/, 'the hit rate is one smooth path, not a polyline')
+  assert.equal(frames.curveProps.opacity, 0.9, 'the curve is drawn translucently above the bars')
+  assert.ok(
+    texts.includes('柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）'),
+    'the head hint describes the overlay instead of two stacked strips',
+  )
 })
 
-test('the hit-rate strip scales to the visible days with 10% headroom', async () => {
-  const { curves, texts } = await renderTrend(trendPayload())
+test('the hit-rate band scales to the visible days with 10% headroom', async () => {
+  const { frames, texts } = await renderTrend(trendPayload())
   // rates: 95%, 90%, 95% -> min 90, max 95, span 5, pad 0.5 -> axis 89.5-95.5
   assert.ok(texts.includes('89.5%'), 'the lower bound is min - 10% of the span')
   assert.ok(texts.includes('95.5%'), 'the upper bound is max + 10% of the span')
-  assert.ok(texts.includes('92.5%'), 'the middle gridline is the band centre')
-  const numbers = (curves.hit.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+  assert.ok(texts.includes('92.5%'), 'the middle label is the band centre')
+  // The right gutter reads those real percentages: lo at the bottom of the plot,
+  // the band centre on the middle gridline, hi at the top of the whole chart.
+  assert.deepEqual(
+    frames.rateLabels,
+    [
+      { text: '89.5%', top: '100%' },
+      { text: '92.5%', top: '50%' },
+      { text: '95.5%', top: '0%' },
+    ],
+    'the band bounds label the right gutter at their mapped heights',
+  )
+  const numbers = (frames.curveD.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
   // the path is 'M x,y' plus 6 coordinates per cubic segment, so a day's own y
   // sits at index 1 and at 2 + 6 * segment + 5; the in-between y's are control
   // points and must not be mistaken for plotted days.
   const dayY = [numbers[1], ...[0, 1].map((segment) => numbers[2 + 6 * segment + 5])]
-  assert.ok(dayY.every((y) => y >= 0 && y <= 100), 'every plotted day sits inside the strip')
+  assert.ok(dayY.every((y) => y >= 0 && y <= 100), 'every plotted day sits inside the plot')
   // the two empty days carry no rate, so only three points are plotted; 95% sits 8.33%
-  // down from the band top (89.5-95.5) and 90% sits 91.67% down
+  // down from the band top (89.5-95.5) and 90% sits 91.67% down — the band still
+  // spans the whole bar plot, so the overlay geometry is unchanged by stacking.
   assert.deepEqual(dayY, [8.33, 91.67, 8.33], '95% near the top, 90% near the bottom')
 })
 
-test('the hit-rate dots and the hover line each live in their own inset plot frame', async () => {
+test('the curve, the dots and the hover line stay inside the shared inset frames', async () => {
   const { plugin } = loadClient()
   const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: trendPayload() }) })
   plugin.apply(ctx)
@@ -1304,6 +1336,7 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
   const curve = idle.find((frame) => frame.node.tag === 'svg' && frame.node.props.preserveAspectRatio === 'none')
   assert.ok(curve, 'the hit-rate curve must be drawn')
   assert.ok(curve.chain.includes('dtu-hitPlot'), 'the curve lives in the same inset frame as the dots')
+  assert.ok(curve.chain.includes('dtu-chartBars'), 'the curve overlays the bars instead of owning a strip')
 
   // Drive TrendSection directly to observe the hover tree: real React re-renders
   // after onMouseEnter, and the fake harness keeps hook state only across
@@ -1342,7 +1375,7 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
   assert.deepEqual(
     cursor.chain.slice(-4),
     ['dtu-trend', 'dtu-plot', 'dtu-plotLine', 'dtu-cursor'],
-    'the cursor hangs off the segment frame — never across the head/legend rows',
+    'the cursor hangs off the plot frame — never across the head/legend rows',
   )
   const tip = hovered.find((frame) => frame.chain.includes('dtu-tip'))
   assert.ok(tip, 'the tooltip follows the cursor')
@@ -1356,7 +1389,7 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
   assert.deepEqual(
     axisFrame.chain.slice(-2),
     ['dtu-plot', 'dtu-axisX'],
-    'the date band belongs to the segment frame, under both segments',
+    'the date band belongs to the plot frame, under the single chart',
   )
 
   // Structure alone cannot prove the insets: parse the rules and compare them.
@@ -1375,13 +1408,21 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
       `.${name} must take its insets from the shared variables, or the pieces drift apart`,
     )
   }
-  assert.ok(ruleBody('dtu-plot').includes('padding-bottom:20px'), 'the segment frame reserves the date band below both segments')
+  // The rate labels live in the right gutter, keyed to the same right inset.
+  const axisHit = ruleBody('dtu-axisHit')
+  assert.ok(
+    axisHit.includes('right:0') && axisHit.includes('width:var(--dtu-plot-r)'),
+    'the rate labels occupy the right inset gutter, beside the plot',
+  )
+  assert.ok(axisHit.includes('text-align:left'), 'the gutter labels read left-aligned, away from the bars')
+  assert.ok(!ruleBody('dtu-chartHit'), 'the standalone hit-rate strip no longer exists')
+  assert.ok(ruleBody('dtu-plot').includes('padding-bottom:20px'), 'the plot frame reserves the date band below the chart')
   assert.ok(
     ruleBody('dtu-plot').includes('position:relative'),
-    'the segment frame must anchor the absolute plot line, or it spans the header again',
+    'the plot frame must anchor the absolute plot line, or it spans the header again',
   )
-  assert.ok(ruleBody('dtu-axisX').includes('bottom:2px;height:14px'), 'the date band must sit below the hit strip, not under it')
-  assert.ok(ruleBody('dtu-plotLine').includes('top:0;bottom:20px'), 'the cursor spans both segments and stops where the axis band starts')
+  assert.ok(ruleBody('dtu-axisX').includes('bottom:2px;height:14px'), 'the date band must sit below the plot area, not under it')
+  assert.ok(ruleBody('dtu-plotLine').includes('top:0;bottom:20px'), 'the cursor spans the plot and stops where the axis band starts')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

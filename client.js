@@ -298,11 +298,12 @@ window.__ModuleLoader__.load({
 .dtu-plot{position:relative;padding-bottom:20px}
 .dtu-trendHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .dtu-chartBars{position:relative;height:190px;margin-top:4px}
-.dtu-chartHit{position:relative;height:44px;margin-top:16px}
-.dtu-axisHit{position:absolute;left:0;top:0;bottom:0;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
-.dtu-axisHit span{position:absolute;right:6px;transform:translateY(-50%)}
-/* The curve, the dots and the hover line share the bars' plot insets (52/44),
-   so one percentage scale positions all three in the same coordinate system. */
+/* The rate labels own the right gutter — the plot's right inset — and carry the
+   real percentages of the band the curve is drawn against. */
+.dtu-axisHit{position:absolute;right:0;top:0;bottom:0;width:var(--dtu-plot-r);color:var(--dsw-alias-label-secondary);font-size:11px;text-align:left}
+.dtu-axisHit span{position:absolute;left:4px;transform:translateY(-50%)}
+/* The curve and the dots overlay the bars and share the bars' plot insets (52/44),
+   so one percentage scale positions them alongside the hover line. */
 .dtu-hitPlot{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0;pointer-events:none}
 .dtu-hitPlot svg{position:absolute;left:0;right:0;top:0;width:100%;height:100%}
 .dtu-plotLine{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:20px;pointer-events:none}
@@ -997,7 +998,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dtu-trendHead' },
-          h('div', { className: 'dtu-hint' }, '柱按 token 堆叠；下面的细条是缓存命中率，两段共用同一条 X 轴'),
+          h('div', { className: 'dtu-hint' }, '柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）'),
           groupBy === 'both'
             ? h(ChipGroup, { items: CHIP_GROUPS, value: mode, onSelect: setMode, label: '统计口径' })
             : null,
@@ -1062,10 +1063,8 @@ window.__ModuleLoader__.load({
                 ),
               ),
             ),
-          ),
-          h(
-            'div',
-            { className: 'dtu-chartHit' },
+            // Rate overlay: kept last inside the plot so the curve and its dots
+            // draw above the bars, on the same percentage scale.
             h(
               'div',
               { className: 'dtu-axisHit' },
@@ -1081,6 +1080,7 @@ window.__ModuleLoader__.load({
                   d: hitPath,
                   fill: 'none',
                   stroke: 'var(--dtu-hit)',
+                  opacity: 0.9,
                   strokeWidth: 1.5,
                   strokeLinecap: 'round',
                   vectorEffect: 'non-scaling-stroke',
