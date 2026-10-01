@@ -46,8 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   (once the calendar spans the card, a wall of solid grey reads as data); today is marked with a two-tone inset ring
   (panel colour outside, label colour inside) that stays visible on the palest and the darkest step alike; and hovering a
   day now raises the dashboard's own tooltip — the same box the trend chart shows, clamped to the plot by a share of the
-  column centre, and laid out as four lines: date / Tokens / turns / requests — instead of the delayed, unstylable
-  native `title`. The whole calendar is **centred with 15px either side**, and its 53 columns share the remaining width,
+  column centre, and laid out as four lines: date / Tokens / turns / requests, with the token figure in the same
+  compact form the stat cards and the trend tooltip use (`1.45亿` rather than `145,156,311`, so no token count can
+  widen the box) — instead of the delayed, unstylable native `title`. The whole calendar is **centred with 15px either side**, and its 53 columns share the remaining width,
   so **nothing scrolls at all** now — the scrolling box is gone. The bottom bar was the hover box all along: once a
   token count gets long it is wider than the 160px min-width it was clamped for, so at the edge columns it poked out of
   the scrolling box, and one pixel was enough. The box now leans away from whichever edge it is near — a column in the
