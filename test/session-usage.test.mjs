@@ -28,7 +28,7 @@ import {
   readSessionRecords,
   scanZstdFrames,
   summarize,
-  totalOf,
+  totalOf, hitRateOf,
 } from '../lib/session-usage.js'
 
 // `apply` writes the plugin's own diagnostics; keep them off the live files,
@@ -404,4 +404,12 @@ test('without a Loader config editor the config endpoints degrade honestly', asy
 test('localDayStart snaps to local midnight', () => {
   const noon = new Date(2026, 8, 27, 12, 34, 56).getTime()
   assert.equal(localDayStart(noon), new Date(2026, 8, 27).getTime())
+})
+
+test('the cache-hit rate puts cache writes on the miss side', () => {
+  // buckets = [uncachedInput, output, cacheRead, cacheWrite, reasoning]
+  assert.equal(hitRateOf([100, 0, 900, 0, 0]), 0.9)
+  assert.ok(Math.abs(hitRateOf([100, 0, 900, 100, 0]) - 9 / 11) < 1e-12, 'cache writes are a miss')
+  assert.equal(hitRateOf([100, 10, 0, 0, 0]), 0, 'prompt tokens but no cache hit reads as 0')
+  assert.equal(hitRateOf([0, 0, 0, 0, 0]), null, 'and an empty range is null, not a fake 0')
 })
