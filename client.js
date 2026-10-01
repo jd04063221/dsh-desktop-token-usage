@@ -281,25 +281,21 @@ window.__ModuleLoader__.load({
 .dtu-dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
 .dtu-heatHead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dtu-heatControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-/* Sideways only. A scroll box that also scrolls vertically grows a scrollbar
-   the moment the hover tooltip hangs past the calendar — it sits 6px down and is
-   ~90px tall, while the shortest calendar (an 11px cell) is 95px, so 1px of
-   overhang was enough to raise a vertical bar, narrow the box and drag in the
-   horizontal one after it. The extra bottom padding is the tooltip's headroom. */
-.dtu-heatScroll{overflow-x:auto;overflow-y:hidden;padding-bottom:12px}
-/* 53 fixed weeks, but the card is not: the whole block stretches to the row it
-   sits in, every week growing on the same 11px basis so the cells stay square
-   and the month axis keeps step. Only a card too narrow for an 11px cell falls
-   back to scrolling. */
-.dtu-heatInner{width:max-content;min-width:100%}
+/* 53 fixed weeks sharing whatever the card gives them, inset 15px either side so
+   the calendar sits centred instead of butting against the card edges. Nothing
+   scrolls and nothing is clipped: 53 columns on a flexible basis always fit, and
+   the hover tooltip is free to hang past the calendar without raising a scrollbar
+   (it was the *tooltip* — wider than the 160px min-width, thanks to a long token
+   count — that poked out of a scrolling box and dragged in the bottom bar). */
+.dtu-heatInner{margin-inline:15px}
 .dtu-heatMonths{display:flex;gap:3px;height:15px;margin-bottom:4px;color:var(--dsw-alias-label-secondary);font-size:10.5px}
 .dtu-monthSpace{width:22px;flex:none}
-.dtu-monthCell{flex:1 0 11px;min-width:0;white-space:nowrap;overflow:visible}
+.dtu-monthCell{flex:1 1 0;min-width:0;white-space:nowrap;overflow:visible}
 .dtu-heatRows{display:flex;gap:3px;position:relative}
 .dtu-weekdays{display:flex;flex-direction:column;gap:3px;width:22px;flex:none;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:11px}
 .dtu-weekdays span{flex:1 1 0;min-height:11px;display:flex;align-items:center}
 .dtu-heat{display:flex;gap:3px;flex:1 1 0;min-width:0}
-.dtu-week{display:flex;flex-direction:column;gap:3px;flex:1 0 11px;min-width:0}
+.dtu-week{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
 .dtu-cell{width:11px;height:11px;border-radius:24%;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
 /* Calendar days share this box with the legend swatches, but not their size. */
 .dtu-heat .dtu-cell{width:100%;height:auto;aspect-ratio:1}
@@ -337,6 +333,11 @@ window.__ModuleLoader__.load({
 .dtu-hitDotEmpty{background:transparent}
 .dtu-cursor{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--dsw-alias-border-l1)}
 .dtu-tip{position:absolute;top:6px;left:0;transform:translateX(-50%);min-width:160px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12px;pointer-events:none;z-index:3}
+/* The heatmap's tooltip pins its own width: the anchor is a 50%-offset clamp, so
+   a box that grew with a long token count could not be clamped exactly — and an
+   inexact clamp is what poked out of the scrolling box. It sits just under the
+   month axis and may hang past the calendar, which clips nothing now. */
+.dtu-tipHeat{top:22px;width:190px;box-sizing:border-box;max-width:calc(100% - 12px)}
 .dtu-tipTitle{font-weight:600;margin-bottom:4px}
 .dtu-tipRow{display:flex;align-items:center;gap:6px}
 .dtu-tipRow b{margin-left:auto;font-weight:600}
@@ -765,7 +766,6 @@ window.__ModuleLoader__.load({
     function Heatmap({ heatmap, days }) {
       const [chosen, setMetric] = React.useState(null)
       const [hovered, setHover] = React.useState(null)
-      const scrollRef = React.useRef(null)
       // A Host older than this Client answers without `heatmap`; the requested
       // range's days still fill the calendar rather than leaving it blank.
       const entries = heatmap
@@ -789,16 +789,6 @@ window.__ModuleLoader__.load({
       const turnDays = entries.filter((day) => (day.turns ?? 0) > 0).length
       const metric = chosen ?? (tokenDays >= turnDays ? 'tokens' : 'turns')
 
-      // 53 fixed-size weeks do not fit every card, and a scroll box that starts
-      // at the oldest week hides the recent ones behind the empty half of the
-      // calendar — exactly the wrong end for a "recent activity" heatmap. Jump
-      // to the newest week on mount and whenever the metric changes; the column
-      // count never moves, so nothing else can shift the anchor.
-      React.useEffect(() => {
-        const node = scrollRef.current
-        if (node) node.scrollLeft = node.scrollWidth
-      }, [metric])
-
       const columns = []
       let previousMonth = -1
       for (let week = 0; week < weeks; week += 1) {
@@ -820,11 +810,12 @@ window.__ModuleLoader__.load({
         columns.push({ key: `w${week}`, days, monthLabel })
       }
 
-      // Anchored the way the trend chart anchors its tooltip — a pure share of
-      // the hovered column — and clamped so the box never leaves the plot. The
-      // 25px is the weekday axis and its gap, which the columns start after.
+      // Anchored the way the trend chart anchors its tooltip — a pure share of the
+      // hovered column — and clamped so the box never leaves the calendar. The
+      // 25px is the weekday axis and its gap, which the columns start after; the
+      // 101px is half of the tooltip's fixed 190px plus a 6px margin.
       const tipLeft = (week) =>
-        'clamp(86px, calc(25px + (100% - 25px) * ' + Number((week + 0.5) / weeks).toFixed(6) + '), calc(100% - 86px))'
+        'clamp(101px, calc(25px + (100% - 25px) * ' + Number((week + 0.5) / weeks).toFixed(6) + '), calc(100% - 101px))'
 
       const values = entries
         .map((day) => day[metric] ?? 0)
@@ -873,79 +864,75 @@ window.__ModuleLoader__.load({
         ),
         h(
           'div',
-          { className: 'dtu-heatScroll', ref: scrollRef },
+          { className: 'dtu-heatInner' },
           h(
             'div',
-            { className: 'dtu-heatInner' },
+            { className: 'dtu-heatMonths' },
+            h('div', { className: 'dtu-monthSpace' }),
+            columns.map((column) => h('div', { key: column.key, className: 'dtu-monthCell' }, column.monthLabel)),
+          ),
+          h(
+            'div',
+            { className: 'dtu-heatRows' },
             h(
               'div',
-              { className: 'dtu-heatMonths' },
-              h('div', { className: 'dtu-monthSpace' }),
-              columns.map((column) => h('div', { key: column.key, className: 'dtu-monthCell' }, column.monthLabel)),
+              { className: 'dtu-weekdays' },
+              WEEKDAY_LABELS.map((label, index) => h('span', { key: label }, index % 2 === 0 && index < 5 ? label : '')),
             ),
             h(
               'div',
-              { className: 'dtu-heatRows' },
-              h(
-                'div',
-                { className: 'dtu-weekdays' },
-                WEEKDAY_LABELS.map((label, index) => h('span', { key: label }, index % 2 === 0 && index < 5 ? label : '')),
-              ),
-              h(
-                'div',
-                { className: 'dtu-heat' },
-                columns.map((column, week) =>
-                  h(
-                    'div',
-                    { key: column.key, className: 'dtu-week' },
-                    column.days.map((day) => {
-                      const entry = day.entry
-                      const level = levelOf(day.value)
-                      return h(
-                        'div',
-                        {
-                          key: day.key,
-                          className: 'dtu-cell',
-                          'data-day': day.key,
-                          'data-level': level,
-                          'data-today': day.key === todayKey ? 'true' : undefined,
-                          // A native title used to be a day's only readout; the
-                          // dashboard already owns a tooltip, so the calendar
-                          // hovers into the very same box the trend chart shows.
-                          onMouseEnter: () =>
-                            setHover({
-                              week,
-                              day: day.key,
-                              tokens: entry ? entry.tokens : 0,
-                              turns: entry ? entry.turns : 0,
-                              requests: entry ? entry.requests : 0,
-                            }),
-                          onMouseLeave: () => setHover(null),
-                        },
-                        h('span', {
-                          className: 'dtu-cellFill',
-                          // Step 0 keeps the box but not the paint: the hairline
-                          // comes from the [data-level="0"] rule instead.
-                          style: { background: level === 0 ? 'transparent' : 'var(--dtu-heat-' + level + ')' },
-                        }),
-                      )
-                    }),
-                  ),
+              { className: 'dtu-heat' },
+              columns.map((column, week) =>
+                h(
+                  'div',
+                  { key: column.key, className: 'dtu-week' },
+                  column.days.map((day) => {
+                    const entry = day.entry
+                    const level = levelOf(day.value)
+                    return h(
+                      'div',
+                      {
+                        key: day.key,
+                        className: 'dtu-cell',
+                        'data-day': day.key,
+                        'data-level': level,
+                        'data-today': day.key === todayKey ? 'true' : undefined,
+                        // A native title used to be a day's only readout; the
+                        // dashboard already owns a tooltip, so the calendar
+                        // hovers into the very same box the trend chart shows.
+                        onMouseEnter: () =>
+                          setHover({
+                            week,
+                            day: day.key,
+                            tokens: entry ? entry.tokens : 0,
+                            turns: entry ? entry.turns : 0,
+                            requests: entry ? entry.requests : 0,
+                          }),
+                        onMouseLeave: () => setHover(null),
+                      },
+                      h('span', {
+                        className: 'dtu-cellFill',
+                        // Step 0 keeps the box but not the paint: the hairline
+                        // comes from the [data-level="0"] rule instead.
+                        style: { background: level === 0 ? 'transparent' : 'var(--dtu-heat-' + level + ')' },
+                      }),
+                    )
+                  }),
                 ),
               ),
-              hovered
-                ? h(
-                    'div',
-                    { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipLeft(hovered.week) } },
-                    // Four lines, one number each: the date on its own, then the
-                    // same label/value row the trend tooltip uses for every figure.
-                    h('div', { className: 'dtu-tipTitle' }, hovered.day),
-                    h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, grouped(hovered.tokens))),
-                    h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
-                    h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
-                  )
-                : null,
             ),
+            hovered
+              ? h(
+                  'div',
+                  { className: 'dtu-tip dtu-tipHeat', 'data-day': hovered.day, style: { left: tipLeft(hovered.week) } },
+                  // Four lines, one number each: the date on its own, then the
+                  // same label/value row the trend tooltip uses for every figure.
+                  h('div', { className: 'dtu-tipTitle' }, hovered.day),
+                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, grouped(hovered.tokens))),
+                  h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
+                  h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
+                )
+              : null,
           ),
         ),
       )

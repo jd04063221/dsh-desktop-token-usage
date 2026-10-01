@@ -1655,49 +1655,36 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
     /\.dtu-heat \.dtu-cell\[data-level="0"\]\{[^}]*background:transparent[^}]*var\(--dtu-heat-0\)\}/.test(styles2),
     'an empty day is a step-0 hairline, not a solid block',
   )
-  // The hover tooltip hangs past the shortest calendar by a pixel or so. If the
-  // scroll box may scroll vertically, that pixel raises a vertical bar, which
-  // narrows the box and drags in a horizontal bar after it.
-  const scrollRule = (styles2.match(/\.dtu-heatScroll\{([^}]*)\}/) ?? [])[1]
-  assert.ok(scrollRule?.includes('overflow-x:auto'), 'the calendar still scrolls sideways on a narrow card')
-  assert.ok(
-    scrollRule.includes('overflow-y:hidden'),
-    'and never vertically: a tooltip must not be able to raise a scrollbar',
-  )
-  const headroom = Number((/padding-bottom:(\d+)px/.exec(scrollRule) ?? [])[1])
-  assert.ok(headroom >= 12, 'the scroll box keeps bottom headroom for the tooltip to hang into')
   assert.ok(
     /\.dtu-heat \.dtu-cell\[data-today="true"\] \.dtu-cellFill\{[^}]*--dsw-alias-bg-layer-1[^}]*--dsw-alias-label-primary\)\}/.test(styles2),
     'today wears two rings, so one of them always reads against the cell colour',
   )
-
-  // 53 fixed-size weeks do not fit every card, and this machine's activity sits
-  // in the last few of them: a box anchored left shows the empty half and hides
-  // the recent weeks, which is the wrong end for a recent-activity calendar.
-  let scrollBox = null
-  const findScroll = (node) => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) return node.forEach(findScroll)
-    if (node.props?.className === 'dtu-heatScroll') scrollBox = node
-    findScroll(node.children)
-  }
-  findScroll(tree)
-  assert.ok(scrollBox, 'the calendar keeps its own scroll box')
+  // The tooltip was the scrollbar's real cause: once a token count gets long it
+  // is wider than the 160px min-width, so at the edge columns it poked out of the
+  // scrolling box. Nothing scrolls now — 53 flexible columns always fit — and the
+  // box pins its own width so the 50%-offset clamp is exact rather than a guess.
+  assert.ok(!styles2.includes('.dtu-heatScroll'), 'the scrolling box is gone')
+  const tipRule = (styles2.match(/\.dtu-tipHeat\{([^}]*)\}/) ?? [])[1]
   assert.ok(
-    scrollBox.props.ref && typeof scrollBox.props.ref === 'object' && 'current' in scrollBox.props.ref,
-    'the effect needs a ref on that box to jump it to the newest week',
+    tipRule?.includes('width:190px') && tipRule.includes('box-sizing:border-box'),
+    'the heatmap tooltip pins its width, so its clamp cannot be outgrown',
   )
+
   const styles = document.head.children[0].textContent
   const ruleBody = (name) => (styles.match(new RegExp('\\.' + name + '\\{([^}]*)\\}')) ?? [])[1]
+  // 15px either side: the calendar is centred in the card instead of butting
+  // against its edges, and the columns share whatever width is left over.
   assert.ok(
-    ruleBody('dtu-heatInner').includes('min-width:100%') && !ruleBody('dtu-heatInner').includes('margin-left:auto'),
-    'the calendar stretches to its row instead of hugging one edge of it',
+    ruleBody('dtu-heatInner').includes('margin-inline:15px') &&
+      !/overflow|max-content/.test(ruleBody('dtu-heatInner')),
+    'the calendar is inset and centred, clips nothing, and keeps no max-content floor to overflow with',
   )
+  assert.ok(ruleBody('dtu-heatRows').includes('position:relative'), 'the calendar frame anchors the tooltip, unclipped')
   assert.ok(ruleBody('dtu-heat').includes('flex:1 1 0'), 'the day grid takes every pixel left of the weekday axis')
-  assert.ok(ruleBody('dtu-week').includes('flex:1 0 11px'), 'every week grows on that basis, and never below an 11px cell')
+  assert.ok(ruleBody('dtu-week').includes('flex:1 1 0'), 'every week shares the row, shrinking with it')
   assert.ok(
-    ruleBody('dtu-monthCell').includes('flex:1 0 11px'),
-    'the month axis grows on the very same basis, or the labels drift off their columns',
+    ruleBody('dtu-monthCell').includes('flex:1 1 0'),
+    'the month axis shrinks on the very same basis, or the labels drift off their columns',
   )
   assert.ok(ruleBody('dtu-weekdays span').includes('flex:1 1 0'), 'the weekday labels stretch with the bands they name')
   const calendarCell = (styles.match(/\.dtu-heat \.dtu-cell\{([^}]*)\}/) ?? [])[1]
@@ -1739,7 +1726,7 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   const findTip = (node) => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) return node.forEach(findTip)
-    if (node.props?.className === 'dtu-tip') tip = node
+    if (String(node.props?.className).split(' ').includes('dtu-tip')) tip = node
     findTip(node.children)
   }
   findTip(shown)
@@ -1755,7 +1742,7 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   // plot, clamped so the box can never leave it.
   assert.equal(
     tip.props.style.left,
-    'clamp(86px, calc(25px + (100% - 25px) * 0.833333), calc(100% - 86px))',
+    'clamp(101px, calc(25px + (100% - 25px) * 0.833333), calc(100% - 101px))',
     'the last of three columns anchors on that column, clamped to the plot',
   )
 
@@ -1767,12 +1754,15 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   findElement(enter, (el) => el.props?.['data-day'] === today).props.onMouseEnter()
   hookIndex = 0
   const afterEnter = heat.type(heat.props)
-  assert.ok(findElement(afterEnter, (el) => el.props?.className === 'dtu-tip'), 'the hover state raises the box')
+  assert.ok(
+    findElement(afterEnter, (el) => String(el.props?.className).split(' ').includes('dtu-tip')),
+    'the hover state raises the box',
+  )
   findElement(afterEnter, (el) => el.props?.['data-day'] === today).props.onMouseLeave()
   hookIndex = 0
   const afterLeave = heat.type(heat.props)
   assert.equal(
-    findElement(afterLeave, (el) => el.props?.className === 'dtu-tip'),
+    findElement(afterLeave, (el) => String(el.props?.className).split(' ').includes('dtu-tip')),
     null,
     'and moving off the cell takes it away again',
   )
