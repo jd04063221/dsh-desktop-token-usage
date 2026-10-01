@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | 한국어
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ja.md) | 한국어
 
 DSH(DeepSeek Harness)용 **완전 오프라인** Token 사용량 통계 플러그인입니다.
 
@@ -34,28 +34,28 @@ DSH(DeepSeek Harness)용 **완전 오프라인** Token 사용량 통계 플러�
 ## 스크린샷
 
 이 플러그인 자신의 컴포넌트로 **샘플 데이터**를 렌더링한 것입니다 — 스크린샷은
-[`scripts/render-shots.mjs`](scripts/render-shots.mjs)(실제 `client.js`와 CSS에 가짜 Host를 물린 방식)와
-[`scripts/render-shots.py`](scripts/render-shots.py)(headless Chrome)가 오프라인으로 생성하므로, 세션 로그·경로·
+[`scripts/render-shots.mjs`](../scripts/render-shots.mjs)(실제 `client.js`와 CSS에 가짜 Host를 물린 방식)와
+[`scripts/render-shots.py`](../scripts/render-shots.py)(headless Chrome)가 오프라인으로 생성하므로, 세션 로그·경로·
 계정 정보가 하나도 포함되지 않습니다. 먼저 밝은 테마, 다음에 어두운 테마입니다. 스크린샷은 중국어로 렌더링되어
 있으며 — 첫 번째 스크립트는 `--locale <id>`를 받아 다른 언어로 렌더링합니다 — 이 README의 열 가지 언어 버전이 모두
 같은 이미지 세트를 공유합니다.
 
-![대시보드, 밝은 테마](assets/dashboard-light.png)
+![대시보드, 밝은 테마](../assets/dashboard-light.png)
 
 통계 카드 6장, 설정된 윈도우 행, 활동 히트맵, 막대 위에 캐시 적중률 곡선을 겹친 일별 Token 추세, 그리고 모델 사용량
 구성입니다.
 
-![대시보드, 어두운 테마](assets/dashboard-dark.png)
+![대시보드, 어두운 테마](../assets/dashboard-dark.png)
 
 어두운 테마의 같은 대시보드 — 각 팔레트에는 밝은색·어두운색 세트가 있습니다.
 
 | 활동 히트맵 | 일별 추세 |
 |---|---|
-| ![활동 히트맵](assets/heatmap-light.png) | ![일별 추세](assets/trend-light.png) |
+| ![활동 히트맵](../assets/heatmap-light.png) | ![일별 추세](../assets/trend-light.png) |
 
 | 사이드바 카드 | 플러그인 관리자의 해당 페이지 |
 |---|---|
-| ![사이드바 카드](assets/sidebar-dark.png) | ![설정](assets/settings-light.png) |
+| ![사이드바 카드](../assets/sidebar-dark.png) | ![설정](../assets/settings-light.png) |
 
 사이드바 하단의 카드는 설정된 두 윈도우를 보여주고, 클릭하면 위의 대시보드가 열립니다. 플러그인 관리자 속 이 플러그인의
 페이지에는 윈도우 기간, 분류, 팔레트가 있습니다.
@@ -179,12 +179,12 @@ npm install            # installs dev/runtime dependencies only, no network data
 - `en`과 `zh`는 DSH의 내장 로케일이고, 이 플러그인은 둘 다 위한 사전을 제공합니다;
 - 다음 언어 팩은 DSH의 카탈로그에 등록되어 있어 DSH 자체 선택기에 나타납니다: `zh-TW`(臺灣正體), `zh-HK`(香港繁體),
   `de`, `fr`, `es`, `it`, `ja`, `ko`. 나머지 여섯 코드 — `pt-BR`, `ru`, `vi`, `th`, `id`, `ar`(오른쪽에서 왼쪽) — 는
-  설계만 되고 아직 구현되지 않았습니다. [설계 문서](docs/superpowers/specs/2026-10-01-i18n-design.md)를 보세요;
+  설계만 되고 아직 구현되지 않았습니다. [설계 문서](../docs/superpowers/specs/2026-10-01-i18n-design.md)를 보세요;
 - 문구는 `locales/<id>.json`에 언어당 하나의 평문 파일로 있으며, `node scripts/build-dicts.mjs`가 `client.js`로
   생성합니다. 생성된 블록은 절대 손으로 고치지 마세요 — 오래된 상태면 `npm test`가 실패합니다;
 - 숫자, 백분율, 날짜, 요일·월 이름, 복수형은 모두 `Intl`에서 오므로, 수천 단위 구분이 다른 언어나 영어가 `K`/`M`/`B`를
   쓰는 곳에 `萬`/`億`을 쓰는 언어, 복수형이 변하는 언어도 올바르게 읽힙니다;
-- `README-<id>.md`와 `CHANGELOG-<id>.md`가 열 언어 각각에서 두 문서를 담습니다. 이 파일들은 GitHub를 위해 저장소에
+- `translations/README-<id>.md`와 `translations/CHANGELOG-<id>.md`가 열 언어 각각에서 두 문서를 담습니다. 이 파일들은 GitHub를 위해 저장소에
   있고, npm은 `README.md`만 보여줍니다.
 
 ## 설정
@@ -342,10 +342,11 @@ test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-
 docs/DESIGN.md               Design, data contracts, pitfalls hit, and verification evidence
 docs/research/               Earlier research notes and reusable session-log probe scripts
 CHANGELOG.md                 Version history (with a commit index)
+translations/                 나머지 9개 언어의 README와 CHANGELOG
 ```
 
 문서는 열 언어로 제공됩니다: 기본은 영어(`README.md` / `CHANGELOG.md`)이고, 나머지 언어마다 각자의
-`README-<id>.md` / `CHANGELOG-<id>.md`가 있습니다. 열 파일 모두 각 파일 3번째 줄의 스위처로 서로 연결되어 있습니다.
+`translations/README-<id>.md` / `translations/CHANGELOG-<id>.md`가 있습니다. 열 파일 모두 각 파일 3번째 줄의 스위처로 서로 연결되어 있습니다.
 
 ## 라이선스
 

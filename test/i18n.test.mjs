@@ -16,6 +16,15 @@ import { LOCALE_IDS, PLURAL_KEYS, build, readDictionaries, validateDictionaries 
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.dirname(here)
+
+/**
+ * The English pair is what npm and GitHub render, so it stays at the repository
+ * root; every other language lives under `translations/`, one file per language
+ * in both classes.
+ */
+const docPath = (file) =>
+  file === 'README.md' || file === 'CHANGELOG.md' ? file : path.posix.join('translations', file)
+const docFile = (file) => path.join(root, docPath(file))
 const source = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
 const dicts = readDictionaries()
 
@@ -163,8 +172,8 @@ test('one document per language, in both classes', () => {
   for (const id of LOCALE_IDS) {
     const suffix = id === 'en' ? '' : `-${id}`
     for (const name of ['README', 'CHANGELOG']) {
-      const file = path.join(root, `${name}${suffix}.md`)
-      assert.ok(fs.existsSync(file), `${name}${suffix}.md is missing`)
+      const file = docFile(`${name}${suffix}.md`)
+      assert.ok(fs.existsSync(file), `${docPath(`${name}${suffix}.md`)} is missing`)
       assert.ok(fs.statSync(file).size > 1000, `${name}${suffix}.md looks empty`)
     }
   }
@@ -174,7 +183,7 @@ test('every document links to all the others exactly once', () => {
   for (const id of LOCALE_IDS) {
     const suffix = id === 'en' ? '' : `-${id}`
     for (const name of ['README', 'CHANGELOG']) {
-      const body = fs.readFileSync(path.join(root, `${name}${suffix}.md`), 'utf8')
+      const body = fs.readFileSync(docFile(`${name}${suffix}.md`), 'utf8')
       const head = body.split(/\r?\n/).slice(0, 8).join('\n')
       for (const other of LOCALE_IDS) {
         if (other === id) continue
@@ -187,7 +196,7 @@ test('every document links to all the others exactly once', () => {
 })
 
 test('the documents keep the structure and versions of the English truth', () => {
-  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8')
+  const read = (file) => fs.readFileSync(docFile(file), 'utf8')
   // A translated heading has translated words, so only the shape is comparable:
   // the sequence of heading levels, the version titles, and every link target.
   const levels = (body) => (body.match(/^#{1,3} /gm) ?? []).join('|')
@@ -200,30 +209,35 @@ test('the documents keep the structure and versions of the English truth', () =>
   // Line 3 is the language switcher, whose links necessarily differ per file, so
   // every comparison below starts after it.
   const body = (file) => read(file).split(/\r?\n/).slice(3).join('\n')
-  const links = (text) =>
+  const links = (text, file) =>
     [...new Set((text.match(/\]\(([^)]+)\)/g) ?? []).map((hit) => hit.slice(2, -1)))]
       // An external site may have a translated page of its own (keepachangelog and
       // semver both link one), and an in-page anchor is a translated heading; the
       // repository's own paths are the ones that must never move.
       .filter((target) => !target.startsWith('http') && !target.startsWith('#'))
+      // A translated document sits one level deeper, so its relative targets carry a
+      // `../../` the English one does not; compare the resolved repository path.
+      .map((target) => path.posix.normalize(path.posix.join(path.posix.dirname(file), target)))
       .sort()
   const en = {
-    readme: { levels: levels(body('README.md')), links: links(body('README.md')) },
+    readme: { levels: levels(body('README.md')), links: links(body('README.md'), 'README.md') },
     changelog: {
       levels: levels(body('CHANGELOG.md')),
       versions: versions(body('CHANGELOG.md')),
-      links: links(body('CHANGELOG.md')),
+      links: links(body('CHANGELOG.md'), 'CHANGELOG.md'),
     },
   }
   for (const id of LOCALE_IDS) {
     if (id === 'en') continue
-    const readme = body(`README-${id}.md`)
-    assert.equal(levels(readme), en.readme.levels, `README-${id}.md heading levels`)
-    assert.deepEqual(links(readme), en.readme.links, `README-${id}.md link targets`)
-    const changelog = body(`CHANGELOG-${id}.md`)
-    assert.equal(levels(changelog), en.changelog.levels, `CHANGELOG-${id}.md heading levels`)
-    assert.equal(versions(changelog), en.changelog.versions, `CHANGELOG-${id}.md version titles`)
-    assert.deepEqual(links(changelog), en.changelog.links, `CHANGELOG-${id}.md link targets`)
+    const readmeName = `README-${id}.md`
+    const readme = body(readmeName)
+    assert.equal(levels(readme), en.readme.levels, `${readmeName} heading levels`)
+    assert.deepEqual(links(readme, docPath(readmeName)), en.readme.links, `${readmeName} link targets`)
+    const changelogName = `CHANGELOG-${id}.md`
+    const changelog = body(changelogName)
+    assert.equal(levels(changelog), en.changelog.levels, `${changelogName} heading levels`)
+    assert.equal(versions(changelog), en.changelog.versions, `${changelogName} version titles`)
+    assert.deepEqual(links(changelog, docPath(changelogName)), en.changelog.links, `${changelogName} link targets`)
   }
 })
 

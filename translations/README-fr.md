@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | Français | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | Français | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ko.md)
 
 Un plugin de statistiques d'utilisation des tokens **entièrement hors ligne** pour DSH (DeepSeek Harness).
 
@@ -40,28 +40,28 @@ votre machine.
 ## Captures d'écran
 
 Rendu à partir des propres composants du plugin avec des **données d'exemple** — les captures sont produites hors ligne par
-[`scripts/render-shots.mjs`](scripts/render-shots.mjs) (le vrai `client.js` et le vrai CSS face à un faux Host) plus
-[`scripts/render-shots.py`](scripts/render-shots.py) (Chrome sans tête), si bien qu'aucun journal de session, chemin ou
+[`scripts/render-shots.mjs`](../scripts/render-shots.mjs) (le vrai `client.js` et le vrai CSS face à un faux Host) plus
+[`scripts/render-shots.py`](../scripts/render-shots.py) (Chrome sans tête), si bien qu'aucun journal de session, chemin ou
 détail de compte n'y figure. Thème clair d'abord, thème sombre ensuite. Les captures sont rendues en chinois — le premier
 script prend `--locale <id>` pour rendre une autre langue — et les dix variantes linguistiques de ce README partagent le
 même jeu.
 
-![Tableau de bord, thème clair](assets/dashboard-light.png)
+![Tableau de bord, thème clair](../assets/dashboard-light.png)
 
 Six cartes de statistiques, la ligne de fenêtres configurées, la carte de chaleur d'activité, la tendance quotidienne des
 tokens avec la courbe de taux de réussite du cache superposée aux barres, et la répartition de l'usage par modèle.
 
-![Tableau de bord, thème sombre](assets/dashboard-dark.png)
+![Tableau de bord, thème sombre](../assets/dashboard-dark.png)
 
 Le même tableau de bord en thème sombre — chaque palette fournit un jeu clair et un jeu sombre.
 
 | Carte de chaleur d'activité | Tendance quotidienne |
 |---|---|
-| ![Carte de chaleur d'activité](assets/heatmap-light.png) | ![Tendance quotidienne](assets/trend-light.png) |
+| ![Carte de chaleur d'activité](../assets/heatmap-light.png) | ![Tendance quotidienne](../assets/trend-light.png) |
 
 | La carte de la barre latérale | Sa page dans le gestionnaire de plugins |
 |---|---|
-| ![Carte de la barre latérale](assets/sidebar-dark.png) | ![Réglages](assets/settings-light.png) |
+| ![Carte de la barre latérale](../assets/sidebar-dark.png) | ![Réglages](../assets/settings-light.png) |
 
 La carte en pied de la barre latérale affiche les deux fenêtres configurées ; un clic dessus ouvre le tableau de bord
 ci-dessus. La page du plugin dans le gestionnaire de plugins porte les plages des fenêtres, le regroupement et la palette.
@@ -197,13 +197,13 @@ langue dans DSH et le tableau de bord bascule avec, immédiatement et sans recha
 - Les paquets de langue suivants sont enregistrés dans le catalogue de DSH, si bien qu'ils apparaissent dans son propre
   sélecteur : `zh-TW` (臺灣正體), `zh-HK` (香港繁體), `de`, `fr`, `es`, `it`, `ja` et `ko`. Les six codes restants — `pt-BR`, `ru`,
   `vi`, `th`, `id` et `ar` (de droite à gauche) — sont conçus mais pas encore implémentés ; voir
-  [la conception](docs/superpowers/specs/2026-10-01-i18n-design.md) ;
+  [la conception](../docs/superpowers/specs/2026-10-01-i18n-design.md) ;
 - Les textes vivent dans `locales/<id>.json`, un fichier plat par langue, et sont générés dans `client.js` par
   `node scripts/build-dicts.mjs`. Ne modifiez jamais le bloc généré à la main — `npm test` échoue lorsqu'il est périmé ;
 - Les nombres, pourcentages, dates, noms de jours et de mois et les formes de pluriel viennent tous de `Intl`, si bien
   qu'une langue qui groupe les milliers autrement, écrit `萬`/`億` là où l'anglais écrit `K`/`M`/`B`, ou module ses
   pluriels s'affiche correctement ;
-- `README-<id>.md` et `CHANGELOG-<id>.md` portent les deux documents dans chacune des dix langues. Ils restent dans le
+- `translations/README-<id>.md` et `translations/CHANGELOG-<id>.md` portent les deux documents dans chacune des dix langues. Ils restent dans le
   dépôt pour GitHub ; npm n'affiche que `README.md`.
 
 ## Configuration
@@ -375,10 +375,11 @@ test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-
 docs/DESIGN.md               Design, data contracts, pitfalls hit, and verification evidence
 docs/research/               Earlier research notes and reusable session-log probe scripts
 CHANGELOG.md                 Version history (with a commit index)
+translations/                 Les README et CHANGELOG des neuf autres langues
 ```
 
 Les documents existent en dix langues : l'anglais est la valeur par défaut (`README.md` / `CHANGELOG.md`), et chaque autre
-langue a son propre `README-<id>.md` / `CHANGELOG-<id>.md`. Les dix sont reliées entre elles par le sélecteur à la ligne 3 de chaque fichier.
+langue a son propre `translations/README-<id>.md` / `translations/CHANGELOG-<id>.md`. Les dix sont reliées entre elles par le sélecteur à la ligne 3 de chaque fichier.
 
 ## Licence
 

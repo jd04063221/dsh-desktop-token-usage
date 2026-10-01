@@ -1,6 +1,6 @@
 # Registro delle modifiche
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | Italiano | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-es.md) | Italiano | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ko.md)
 
 Questo file documenta tutte le modifiche note a `dsh-desktop-token-usage`.
 Il formato si basa su [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), e i numeri di versione seguono [Semantic Versioning](https://semver.org/).
@@ -22,8 +22,8 @@ Il formato si basa su [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
   `es`, `it`, `ja` e `ko` che questo plugin registra nel catalogo di DSH. Numeri, percentuali, date, nomi di giorni e
   mesi e le forme plurali arrivano tutti da `Intl`, quindi i separatori delle migliaia, `萬`/`億` dove l'inglese scrive
   `K`/`M`/`B` e le categorie plurali proprie di ogni lingua vengono tutti corretti. Le stringhe stanno in `locales/<id>.json`
-  e vengono generate nel bundle del client da [`scripts/build-dicts.mjs`](scripts/build-dicts.mjs): il blocco generato
-  non va mai modificato a mano, e un test fallisce quando è obsoleto. `README-<id>.md` e `CHANGELOG-<id>.md`
+  e vengono generate nel bundle del client da [`scripts/build-dicts.mjs`](../scripts/build-dicts.mjs): il blocco generato
+  non va mai modificato a mano, e un test fallisce quando è obsoleto. `translations/README-<id>.md` e `translations/CHANGELOG-<id>.md`
   contengono entrambi i documenti in ciascuna lingua pubblicata. Nota: selezionare un language pack lascia **l'interfaccia di DSH** su
   `zh`/`en` — solo questo plugin cambia.
 
@@ -41,7 +41,7 @@ Il formato si basa su [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
 - **Localizzazione, il livello rimanente**: i sei codici lingua `pt-BR`, `ru`, `vi`, `th`, `id` e `ar` sono progettati
   ma non ancora implementati. `ar` richiede anche la shell da destra a sinistra — inset specchiati, tooltip e lati degli assi, con
   l'asse temporale da sinistra a destra — che nessuna delle dieci lingue pubblicate richiede. Vedi
-  [la progettazione](docs/superpowers/specs/2026-10-01-i18n-design.md).
+  [la progettazione](../docs/superpowers/specs/2026-10-01-i18n-design.md).
 
 ## [0.1.5] - 2026-10-01
 

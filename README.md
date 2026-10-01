@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
+English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ko.md)
 
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
@@ -190,7 +190,7 @@ DSH and the dashboard switches with it, immediately and without a reload.
 - Numbers, percentages, dates, weekday and month names, and plural forms all come from `Intl`, so a language that
   groups thousands differently, writes `萬`/`億` where English writes `K`/`M`/`B`, or inflects its plurals reads
   correctly;
-- `README-<id>.md` and `CHANGELOG-<id>.md` carry both documents in each of the ten languages. They stay in the
+- `translations/README-<id>.md` and `translations/CHANGELOG-<id>.md` carry both documents in each of the ten languages. They stay in the
   repository for GitHub; npm shows `README.md` only.
 
 ## Configuration
@@ -354,10 +354,11 @@ test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-
 docs/DESIGN.md               Design, data contracts, pitfalls hit, and verification evidence
 docs/research/               Earlier research notes and reusable session-log probe scripts
 CHANGELOG.md                 Version history (with a commit index)
+translations/                 The other nine languages' README and CHANGELOG
 ```
 
 The docs come in ten languages: English is the default (`README.md` / `CHANGELOG.md`), and every other language has its
-own `README-<id>.md` / `CHANGELOG-<id>.md`. All ten are cross-linked by the switcher on line 3 of each file.
+own `translations/README-<id>.md` / `translations/CHANGELOG-<id>.md`. All ten are cross-linked by the switcher on line 3 of each file.
 
 ## License
 

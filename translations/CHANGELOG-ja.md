@@ -1,6 +1,6 @@
 # 変更履歴
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-it.md) | 日本語 | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-it.md) | 日本語 | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ko.md)
 
 このファイルは `dsh-desktop-token-usage` のすべての注目すべき変更を記録します。
 フォーマットは [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) に基づき、バージョン番号は [Semantic Versioning](https://semver.org/) に従います。
@@ -16,7 +16,7 @@
 
 ### 追加
 
-- **ローカライゼーション（i18n）**：ダッシュボードが**DSH自身の言語設定**に追従するようになりました — 独自の選択器は持たず、DSHで言語を切り替えるとダッシュボードもリロードなしで即座に切り替わります。10言語を同梱：`en` と `zh` はDSHの組み込み辞書経由、さらにこのプラグインがDSHのカタログに登録する `zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja`、`ko` の各パック。数字、パーセンテージ、日付、曜日・月の名前、複数形はすべて `Intl` 由来のため、桁区切り、英語が `K`/`M`/`B` と書くところでの `萬`/`億`、そして各言語固有の複数カテゴリが正しく出力されます。文言は `locales/<id>.json` に置かれ、[`scripts/build-dicts.mjs`](scripts/build-dicts.mjs) によりクライアントバンドルに生成されます：生成ブロックは決して手で編集せず、古いままだとテストが失敗します。`README-<id>.md` と `CHANGELOG-<id>.md` は、それぞれの同梱言語で両ドキュメントを提供します。注意：言語パックを選択しても**DSH自身のインターフェース**は `zh`/`en` のままで、切り替わるのはこのプラグインだけです。
+- **ローカライゼーション（i18n）**：ダッシュボードが**DSH自身の言語設定**に追従するようになりました — 独自の選択器は持たず、DSHで言語を切り替えるとダッシュボードもリロードなしで即座に切り替わります。10言語を同梱：`en` と `zh` はDSHの組み込み辞書経由、さらにこのプラグインがDSHのカタログに登録する `zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja`、`ko` の各パック。数字、パーセンテージ、日付、曜日・月の名前、複数形はすべて `Intl` 由来のため、桁区切り、英語が `K`/`M`/`B` と書くところでの `萬`/`億`、そして各言語固有の複数カテゴリが正しく出力されます。文言は `locales/<id>.json` に置かれ、[`scripts/build-dicts.mjs`](../scripts/build-dicts.mjs) によりクライアントバンドルに生成されます：生成ブロックは決して手で編集せず、古いままだとテストが失敗します。`translations/README-<id>.md` と `translations/CHANGELOG-<id>.md` は、それぞれの同梱言語で両ドキュメントを提供します。注意：言語パックを選択しても**DSH自身のインターフェース**は `zh`/`en` のままで、切り替わるのはこのプラグインだけです。
 
 ### 修正
 
@@ -25,7 +25,7 @@
 
 ### 予定
 
-- **ローカライゼーションの残りの段階**：`pt-BR`、`ru`、`vi`、`th`、`id`、`ar` の6つの言語コードは設計済みですが未実装です。`ar` はさらに右から左のシェル（インセット・ツールチップ・軸の左右反転。時間軸は左から右のまま）が必要で、同梱の10言語はいずれもこれを必要としません。[設計](docs/superpowers/specs/2026-10-01-i18n-design.md) を参照してください。
+- **ローカライゼーションの残りの段階**：`pt-BR`、`ru`、`vi`、`th`、`id`、`ar` の6つの言語コードは設計済みですが未実装です。`ar` はさらに右から左のシェル（インセット・ツールチップ・軸の左右反転。時間軸は左から右のまま）が必要で、同梱の10言語はいずれもこれを必要としません。[設計](../docs/superpowers/specs/2026-10-01-i18n-design.md) を参照してください。
 ## [0.1.5] - 2026-10-01
 
 ### 追加

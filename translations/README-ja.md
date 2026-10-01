@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | 日本語 | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | 日本語 | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ko.md)
 
 DSH（DeepSeek Harness）向けの**完全オフライン**のToken使用量統計プラグインです。
 
@@ -17,23 +17,23 @@ DSH（DeepSeek Harness）向けの**完全オフライン**のToken使用量統�
 
 ## スクリーンショット
 
-このプラグイン自身のコンポーネントで**サンプルデータ**をレンダリングしたものです — 画像はオフラインで [`scripts/render-shots.mjs`](scripts/render-shots.mjs)（偽のHostに対して実際の `client.js` とCSSを使用）と [`scripts/render-shots.py`](scripts/render-shots.py)（ヘッドレスChrome）によって生成されるため、セッションログ・パス・アカウント情報は一切関与しません。最初がライトテーマ、次がダークテーマです。画像は中国語でレンダリングされています — 最初のスクリプトは `--locale <id>` を受け取り別の言語でレンダリングします — このREADMEの10言語すべての版が同じ画像セットを共有します。
+このプラグイン自身のコンポーネントで**サンプルデータ**をレンダリングしたものです — 画像はオフラインで [`scripts/render-shots.mjs`](../scripts/render-shots.mjs)（偽のHostに対して実際の `client.js` とCSSを使用）と [`scripts/render-shots.py`](../scripts/render-shots.py)（ヘッドレスChrome）によって生成されるため、セッションログ・パス・アカウント情報は一切関与しません。最初がライトテーマ、次がダークテーマです。画像は中国語でレンダリングされています — 最初のスクリプトは `--locale <id>` を受け取り別の言語でレンダリングします — このREADMEの10言語すべての版が同じ画像セットを共有します。
 
-![ダッシュボード、ライトテーマ](assets/dashboard-light.png)
+![ダッシュボード、ライトテーマ](../assets/dashboard-light.png)
 
 6枚の統計カード、設定ウィンドウの行、アクティビティヒートマップ、キャッシュヒット率の曲線を棒に重ねた日次Tokenトレンド、そしてモデル別使用量の内訳。
 
-![ダッシュボード、ダークテーマ](assets/dashboard-dark.png)
+![ダッシュボード、ダークテーマ](../assets/dashboard-dark.png)
 
 ダークテーマでの同じダッシュボード — 各パレットはライトセットとダークセットを備えています。
 
 | アクティビティヒートマップ | 日次トレンド |
 |---|---|
-| ![アクティビティヒートマップ](assets/heatmap-light.png) | ![日次トレンド](assets/trend-light.png) |
+| ![アクティビティヒートマップ](../assets/heatmap-light.png) | ![日次トレンド](../assets/trend-light.png) |
 
 | サイドバーカード | プラグインマネージャーでのそのページ |
 |---|---|
-| ![サイドバーカード](assets/sidebar-dark.png) | ![設定](assets/settings-light.png) |
+| ![サイドバーカード](../assets/sidebar-dark.png) | ![設定](../assets/settings-light.png) |
 
 サイドバー下部のカードは2つの設定ウィンドウを表示し、クリックすると上のダッシュボードが開きます。プラグインマネージャーでのプラグインのページには、ウィンドウの時間範囲、集計単位、パレットが備わっています。
 ## 互換性とテスト環境
@@ -122,10 +122,10 @@ npm install            # installs dev/runtime dependencies only, no network data
 ダッシュボードは**DSH自身の言語設定**に従います。独自の言語選択器は持たず、DSHの言語を変えればダッシュボードもリロードなしですぐに切り替わります。
 
 - `en` と `zh` はDSHの組み込みロケールで、このプラグインはどちらにも辞書を同梱しています；
-- 以下の言語パックはDSHのカタログに登録されているため、DSH自身のセレクタに表示されます：`zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja`、`ko`。残りの6つのコード — `pt-BR`、`ru`、`vi`、`th`、`id`、`ar`（右から左）— は設計済みですが未実装です。[設計](docs/superpowers/specs/2026-10-01-i18n-design.md) を参照してください；
+- 以下の言語パックはDSHのカタログに登録されているため、DSH自身のセレクタに表示されます：`zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja`、`ko`。残りの6つのコード — `pt-BR`、`ru`、`vi`、`th`、`id`、`ar`（右から左）— は設計済みですが未実装です。[設計](../docs/superpowers/specs/2026-10-01-i18n-design.md) を参照してください；
 - コピーは `locales/<id>.json` に1言語1つのフラットなファイルで置かれ、`node scripts/build-dicts.mjs` により `client.js` に生成されます。生成ブロックを決して手で編集しないでください — 古いままだと `npm test` が失敗します；
 - 数字、パーセンテージ、日付、曜日・月の名前、複数形はすべて `Intl` 由来なので、千の区切り方が違う言語、英語が `K`/`M`/`B` と書くところに `萬`/`億` を書く言語、複数形を活用する言語でも正しく表示されます；
-- `README-<id>.md` と `CHANGELOG-<id>.md` は10言語それぞれで両ドキュメントを提供しています。GitHubのためにリポジトリに置かれ、npmが表示するのは `README.md` のみです。
+- `translations/README-<id>.md` と `translations/CHANGELOG-<id>.md` は10言語それぞれで両ドキュメントを提供しています。GitHubのためにリポジトリに置かれ、npmが表示するのは `README.md` のみです。
 
 ## 設定
 
@@ -240,10 +240,11 @@ test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-
 docs/DESIGN.md               Design, data contracts, pitfalls hit, and verification evidence
 docs/research/               Earlier research notes and reusable session-log probe scripts
 CHANGELOG.md                 Version history (with a commit index)
+translations/                 残り9言語の README と CHANGELOG
 ```
 
 ドキュメントは10言語で用意されています：デフォルトは英語（`README.md` / `CHANGELOG.md`）、それ以外の言語はそれぞれ
-独自の `README-<id>.md` / `CHANGELOG-<id>.md` を持ちます。10言語すべては、各ファイルの3行目のスイッチャーで相互にリンクされています。
+独自の `translations/README-<id>.md` / `translations/CHANGELOG-<id>.md` を持ちます。10言語すべては、各ファイルの3行目のスイッチャーで相互にリンクされています。
 
 ## ライセンス
 

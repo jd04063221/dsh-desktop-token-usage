@@ -1,6 +1,6 @@
 # 변경 이력
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ja.md) | 한국어
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ja.md) | 한국어
 
 이 파일은 `dsh-desktop-token-usage`의 모든 주요 변경 사항을 기록합니다.
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)을 따르고, 버전 번호는 [Semantic Versioning](https://semver.org/)을 따릅니다.
@@ -22,8 +22,8 @@
   플러그인이 DSH 카탈로그에 등록하는 `zh-TW`(臺灣正體), `zh-HK`(香港繁體), `de`, `fr`, `es`, `it`, `ja`, `ko` 팩. 숫자,
   백분율, 날짜, 요일·월 이름, 복수형은 모두 `Intl`에서 오므로, 천 단위 구분 기호, 영어가 `K`/`M`/`B`를 쓰는 곳에서 쓰는
   `萬`/`億`, 그리고 각 언어 고유의 복수 분류가 모두 올바르게 나옵니다. 문구는 `locales/<id>.json`에 있으며,
-  [`scripts/build-dicts.mjs`](scripts/build-dicts.mjs)가 클라이언트 번들로 생성합니다: 생성된 블록은 절대 손으로 고쳐서는
-  안 되고, 오래된 상태면 테스트가 실패합니다. `README-<id>.md`와 `CHANGELOG-<id>.md`가 제공하는 각 언어마다 두 문서를
+  [`scripts/build-dicts.mjs`](../scripts/build-dicts.mjs)가 클라이언트 번들로 생성합니다: 생성된 블록은 절대 손으로 고쳐서는
+  안 되고, 오래된 상태면 테스트가 실패합니다. `translations/README-<id>.md`와 `translations/CHANGELOG-<id>.md`가 제공하는 각 언어마다 두 문서를
   담습니다. 참고: 언어 팩을 골라도 **DSH 자체 인터페이스**는 `zh`/`en`에 그대로 있고, 이 플러그인만 전환됩니다.
 
 ### 수정됨
@@ -38,7 +38,7 @@
 
 - **현지화, 남은 층위**: 여섯 언어 코드 `pt-BR`, `ru`, `vi`, `th`, `id`, `ar`은 설계만 되고 아직 구현되지 않았습니다.
   `ar`은 오른쪽에서 왼쪽 셸도 필요합니다 — 좌우 반전된 여백, 툴팁, 축 위치를 담되 시간축은 왼쪽에서 오른쪽으로 — 제공되는
-  열 언어는 어느 것도 이런 것을 요구하지 않습니다. [설계 문서](docs/superpowers/specs/2026-10-01-i18n-design.md)를 보세요.
+  열 언어는 어느 것도 이런 것을 요구하지 않습니다. [설계 문서](../docs/superpowers/specs/2026-10-01-i18n-design.md)를 보세요.
 
 ## [0.1.5] - 2026-10-01
 

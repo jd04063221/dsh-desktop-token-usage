@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文 | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文 | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ko.md)
 
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
@@ -29,26 +29,26 @@
 
 ## 界面截图
 
-用本插件**自己的组件**渲染，数据是**示例数据**：截图由 [`scripts/render-shots.mjs`](scripts/render-shots.mjs)
-（真实 `client.js` + 真实 CSS，接一个假 Host）与 [`scripts/render-shots.py`](scripts/render-shots.py)
+用本插件**自己的组件**渲染，数据是**示例数据**：截图由 [`scripts/render-shots.mjs`](../scripts/render-shots.mjs)
+（真实 `client.js` + 真实 CSS，接一个假 Host）与 [`scripts/render-shots.py`](../scripts/render-shots.py)
 （无头 Chrome）离线生成，不涉及任何会话日志、路径或账号信息。先是浅色，再是深色。截图统一用中文渲染（第一个脚本
 加 `--locale <id>` 可换语言），十种语言的 README 共用同一组图。
 
-![看板·浅色](assets/dashboard-light.png)
+![看板·浅色](../assets/dashboard-light.png)
 
 6 张统计卡、「配置窗口」一行、活跃热力图、按天 Token 趋势（命中率曲线叠加在柱上）、模型用量拆分。
 
-![看板·深色](assets/dashboard-dark.png)
+![看板·深色](../assets/dashboard-dark.png)
 
 同一张看板的深色主题——三套配色各自都有浅色与深色两份。
 
 | 活跃热力图 | 按天趋势 |
 |---|---|
-| ![活跃热力图](assets/heatmap-light.png) | ![按天趋势](assets/trend-light.png) |
+| ![活跃热力图](../assets/heatmap-light.png) | ![按天趋势](../assets/trend-light.png) |
 
 | 侧边栏卡片 | 插件页（设置） |
 |---|---|
-| ![侧边栏卡片](assets/sidebar-dark.png) | ![设置页](assets/settings-light.png) |
+| ![侧边栏卡片](../assets/sidebar-dark.png) | ![设置页](../assets/settings-light.png) |
 
 侧边栏底部那张卡片显示两个「配置窗口」，点它打开上面的看板；插件页里配置窗口跨度、统计口径与配色方案。
 
@@ -155,12 +155,12 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 - `en` 与 `zh` 是 DSH 内置语言，本插件为两者都提供了字典；
 - 以下语言包注册进 DSH 的语言目录，因此会出现在 DSH 自己的语言选择器里：`zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、
   `de`、`fr`、`es`、`it`、`ja`、`ko`。其余六个代码 `pt-BR`、`ru`、`vi`、`th`、`id`、`ar`（RTL）设计已定稿、
-  尚未实现，见 [设计稿](docs/superpowers/specs/2026-10-01-i18n-design.md)；
+  尚未实现，见 [设计稿](../docs/superpowers/specs/2026-10-01-i18n-design.md)；
 - 文案放在 `locales/<id>.json`，一种语言一个扁平文件，由 `node scripts/build-dicts.mjs` 生成进 `client.js`。
   生成块**不要手改**：过期时 `npm test` 会失败；
 - 数字、百分比、日期、星期与月份名、复数形式全部来自 `Intl`，因此千分位写法不同、用 `萬`/`億` 而非 `K`/`M`/`B`、
   或需要复数的语言都能正确显示；
-- `README-<id>.md` 与 `CHANGELOG-<id>.md` 提供这十种语言的同款文档，留在仓库里供 GitHub 阅读；npm 只显示
+- `translations/README-<id>.md` 与 `translations/CHANGELOG-<id>.md` 提供这十种语言的同款文档，留在仓库里供 GitHub 阅读；npm 只显示
   `README.md`。
 
 ## 配置项
@@ -304,11 +304,12 @@ test/session-usage.test.mjs  聚合、毫秒区间、卡片窗口、日历、Con
 test/client-smoke.test.mjs   客户端工厂 / 槽位注册 / 两半 wire 契约对拍 / 渲染
 docs/DESIGN.md               设计、数据契约、踩过的坑与验证证据
 docs/research/               前期调研记录与可复用的会话日志探针脚本
-CHANGELOG-zh.md              中文版本变更记录（含提交索引）
+CHANGELOG.md                 版本变更记录（含提交索引）
+translations/                其余九种语言的 README 与 CHANGELOG（本文件在其中）
 ```
 
-文档提供十种语言：英文为默认（`README.md` / `CHANGELOG.md`），其余每种语言各有自己的 `README-<id>.md` /
-`CHANGELOG-<id>.md`，十份文档由各自第 3 行的语言切换条互链。
+文档提供十种语言：英文为默认（`README.md` / `CHANGELOG.md`），其余每种语言各有自己的 `translations/README-<id>.md` /
+`translations/CHANGELOG-<id>.md`，十份文档由各自第 3 行的语言切换条互链。
 
 ## License
 

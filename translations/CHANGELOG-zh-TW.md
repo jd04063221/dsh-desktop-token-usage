@@ -1,6 +1,6 @@
 # 變更日誌
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md) | 繁體中文（臺灣） | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh.md) | 繁體中文（臺灣） | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/CHANGELOG-ko.md)
 
 本檔案記錄 `dsh-desktop-token-usage` 的所有重要變更。
 格式基於 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，版本號遵循 [Semantic Versioning](https://semver.org/)。
@@ -20,8 +20,8 @@
   跟著切換，無需重新載入。這裡隨附十種語言：`en` 與 `zh` 走 DSH 內建字典，另有本插件註冊進 DSH 目錄的 `zh-TW`
   （臺灣正體）、`zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja` 與 `ko` 語言包。數字、百分比、日期、星期與月份
   名稱、複數形式全部來自 `Intl`，因此千分位分隔、英文寫 `K`/`M`/`B` 之處改寫 `萬`/`億`、以及各語言自己的複數類別都能
-  正確呈現。文案放在 `locales/<id>.json`，由 [`scripts/build-dicts.mjs`](scripts/build-dicts.mjs) 產生進用戶端產物：
-  產生區塊絕不可手改，它過期時測試就會失敗。`README-<id>.md` 與 `CHANGELOG-<id>.md` 隨每一種發佈語言提供這兩份
+  正確呈現。文案放在 `locales/<id>.json`，由 [`scripts/build-dicts.mjs`](../scripts/build-dicts.mjs) 產生進用戶端產物：
+  產生區塊絕不可手改，它過期時測試就會失敗。`translations/README-<id>.md` 與 `translations/CHANGELOG-<id>.md` 隨每一種發佈語言提供這兩份
   文件。注意：選用語言包後，**DSH 自身的介面**仍停留在 `zh`/`en`——只有本插件切換。
 
 ### 修復
@@ -35,7 +35,7 @@
 
 - **多語言的剩餘梯隊**：其餘六個語言代碼 `pt-BR`、`ru`、`vi`、`th`、`id` 與 `ar` 已設計但尚未實作。`ar` 還需要
   從右到左的外殼——內距、提示框與座標軸側別都要鏡像，而時間軸仍保持由左至右——這十種發佈語言都不需要。見
-  [設計文件](docs/superpowers/specs/2026-10-01-i18n-design.md)。
+  [設計文件](../docs/superpowers/specs/2026-10-01-i18n-design.md)。
 
 ## [0.1.5] - 2026-10-01
 

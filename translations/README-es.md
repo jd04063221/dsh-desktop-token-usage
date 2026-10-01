@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | Español | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-fr.md) | Español | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/translations/README-ko.md)
 
 Un plugin de estadísticas de uso de Tokens **totalmente sin conexión** para DSH (DeepSeek Harness).
 
@@ -37,27 +37,27 @@ máquina.
 ## Capturas de pantalla
 
 Renderizadas desde los propios componentes de este plugin con **datos de ejemplo** —las capturas se producen sin conexión con
-[`scripts/render-shots.mjs`](scripts/render-shots.mjs) (el `client.js` real y el CSS contra un Host falso) más
-[`scripts/render-shots.py`](scripts/render-shots.py) (Chrome sin cabeza), así que no intervienen registros de sesiones, rutas
+[`scripts/render-shots.mjs`](../scripts/render-shots.mjs) (el `client.js` real y el CSS contra un Host falso) más
+[`scripts/render-shots.py`](../scripts/render-shots.py) (Chrome sin cabeza), así que no intervienen registros de sesiones, rutas
 ni datos de cuenta. Tema claro primero, tema oscuro segundo. Las capturas están renderizadas en chino —el primer script acepta
 `--locale <id>` para renderizar otro idioma— y las diez variantes de idioma de este README comparten el mismo conjunto.
 
-![Panel, tema claro](assets/dashboard-light.png)
+![Panel, tema claro](../assets/dashboard-light.png)
 
 Seis tarjetas de estadísticas, la fila de ventanas configuradas, el mapa de calor de actividad, la tendencia diaria de Tokens
 con la curva de tasa de aciertos de caché superpuesta sobre las barras y el desglose del uso por modelo.
 
-![Panel, tema oscuro](assets/dashboard-dark.png)
+![Panel, tema oscuro](../assets/dashboard-dark.png)
 
 El mismo panel en el tema oscuro —cada paleta incluye un conjunto claro y otro oscuro.
 
 | Mapa de calor de actividad | Tendencia diaria |
 |---|---|
-| ![Mapa de calor de actividad](assets/heatmap-light.png) | ![Tendencia diaria](assets/trend-light.png) |
+| ![Mapa de calor de actividad](../assets/heatmap-light.png) | ![Tendencia diaria](../assets/trend-light.png) |
 
 | La tarjeta de la barra lateral | Su página en el gestor de plugins |
 |---|---|
-| ![Tarjeta de la barra lateral](assets/sidebar-dark.png) | ![Configuración](assets/settings-light.png) |
+| ![Tarjeta de la barra lateral](../assets/sidebar-dark.png) | ![Configuración](../assets/settings-light.png) |
 
 La tarjeta al pie de la barra lateral muestra las dos ventanas configuradas; al hacer clic se abre el panel de arriba. La
 página del plugin en el gestor de plugins contiene los intervalos de las ventanas, la agrupación y la paleta.
@@ -188,13 +188,13 @@ el panel cambia con él, al instante y sin recargar.
 - Los siguientes paquetes de idioma están registrados en el catálogo de DSH, de modo que aparecen en su propio selector: `zh-TW`
   (臺灣正體), `zh-HK` (香港繁體), `de`, `fr`, `es`, `it`, `ja` y `ko`. Los seis códigos restantes —`pt-BR`, `ru`, `vi`, `th`, `id`
   y `ar` (de derecha a izquierda)— están diseñados pero aún no implementados; consulte
-  [el diseño](docs/superpowers/specs/2026-10-01-i18n-design.md);
+  [el diseño](../docs/superpowers/specs/2026-10-01-i18n-design.md);
 - Los textos viven en `locales/<id>.json`, un archivo plano por idioma, y se generan en `client.js` mediante
   `node scripts/build-dicts.mjs`. Nunca edite el bloque generado a mano —`npm test` falla mientras esté desactualizado—;
 - Los números, porcentajes, fechas, nombres de días de la semana y de meses, y las formas plurales provienen todos de `Intl`,
   de modo que un idioma que agrupa los miles de otro modo, escribe `萬`/`億` donde el inglés escribe `K`/`M`/`B`, o flexiona sus
   plurales, se lee correctamente;
-- `README-<id>.md` y `CHANGELOG-<id>.md` contienen ambos documentos en cada uno de los diez idiomas. Permanecen en el
+- `translations/README-<id>.md` y `translations/CHANGELOG-<id>.md` contienen ambos documentos en cada uno de los diez idiomas. Permanecen en el
   repositorio para GitHub; npm muestra solo `README.md`.
 
 ## Configuración
@@ -369,10 +369,11 @@ test/client-smoke.test.mjs   Client factory / slot registration / two-half wire-
 docs/DESIGN.md               Design, data contracts, pitfalls hit, and verification evidence
 docs/research/               Earlier research notes and reusable session-log probe scripts
 CHANGELOG.md                 Version history (with a commit index)
+translations/                 Los README y CHANGELOG de los otros nueve idiomas
 ```
 
 Los documentos vienen en diez idiomas: el inglés es el predeterminado (`README.md` / `CHANGELOG.md`), y cada otro idioma
-tiene su propio `README-<id>.md` / `CHANGELOG-<id>.md`. Los diez están enlazados entre sí por el conmutador de la línea 3 de
+tiene su propio `translations/README-<id>.md` / `translations/CHANGELOG-<id>.md`. Los diez están enlazados entre sí por el conmutador de la línea 3 de
 cada archivo.
 
 ## Licencia
