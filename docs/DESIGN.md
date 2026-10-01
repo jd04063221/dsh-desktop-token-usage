@@ -295,10 +295,13 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 
 - **热力图**：CSS grid（`grid-auto-flow: column` + 7 行），格子用主题背景色 + 内层 `opacity` 分级，
   固定 53 周 × 7 天，日期按本地时区逐格推算；
-- **趋势图**：柱是 flex 列 + 百分比高度的堆叠 div（文字由 HTML 渲染，保持清晰）；命中率是下方独立的细条，
-  用一层 `preserveAspectRatio="none"` 的 SVG overlay 画单调三次曲线（曲线没有文字，压缩不失真），
-  两段共用同一条 X 轴。命中率条的纵轴由可见范围的数据决定（min − 10% 跨度 → max + 10% 跨度），
-  所以 90%–98% 的命中率也能看出起伏，而不是贴在 0–100% 的顶端；
+- **趋势图**：一张图——柱是 flex 列 + 百分比高度的堆叠 div（文字由 HTML 渲染，保持清晰），
+  缓存命中率曲线**叠加在柱图上层**（半透明），用一层 `preserveAspectRatio="none"` 的 SVG overlay 画
+  单调三次插值的曲线（曲线没有文字，压缩不失真）。曲线的纵轴仍是数据驱动的带：从统计期
+  min − 10% × 跨度 到 max + 10% × 跨度（各日相同或单日时取该值 ±1pp，整段无数据时取 0–100%），
+  这条带映射到**整幅柱图的绘图区高度**，右侧刻度标真实百分比（下 / 中 / 上三个值），所以
+  90%–98% 的命中率也能看出起伏，而不是贴在 0–100% 的顶端。独立的命中率细条已取消，X 轴仍然
+  只画一条（在柱图下方）；悬停联动（指示线贯穿绘图区）与自定义 tooltip 不变；
 - **配色**：三套色板（primer / cvd / muted）全部落成根节点的 CSS 变量，浅/深由 `prefers-color-scheme` 覆盖——
   宿主只提供 `--dsw-alias-*` 语义 token，没有图表色板 token（实测 `app.asar` 里 `--dsw-chart-*` 为 0 命中）。
 - **环形图**：SVG `circle` + `stroke-dasharray/​stroke-dashoffset`，按占比切段。

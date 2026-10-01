@@ -7,8 +7,8 @@ A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 - The **Host half** scans `$DSH_HOME/sessions/**/session.vN.jsonl.zstd` and folds out the real token usage;
 - The **Client half** mounts a usage card at the foot of the left sidebar; clicking it opens a dashboard in the central
   panel: time-range and source filters, 6 stat cards, a configured-windows row, an activity heatmap, a per-day token
-  trend (token bars with a cache hit-rate strip below them, both sharing one X axis), and a model usage donut chart with
-  a list.
+  trend (a cache hit-rate curve overlaid on the token bars, real percentages labelled on the right, its Y axis padded
+  10% beyond the period's min/max), and a model usage donut chart with a list.
 
 Which time spans the card and the dashboard's **Configured windows** row report is decided by the **plugin
 configuration** (both windows are off by default): in **Settings → Plugins → `Token 用量`** (Token usage) you can
