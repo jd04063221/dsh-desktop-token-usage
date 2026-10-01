@@ -220,7 +220,7 @@ const pickDay = (day) => (tree) =>
 
 // ── loading the Client half ─────────────────────────────────────────────────
 
-function loadClient() {
+function loadClient(options = {}) {
   const source = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
   const required = []
   let registration
@@ -228,6 +228,10 @@ function loadClient() {
     window: { __ModuleLoader__: { load: (value) => { registration = value } } },
     document,
     console,
+    // The page has no `navigator` here unless a test asks for one: the plugin
+    // must survive its absence, and the browser fallback is one of the paths
+    // worth testing on its own.
+    navigator: options.navigator,
     // The page's timers: the plugin only arms one quiet refresh.
     setInterval: () => 1,
     clearInterval: () => {},
@@ -242,9 +246,73 @@ function loadClient() {
   return { registration, plugin, required }
 }
 
+/**
+ * A stand-in for the DSH locale service. It mirrors the parts the plugin uses —
+ * a readable snapshot, a subscription, the language catalog and the dictionary
+ * registry — and rejects a duplicate registration the way the real one does, so
+ * a double-registering plugin fails here instead of in the app.
+ */
+function localeService(record, active = 'zh') {
+  const listeners = new Set()
+  const catalog = new Set(['zh', 'en'])
+  // How many times the plugin took the service and let it go: mounting it once is
+  // the difference between following the shell and following a stale snapshot.
+  const stats = { subscribes: 0, unsubscribes: 0 }
+  const notify = () => {
+    for (const listener of [...listeners]) listener()
+  }
+  return {
+    stats,
+    getLocale: () => ({ active, locales: [...catalog], revision: record.languages.length + record.dictionaries.length }),
+    subscribe: (listener) => {
+      stats.subscribes += 1
+      listeners.add(listener)
+      return () => {
+        stats.unsubscribes += 1
+        listeners.delete(listener)
+      }
+    },
+    setActive: (id) => {
+      active = id
+      notify()
+      return active
+    },
+    addLanguage: (pack) => {
+      if (catalog.has(pack.id)) throw new Error(`locale "${pack.id}" is already registered`)
+      catalog.add(pack.id)
+      record.languages.push(pack)
+      notify()
+      return () => {
+        catalog.delete(pack.id)
+        record.languages = record.languages.filter((entry) => entry !== pack)
+      }
+    },
+    register: (ns, localeOrDicts, dict) => {
+      const pairs = typeof localeOrDicts === 'string' ? [[localeOrDicts, dict]] : Object.entries(localeOrDicts)
+      for (const [id, entries] of pairs) {
+        if (record.dictionaries.some((entry) => entry.ns === ns && entry.id === id)) {
+          throw new Error(`locale namespace "${ns}" already has locale "${id}"`)
+        }
+        record.dictionaries.push({ ns, id, entries })
+      }
+      notify()
+      return () => {}
+    },
+  }
+}
+
 /** A fake Cordis context recording everything the plugin registers. */
 function fakeContext(options = {}) {
-  const record = { slots: [], effects: [], mounted: [], injected: [], saved: [] }
+  const record = { slots: [], effects: [], mounted: [], injected: [], saved: [], languages: [], dictionaries: [] }
+  // `locale: null` is a Host without the service at all.
+  const locale = options.locale === null ? null : localeService(record, options.active ?? 'zh')
+  record.locale = locale
+  // `deferLocale` holds the locale callback back, which is how the shell behaves
+  // when this half mounts first.
+  const pending = []
+  record.releaseLocale = () => {
+    for (const run of pending.splice(0)) run()
+  }
   // A Remote resolves to its `{ ok, value }` envelope, never to the bare payload.
   const namespace = {
     summary: options.summary ?? (async (filter) => ({ ok: true, value: summaryPayload(filter) })),
@@ -267,7 +335,12 @@ function fakeContext(options = {}) {
     get: () => ({ selectPanel: () => {} }),
     inject: (deps, callback) => {
       record.injected.push(deps)
-      callback(make({ remote: { ...remote, dshUsage: namespace } }))
+      const scoped = () => callback(make({ remote: { ...remote, dshUsage: namespace }, locale }))
+      if (options.deferLocale && deps.includes('locale')) {
+        pending.push(scoped)
+        return
+      }
+      scoped()
     },
     effect: (fn, label) => {
       const cleanup = fn()
@@ -403,7 +476,11 @@ test('the Client half requires only React and registers both slots', async () =>
   // The Remote namespace arrives one microtask after `$mount` resolves.
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  assert.deepEqual(plain(record.injected), [['layout'], ['remote.dshUsage']], 'both services must be awaited')
+  assert.deepEqual(
+    plain(record.injected),
+    [['locale'], ['layout'], ['remote.dshUsage']],
+    'the locale service, the layout service and the Remote namespace must all be awaited',
+  )
   assert.equal(record.mounted.length, 1)
 
   const registrations = record.slots.filter((entry) => entry.options)
@@ -469,7 +546,7 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.match(wide, /近 7 天/)
   assert.match(wide, /输入 2,000 · 输出 80/, `expected the hour window's split, got: ${wide}`)
   assert.match(wide, /输入 5,000 · 输出 200/, `expected the day window's split, got: ${wide}`)
-  assert.match(wide, /缓存命中 80\.0%/)
+  assert.match(wide, /缓存命中 80%/)
 
   const rail = render({ type: entry.component, props: { ...entry.options.inject(), wide: false } })
   assert.equal(rail.tag, 'button')
@@ -531,7 +608,7 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.ok(body.includes('近 6 小时') && body.includes('近 7 天'), 'both configured windows must be named')
   assert.ok(body.includes('2,080'), `expected the hour window's total, got: ${body.slice(0, 500)}`)
   assert.ok(
-    body.includes('输入 2,000 · 输出 80 · 缓存命中 80.0% · 2 轮'),
+    body.includes('输入 2,000 · 输出 80 · 缓存命中 80% · 2 轮'),
     'each window must show its own split, not the filtered totals',
   )
   assert.ok(body.includes('不随上方来源筛选变化'), 'the section must not claim to follow the filter')
@@ -596,7 +673,10 @@ test('with both windows off the dashboard falls back to the all-time rollup', as
   const main = record.slots.find((item) => item.options?.name === 'main')
   const body = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
   assert.ok(body.includes('配置窗口'), 'the section stays, labelled with the all-time block')
-  assert.ok(body.includes('输入 5,000 · 输出 200 · 缓存命中 90.0% · 7 轮'), `expected the all-time split, got: ${body.slice(0, 500)}`)
+  assert.ok(
+    body.includes('输入 5,000 · 输出 200 · 缓存命中 90% · 7 轮'),
+    `expected the all-time split, got: ${body.slice(0, 500)}`,
+  )
   assert.ok(!body.includes('近 6 小时'), 'a disabled window must not be listed')
 })
 
@@ -691,9 +771,14 @@ test('the configuration card renders the windows and saves them to the Host', as
     selects.every((select) => String(select.props.className).includes('dtu-select')),
     'both selects must carry the wide-select class or the labels get clipped',
   )
+  // A select clips its closed label, and German and French name the grouping in
+  // 38-41 characters: the rule has to size the control to its own options, with a
+  // floor so a short language does not shrink it.
   assert.ok(
-    document.head.children[0].textContent.includes('.dtu-select{width:190px;text-align:left}'),
-    'the wide-select rule must exist',
+    document.head.children[0].textContent.includes(
+      '.dtu-select{width:auto;min-width:190px;max-width:100%;text-align:left}',
+    ),
+    'the select must size to its options, with a floor for short labels',
   )
 
   const button = find(tree, (node) => node.tag === 'button' && node.props.className === 'dtu-save')
@@ -1166,14 +1251,14 @@ test('the legacy rebuild matches Host split and ranking semantics', async () => 
     ['shared', 'solo', 'unknown'],
     'same-named models merge across providers; a slashless route becomes its own key',
   )
-  assert.deepEqual(model.shares, ['50.0%', '25.0%', '25.0%'], 'the 150/150 tie breaks by key asc: solo before unknown')
+  assert.deepEqual(model.shares, ['50%', '25%', '25%'], 'the 150/150 tie breaks by key asc: solo before unknown')
 
   const drivenTree = render(
     driveComponent(bodyElementOf(record), '拆分口径/按供应商', pickChip('拆分口径', '按供应商')),
   )
   const provider = rowsOf(drivenTree)
   assert.deepEqual(provider.names, ['p', 'q', 'unknown'], 'providers rank by their own rebuilt totals')
-  assert.deepEqual(provider.shares, ['41.7%', '33.3%', '25.0%'], '250/200/150 of 600')
+  assert.deepEqual(provider.shares, ['41.7%', '33.3%', '25%'], '250/200/150 of 600')
   assert.match(collect(drivenTree).join(' '), /最常用供应商/, 'the driven card names the top provider')
 })
 
@@ -1226,7 +1311,7 @@ test('the legacy rebuild keeps one row for a model its providers spell different
   const main = record.slots.find((item) => item.options?.name === 'main')
   const model = rowsOf(render({ type: main.component, props: main.options.inject() }))
   assert.deepEqual(model.names, ['deepseek-v4.1-flash'], 'the two spellings are one model row, not two')
-  assert.deepEqual(model.shares, ['100.0%'], 'and that one row carries the tokens of both providers')
+  assert.deepEqual(model.shares, ['100%'], 'and that one row carries the tokens of both providers')
 
   const driven = render(driveComponent(bodyElementOf(record), '拆分口径/按供应商', pickChip('拆分口径', '按供应商')))
   assert.deepEqual(
@@ -1243,8 +1328,9 @@ test('the hit-rate axis handles a flat series and a rateless range', async () =>
     { day: '2026-09-25', buckets: one, turns: 1, requests: 1, byModel: { 'p/a': one }, byGroup: { model: { a: one }, provider: { p: one } } },
   ]
   const flat = await renderTrend(singleDay)
-  // one rate: min = max = 90 -> +/-1pp -> 89.0 / 90.0 / 91.0
-  for (const tick of ['89.0%', '90.0%', '91.0%']) {
+  // one rate: min = max = 90 -> +/-1pp -> 89 / 90 / 91, through the locale's own
+  // percentage format (which drops a trailing zero).
+  for (const tick of ['89%', '90%', '91%']) {
     assert.ok(flat.texts.includes(tick), `a single rate gets ±1pp of headroom, expected ${tick}`)
   }
 
@@ -1260,7 +1346,7 @@ test('the hit-rate axis handles a flat series and a rateless range', async () =>
   rateless.days = [zero('2026-09-24'), zero('2026-09-25')]
   const empty = await renderTrend(rateless)
   // no rate at all: fall back to the full 0-100 axis
-  for (const tick of ['0.0%', '50.0%', '100.0%']) {
+  for (const tick of ['0%', '50%', '100%']) {
     assert.ok(empty.texts.includes(tick), `no rate falls back to 0-100, expected ${tick}`)
   }
 })
@@ -1789,7 +1875,7 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   const lines = [tip.children].flat().map((child) => collect(child).join(' '))
   assert.deepEqual(
     lines,
-    [today, 'Tokens 125.0万', '轮次 4', '请求 5'],
+    [today, 'Tokens 125万', '轮次 4', '请求 5'],
     'four lines: the date on its own, then one figure per row, like the trend tooltip',
   )
   // Today is in the last of three columns, so its box hangs off the column's
@@ -1868,8 +1954,8 @@ test('the footer stacks one fact per line and never splits a quoted term', async
   assert.equal(lines.length, 3, 'one fact per line, instead of three ragged wrapping items')
   assert.deepEqual(
     quoted,
-    ['「桌面·网页」', '「命令行·机器人」'],
-    'each quoted term is nowrap, so 「 or 」 can never end up alone at a line edge',
+    ['桌面·网页', '命令行·机器人'],
+    'each surface name is its own nowrap span; the quotes belong to the sentence',
   )
   assert.match(collect(lines[2]).join(''), /^来源按本地可观测信号推断：/, 'the note still reads as one sentence')
   assert.match(collect(lines[2]).join(''), /指无客户端的会话。$/, 'and still ends where it used to')
@@ -2028,4 +2114,201 @@ test('the Host descriptor and the Client contribution agree', async () => {
       assert.equal(patch({ [key]: value })[key], value, `the Host must accept its own ${key} value ${value}`)
     }
   }
+})
+
+// ── locale ──────────────────────────────────────────────────────────────────
+
+/**
+ * Every text node the three seats render under one language configuration.
+ * `locale: null` is a Host whose locale service is missing, and `navigator` is
+ * what the browser would report in that case.
+ */
+async function textsOf({ active = 'zh', locale = true, navigator: nav, summary } = {}) {
+  const { plugin } = loadClient({ navigator: nav })
+  const { ctx, record } = fakeContext({
+    active,
+    ...(locale === null ? { locale: null } : {}),
+    ...(summary ? { summary } : {}),
+  })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const texts = []
+  for (const name of ['main', 'sidebar.footer.action', 'plugins.bundle.config']) {
+    const entry = record.slots.find((item) => item.options?.name === name)
+    const props = typeof entry.options.inject === 'function' ? entry.options.inject() : {}
+    texts.push(...collect(render({ type: entry.component, props })))
+  }
+  return { texts, text: texts.join(' '), record }
+}
+
+test('the dashboard renders in the language the locale service reports', async () => {
+  const { text } = await textsOf({ active: 'en' })
+  assert.ok(text.includes('Last 7 days'), 'the range chips follow the language')
+  assert.ok(text.includes('Daily token trend'))
+  assert.ok(text.includes('Usage breakdown'))
+  assert.ok(text.includes('Cache hit rate'))
+  assert.ok(text.includes('Average cache hit rate'))
+  assert.ok(
+    !/最近 7 天|用量拆分|缓存命中率|配置窗口/.test(text),
+    'no Chinese copy may leak into an English dashboard',
+  )
+  // Intl, not a hand-written table: English groups thousands, shortens millions
+  // and drops the trailing zero a fixed one-decimal percentage used to print.
+  assert.ok(text.includes('5,200'), 'grouped thousands')
+  assert.ok(text.includes('80%'), 'a percentage with no trailing zero')
+  // The window label comes from the block id plus the card's own figures, not
+  // from the Chinese string the Host still ships for older clients.
+  assert.ok(text.includes('Last 6 hours'), 'the configured window is labelled locally')
+})
+
+test('switching the language shows on the next render, with no reload', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({ active: 'zh' })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const props = main.options.inject()
+  const dashboard = () => collect(render({ type: main.component, props })).join(' ')
+  assert.ok(dashboard().includes('最近 7 天'))
+  record.locale.setActive('en')
+  assert.ok(dashboard().includes('Last 7 days'), 'the view re-reads the active language')
+  // The registered catalog is what DSH lists; the packs are owned effects.
+  assert.deepEqual(
+    record.languages.map((pack) => pack.id),
+    ['zh-TW', 'zh-HK', 'de', 'fr', 'es', 'it', 'ja', 'ko'],
+    'every language pack must be added to the catalog',
+  )
+  assert.deepEqual(
+    record.dictionaries.filter((entry) => entry.ns === 'dsh-desktop-token-usage').map((entry) => entry.id),
+    ['zh', 'en', 'zh-TW', 'zh-HK', 'de', 'fr', 'es', 'it', 'ja', 'ko'],
+    'one dictionary per shipped language, the two built-in locales together first',
+  )
+})
+
+test('without a locale service the browser decides, and an unsupported language is English', async () => {
+  const zh = await textsOf({ locale: null, navigator: { languages: ['pl-PL', 'zh-CN'] } })
+  assert.ok(zh.text.includes('最近 7 天'), 'the first supported browser language wins, not the first one')
+  // Ordered lists are matched in order, so the second entry must not win: the
+  // Chinese tag in front of it is the one that decides. (What `zh-Hant-TW` reads
+  // like is asserted per language, against each pack's own dictionary.)
+  const traditional = await textsOf({ locale: null, navigator: { languages: ['zh-Hant-TW', 'ja-JP'] } })
+  assert.ok(!traditional.text.includes('過去 7'), 'the first supported browser entry wins, not the one behind it')
+  const none = await textsOf({ locale: null, navigator: { languages: ['pl-PL', 'sv-SE'] } })
+  assert.ok(none.text.includes('Last 7 days'), 'an unsupported browser language falls back to English')
+  const bare = await textsOf({ locale: null })
+  assert.ok(bare.text.includes('Last 7 days'), 'a page with no navigator at all renders English, not a crash')
+  const unknown = await textsOf({ active: 'pl' })
+  assert.ok(unknown.text.includes('Last 7 days'), 'a locale we have no dictionary for renders English')
+})
+
+/**
+ * The dictionaries that are actually in the tree. Every check below is driven by
+ * this list, so it covers a language as soon as its file lands — and never asks
+ * for a pack the release does not ship.
+ */
+function shippedLocales() {
+  return fs
+    .readdirSync(path.join(root, 'locales'))
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => file.replace(/\.json$/, ''))
+    .sort()
+}
+
+/** A rendered string that is a dictionary key means the lookup missed. */
+const LOOKS_LIKE_A_KEY = /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9-]+)+$/
+
+test('every shipped dictionary renders its own copy', async () => {
+  const ids = shippedLocales()
+  // Placeholder-free, non-plural labels: their text reaches the DOM as-is.
+  const probes = ['dash.title', 'section.breakdown', 'card.hitRate', 'action.refresh', 'source.subagent']
+  for (const id of ids) {
+    const dict = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${id}.json`), 'utf8'))
+    const { text } = await textsOf({ active: id })
+    for (const key of probes) {
+      assert.ok(text.includes(dict[key]), `[${id}] ${key} must render as its own translation`)
+    }
+  }
+})
+
+test('a region or script subtag resolves to the language under it', async () => {
+  const ids = shippedLocales()
+  for (const [tag, id] of [['de-AT', 'de'], ['ja-JP', 'ja'], ['zh-CN', 'zh'], ['zh-Hant-TW', 'zh-TW']]) {
+    if (!ids.includes(id)) continue
+    const dict = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${id}.json`), 'utf8'))
+    const { text } = await textsOf({ locale: null, navigator: { languages: [tag] } })
+    assert.ok(text.includes(dict['dash.title']), `${tag} must resolve to the ${id} dictionary`)
+  }
+})
+
+test('no dictionary key is ever rendered, in any shipped language', async () => {
+  const ids = shippedLocales()
+  assert.ok(ids.length >= 2, 'the dictionaries must be in the tree')
+  for (const id of ids) {
+    const { texts } = await textsOf({ active: id })
+    for (const text of texts) {
+      assert.ok(
+        !LOOKS_LIKE_A_KEY.test(text),
+        `[${id}] rendered a dictionary key instead of copy: "${text}"`,
+      )
+    }
+  }
+})
+
+test('a count inflects through the language own plural categories', async () => {
+  const sidebarWith = async (turns, active) => {
+    const payload = summaryPayload()
+    payload.card.blocks = [payload.card.blocks[0]]
+    payload.card.blocks[0].turns = turns
+    const { text } = await textsOf({ active, summary: async () => ({ ok: true, value: payload }) })
+    return text
+  }
+  assert.ok((await sidebarWith(1, 'en')).includes('1 turn'), 'English has a singular form')
+  assert.ok((await sidebarWith(2, 'en')).includes('2 turns'), 'and a plural one')
+  assert.ok((await sidebarWith(1, 'zh')).includes('1 轮'), 'Chinese has one form for every count')
+  assert.ok((await sidebarWith(2, 'zh')).includes('2 轮'))
+})
+
+test('a language the service already ships is not added twice, and never fatal', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({ active: 'zh' })
+  // DSH could ship a language this plugin also carries (a later built-in); the
+  // service refuses the duplicate, and the dashboard must still mount.
+  record.locale.addLanguage = () => {
+    throw new Error('locale "de" is already registered')
+  }
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const text = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  assert.ok(text.includes('最近 7 天'), 'the dashboard still renders')
+  assert.ok(
+    record.dictionaries.some((entry) => entry.id === 'de'),
+    'the dictionary is registered even without our language definition',
+  )
+})
+
+test('a locale service that arrives after the first render still takes over', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({ deferLocale: true })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const props = main.options.inject()
+  const dashboard = () => collect(render({ type: main.component, props })).join(' ')
+  assert.ok(dashboard().includes('Last 7 days'), 'before the service arrives, the browser decides')
+  assert.equal(record.locale.stats.subscribes, 0, 'there is nothing to subscribe to yet')
+
+  record.releaseLocale()
+  assert.equal(record.locale.stats.subscribes, 1, 'the hub takes the service when it appears')
+  assert.deepEqual(
+    record.languages.map((pack) => pack.id),
+    ['zh-TW', 'zh-HK', 'de', 'fr', 'es', 'it', 'ja', 'ko'],
+    'the catalog is registered just the same',
+  )
+  assert.ok(dashboard().includes('最近 7 天'), 'and the dashboard follows it')
+
+  const registered = record.effects.find((entry) => entry.label === 'dsh-desktop-token-usage: locale subscription')
+  registered.cleanup()
+  assert.equal(record.locale.stats.unsubscribes, 1, 'unloading gives the service back')
+  assert.ok(dashboard().includes('Last 7 days'), 'with no service the browser decides again')
 })

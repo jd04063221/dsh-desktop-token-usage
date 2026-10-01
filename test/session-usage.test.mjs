@@ -412,7 +412,7 @@ test('without a Loader config editor the config endpoints degrade honestly', asy
   })
   const service = provided[0].value
   assert.deepEqual(await service.config(), { hours: 0, days: 0, writable: false, groupBy: 'both', palette: 'primer' })
-  await assert.rejects(() => service.setConfig({ hours: 1, days: 1 }), /找不到本插件的 Loader 条目/)
+  await assert.rejects(() => service.setConfig({ hours: 1, days: 1 }), /no Loader entry for dsh-desktop-token-usage/)
 })
 
 test('localDayStart snaps to local midnight', () => {
