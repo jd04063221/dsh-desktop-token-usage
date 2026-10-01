@@ -38,18 +38,18 @@ DSH（DeepSeek Harness）向けの**完全オフライン**のToken使用量統�
 サイドバー下部のカードは2つの設定ウィンドウを表示し、クリックすると上のダッシュボードが開きます。プラグインマネージャーでのプラグインのページには、ウィンドウの時間範囲、集計単位、パレットが備わっています。
 ## 互換性とテスト環境
 
-**DSH Desktop 0.1.7-rc.2 で完全検証済み、0.2.0-rc.1 で互換性を確認済み、さらにプラグイン0.1.3は 0.2.0-rc.2 で手動試行し問題なし。**
+**DSH Desktop 0.1.7-rc.2 と 0.2.0-rc.2 で完全検証済み、0.2.0-rc.1 で互換性を確認済み。**
 
 | 項目 | テスト環境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2`（完全検証）、`0.2.0-rc.1`（互換性確認）、`0.2.0-rc.2`（`0.1.3` の手動試行） |
+| DSH | Desktop `0.1.7-rc.2` と `0.2.0-rc.2`（完全検証）、`0.2.0-rc.1`（互換性確認） |
 | 同梱ランタイム | Electron 44 / Chromium 152 / Node 24.18.1（座席を列にするには `:has()` が必要（Chrome 105+）。パレットのテーマ付けには `light-dark()` が必要（Chrome 123+）） |
 | オペレーティングシステム | Windows 11 Pro, build 26200, AMD64 |
 | Node（テスト実行用） | v25.2.1, v26.7.0 |
 
 検証は「インストールできる」をはるかに超えるものでした：プラグインのアクティベーションが `fiberPhase: active` に到達すること、サイドバーカードと中央ダッシュボードのレンダリング、プラグインページの設定カードが読み書き可能であること、ブラウザ → Host のRemote呼び出しが端から端まで動作すること、そして全フィールドがDSH自身のプロジェクションキャッシュと突合で一致すること。
 
-`0.2.0-rc.1` に対する確認は、2回目の完全実行ではなく構造的なチェックでした。このプラグインが触れるすべての公開パケージを `0.1.7-rc.2` と差分比較：`dsh-plugin-manager` はバイト単位で同一、`dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis` ではバージョン文字列・1件の分析呼び出し・タイトルバーCSSのみが異なります。`sidebar.footer.action` スロットの契約とその `{ wide }` owner propsは変わらず、このプラグインがインポートするパケージ（`dsh-api-remotes`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`）も名前を保っています。`0.2.0-rc.1` での手動試行ではダッシュボードとRemote呼び出しが動作すると報告され、プラグイン `0.1.3` も `0.2.0-rc.2` で手動試行されて同じ結果です。
+`0.2.0-rc.1` に対する確認は、2回目の完全実行ではなく構造的なチェックでした。このプラグインが触れるすべての公開パケージを `0.1.7-rc.2` と差分比較：`dsh-plugin-manager` はバイト単位で同一、`dsh-client-ui-sidebar`、`dsh-client-ui-layout`、`dsh-client-ui-cordis` ではバージョン文字列・1件の分析呼び出し・タイトルバーCSSのみが異なります。`sidebar.footer.action` スロットの契約とその `{ wide }` owner propsは変わらず、このプラグインがインポートするパケージ（`dsh-api-remotes`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`）も名前を保っています。`0.2.0-rc.1` での手動試行ではダッシュボードとRemote呼び出しが動作すると報告され、続く `0.2.0-rc.2` では本プラグインの開発機で完全な実行を行いました：`fiberPhase: active` までのアクティベーション、サイドバーカードとダッシュボードによる実際のRemote呼び出し（`calls.json`）、そして `boot.json` に反映されたウィンドウがprofileと一致すること。
 
 このプラグインは `@deepseek-ai/dsh*` のpeer dependencyを**宣言しておらず**、DSHが実際に検証しているのはそれです — peerレンジがなければバージョン制約はまったく課されません。`engines.dsh` は `^0.1.7-rc.2 || ^0.2.0-rc.1` と宣言されていますが、これは人間向けの記録にすぎません：公式ドキュメントには、レンジを宣言しても互換性のないHostを拒否しないと明記されています。
 
@@ -70,7 +70,13 @@ DSH（DeepSeek Harness）向けの**完全オフライン**のToken使用量統�
 
 ## インストール
 
-このリポジトリはDSHバンドルです（`package.json` は `dsh.bundle.patch` と `dsh.client` を宣言しています）。公式のエントリポイントからインストールしてください。profileファイルを手で編集する必要はありません：
+このリポジトリはDSHバンドルです（`package.json` は `dsh.bundle.patch` と `dsh.client` を宣言しています）。公式のエントリポイントからインストールしてください。profileファイルを手で編集する必要はありません。このパッケージは公式のnpmレジストリに公開されているので、パッケージ名だけで足ります——マネージャーがレジストリで解決し、現在のprofileにインストールします：
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+ローカルのディレクトリからインストールする場合（たとえば未公開の `main` を動かす場合）は、`install_bundle` にこのディレクトリの絶対パスを指定します。
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

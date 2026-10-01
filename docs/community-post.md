@@ -107,12 +107,14 @@ Node 按 realpath 缓存 ESM，重新启用插件、重装甚至改包名都不�
 
 | 项目 | 实测环境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对）、`0.2.0-rc.2`（插件 0.1.3 手工试用通过） |
+| DSH | Desktop `0.1.7-rc.2` 与 `0.2.0-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对） |
 | 内置运行时 | Electron 44 / Chromium 152 / Node 24.18.1 |
 | 操作系统 | Windows 11 专业版，build 26200，AMD64 |
 
 验证不止「能装上」：插件激活到 `fiberPhase: active`、侧边栏卡片与中央看板渲染、插件页自带配置卡可读可写、
 浏览器 → Host 的 Remote 调用打通，以及折叠结果与 DSH 自身投影缓存**逐字段对拍一致**。
+本插件的开发机现在跑的正是 DSH Desktop `0.2.0-rc.2`，这一整套在上面完整跑过：`boot.json` 里激活链路各阶段齐全、
+`calls.json` 记录到真实的看板请求（183 个会话、61 天、17 个模型，热调用约 0.5 秒）、生效窗口与 profile 配置一致。
 本插件**没有**声明任何 `@deepseek-ai/dsh*` 的 peer dependency（`engines.dsh` 仅供人阅读）。
 上表之外的版本未测试：更早的 DSH 可能没有 `plugins.bundle.config` 槽与 `configEditor` 服务。
 
@@ -168,6 +170,6 @@ official registry (the manager queries it with `pnpm view` and then `pnpm add`s 
 heatmap/trend fixes are on `main`, waiting for 0.1.6 — get those from a source checkout (`npm install`, then
 `install_bundle` with the directory's absolute path).
 
-**Tested environment:** DSH Desktop `0.1.7-rc.2` (full verification), `0.2.0-rc.1` (compatibility check) and
-`0.2.0-rc.2` (manual trial of 0.1.3); Electron 44 / Chromium 152 / Node 24.18.1; Windows 11 Pro, build 26200, AMD64.
+**Tested environment:** DSH Desktop `0.1.7-rc.2` and `0.2.0-rc.2` (full verification), `0.2.0-rc.1`
+(compatibility check); Electron 44 / Chromium 152 / Node 24.18.1; Windows 11 Pro, build 26200, AMD64.
 No `@deepseek-ai/dsh*` peer dependency is declared. MIT licensed.

@@ -62,11 +62,11 @@ Plugins im Plugin-Manager enthält die Fenster-Zeiträume, die Gruppierung und d
 
 ## Kompatibilität und getestete Umgebung
 
-**Vollständig verifiziert auf DSH Desktop 0.1.7-rc.2, auf Kompatibilität mit 0.2.0-rc.1 geprüft, und Plugin 0.1.3 wurde von Hand auf 0.2.0-rc.2 getestet, ohne Probleme.**
+**Vollständig verifiziert auf DSH Desktop 0.1.7-rc.2 und 0.2.0-rc.2, auf Kompatibilität mit 0.2.0-rc.1 geprüft.**
 
 | Element | Getestete Umgebung |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (volle Verifikation), `0.2.0-rc.1` (Kompatibilitätsprüfung) und `0.2.0-rc.2` (manueller Versuch mit `0.1.3`) |
+| DSH | Desktop `0.1.7-rc.2` und `0.2.0-rc.2` (volle Verifikation), `0.2.0-rc.1` (Kompatibilitätsprüfung) |
 | Mitgelieferte Laufzeit | Electron 44 / Chromium 152 / Node 24.18.1 (der Platz wird erst durch `:has()` zur Spalte, Chrome 105+; Palette-Theming braucht `light-dark()`, Chrome 123+) |
 | Betriebssystem | Windows 11 Pro, Build 26200, AMD64 |
 | Node (für die Tests) | v25.2.1, v26.7.0 |
@@ -80,8 +80,9 @@ wurde gegen `0.1.7-rc.2` gedifft: `dsh-plugin-manager` ist byte-identisch, und i
 `dsh-client-ui-layout` und `dsh-client-ui-cordis` unterscheiden sich nur der Versionsstring, ein Analytics-Aufruf und Titelbalken-CSS.
 Der `sidebar.footer.action`-Slot-Vertrag und seine `{ wide }`-Owner-Props sind unverändert, und die Pakete, die dieses Plugin
 importiert (`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`), behalten ihre Namen. Ein manueller Versuch auf
-`0.2.0-rc.1` meldet, dass Dashboard und Remote-Aufrufe funktionieren; Plugin `0.1.3` wurde ebenso von Hand auf
-`0.2.0-rc.2` getestet und meldet dasselbe.
+`0.2.0-rc.1` meldet, dass Dashboard und Remote-Aufrufe funktionieren; auf `0.2.0-rc.2` folgte dann der vollständige Lauf auf
+der Entwicklungsmaschine dieses Plugins: Aktivierung bis `fiberPhase: active`, Karte und Dashboard mit echten
+Remote-Aufrufen (`calls.json`) und die in `boot.json` wirksamen Fenster passend zum Profile.
 
 Dieses Plugin deklariert **keine** `@deepseek-ai/dsh*` Peer-Abhängigkeit, und genau das validiert DSH tatsächlich — ein fehlender
 Peer-Bereich legt überhaupt keine Versionsbeschränkung fest. `engines.dsh` ist als `^0.1.7-rc.2 || ^0.2.0-rc.1` deklariert, nur für Menschen:
@@ -110,7 +111,16 @@ Einträge begrenzt (älteste fallen raus, bei Bedarf neu gescannt), und eine `.t
 ## Installation
 
 Dieses Repository ist ein DSH-Bundle (`package.json` deklariert `dsh.bundle.patch` und `dsh.client`). Installieren Sie es über den
-offiziellen Einstiegspunkt; ein manuelles Bearbeiten von Profildateien ist nicht nötig:
+offiziellen Einstiegspunkt; ein manuelles Bearbeiten von Profildateien ist nicht nötig. Das Paket ist in der offiziellen npm-Registry
+veröffentlicht, der Paketname genügt also — der Manager löst ihn in der Registry auf und installiert es in das aktuelle
+Profile:
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+Für eine Installation aus einem lokalen Verzeichnis (etwa um einen noch unveröffentlichten `main`-Stand zu fahren) zeigen
+Sie `install_bundle` stattdessen auf den absoluten Pfad dieses Verzeichnisses.
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

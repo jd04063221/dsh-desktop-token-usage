@@ -59,11 +59,11 @@
 
 ## 兼容性與測試環境
 
-**已在 DSH Desktop 0.1.7-rc.2 上完整驗證，並核對了與 0.2.0-rc.1 的相容性；插件 0.1.3 亦曾在 0.2.0-rc.2 上手工試用，沒有問題。**
+**已在 DSH Desktop 0.1.7-rc.2 與 0.2.0-rc.2 上完整驗證，並核對了與 0.2.0-rc.1 的相容性。**
 
 | 項目 | 測試環境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2`（完整驗證）、`0.2.0-rc.1`（相容性核對）與 `0.2.0-rc.2`（`0.1.3` 的手工試用） |
+| DSH | Desktop `0.1.7-rc.2` 與 `0.2.0-rc.2`（完整驗證）、`0.2.0-rc.1`（相容性核對） |
 | 內置運行時 | Electron 44 / Chromium 152 / Node 24.18.1（把席位改成縱向列需要 `:has()`，Chrome 105+；配色主題需要 `light-dark()`，Chrome 123+） |
 | 作業系統 | Windows 11 Pro, build 26200, AMD64 |
 | Node（用來執行測試） | v25.2.1, v26.7.0 |
@@ -75,7 +75,7 @@
 `dsh-plugin-manager` 逐位元一致；`dsh-client-ui-sidebar`、`dsh-client-ui-layout` 與 `dsh-client-ui-cordis`
 只有版本字符串、一行分析調用與標題欄 CSS 的差異。`sidebar.footer.action` 槽位的契約與其 `{ wide }` owner props 未改變，
 本插件 import 的套件（`dsh-api-remotes`、`dsh-client-ui-layout`、`dsh-client-ui-sidebar`）名稱也保持不變。
-在 `0.2.0-rc.1` 上的手工試用回報儀表板與 Remote 調用正常；插件 `0.1.3` 同樣在 `0.2.0-rc.2` 上手工試用，回報相同。
+在 `0.2.0-rc.1` 上的手工試用回報儀表板與 Remote 調用正常；`0.2.0-rc.2` 則在本插件自己的開發機上跑了完整驗證：啟用達到 `fiberPhase: active`、側邊欄卡片與中央儀表板發出真實的 Remote 調用（`calls.json`）、`boot.json` 裡生效的窗口與 profile 一致。
 
 本插件**沒有**宣告任何 `@deepseek-ai/dsh*` peer dependency，而這正是 DSH 實際校驗的東西——不宣告 peer 範圍就完全不施加版本約束。`engines.dsh` 宣告為 `^0.1.7-rc.2 || ^0.2.0-rc.1` 純粹給人看：官方文檔明確指出宣告範圍並不會
 拒絕不相容的 Host。
@@ -102,7 +102,14 @@
 ## 安裝
 
 本倉庫是一個 DSH bundle（`package.json` 宣告了 `dsh.bundle.patch` 與 `dsh.client`）。用官方入口安裝即可，
-不需要手動編輯 profile 檔案：
+不需要手動編輯 profile 檔案。本套件已發佈到 npm 官方源，所以直接寫套件名即可——管理器會到註冊表解析它並裝進目前
+的 profile：
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+想改為從本地目錄安裝（例如跑 `main` 上尚未發佈的版本），把 `install_bundle` 指向本目錄的絕對路徑即可。
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

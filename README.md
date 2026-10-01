@@ -62,11 +62,11 @@ page in the Plugins manager carries the window spans, the grouping and the palet
 
 ## Compatibility and tested environment
 
-**Fully verified on DSH Desktop 0.1.7-rc.2, checked for compatibility with 0.2.0-rc.1, and plugin 0.1.3 was tried by hand on 0.2.0-rc.2 with no problems.**
+**Fully verified on DSH Desktop 0.1.7-rc.2 and 0.2.0-rc.2; checked for compatibility with 0.2.0-rc.1.**
 
 | Item | Tested environment |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (full verification), `0.2.0-rc.1` (compatibility check) and `0.2.0-rc.2` (manual trial of `0.1.3`) |
+| DSH | Desktop `0.1.7-rc.2` and `0.2.0-rc.2` (full verification); `0.2.0-rc.1` (compatibility check) |
 | Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+; palette theming needs `light-dark()`, Chrome 123+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
@@ -80,8 +80,9 @@ was diffed against `0.1.7-rc.2`: `dsh-plugin-manager` is byte-identical, and in 
 `dsh-client-ui-layout` and `dsh-client-ui-cordis` only the version string, one analytics call and title-bar CSS differ.
 The `sidebar.footer.action` slot contract and its `{ wide }` owner props are unchanged, and the packages this plugin
 imports (`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`) keep their names. A manual trial on
-`0.2.0-rc.1` reports the dashboard and the Remote calls working; plugin `0.1.3` was likewise tried by hand on
-`0.2.0-rc.2` and reports the same.
+`0.2.0-rc.1` reports the dashboard and the Remote calls working, and `0.2.0-rc.2` then got the full run on this plugin's
+own development machine: activation reaching `fiberPhase: active`, the sidebar card and the dashboard issuing real
+Remote calls (`calls.json`), and the windows in `boot.json` matching the profile.
 
 This plugin declares **no** `@deepseek-ai/dsh*` peer dependency, and that is what DSH actually validates — an absent
 peer range applies no version constraint at all. `engines.dsh` is declared as `^0.1.7-rc.2 || ^0.2.0-rc.1` for humans
@@ -110,7 +111,16 @@ entries (oldest dropped, re-scanned on demand), and any `.tmp` a crash left behi
 ## Installation
 
 This repository is a DSH bundle (`package.json` declares `dsh.bundle.patch` and `dsh.client`). Install it through the
-official entry point; no manual editing of profile files is needed:
+official entry point; no manual editing of profile files is needed. The package is published on the official npm
+registry, so the package name alone is enough — the manager resolves it on the registry and installs it into the
+current profile:
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+To install from a local checkout instead (for example to run an unreleased `main`), point `install_bundle` at this
+directory's absolute path.
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

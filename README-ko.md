@@ -62,12 +62,11 @@ DSH(DeepSeek Harness)용 **완전 오프라인** Token 사용량 통계 플러�
 
 ## 호환성 및 테스트 환경
 
-**DSH Desktop 0.1.7-rc.2에서 완전히 검증했고, 0.2.0-rc.1은 호환성을 확인했으며, 플러그인 0.1.3은 0.2.0-rc.2에서 직접
-시험해 문제 없었습니다.**
+**DSH Desktop 0.1.7-rc.2와 0.2.0-rc.2에서 완전히 검증했고, 0.2.0-rc.1은 호환성을 확인했습니다.**
 
 | 항목 | 테스트 환경 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (전체 검증), `0.2.0-rc.1` (호환성 확인), `0.2.0-rc.2` (`0.1.3` 수동 시연) |
+| DSH | Desktop `0.1.7-rc.2` 및 `0.2.0-rc.2` (전체 검증), `0.2.0-rc.1` (호환성 확인) |
 | 번들 런타임 | Electron 44 / Chromium 152 / Node 24.18.1 (자리를 세로 열로 바꾸려면 `:has()`, Chrome 105+; 팔레트 테마에는 `light-dark()`, Chrome 123+) |
 | 운영 체제 | Windows 11 Pro, build 26200, AMD64 |
 | Node (테스트 실행용) | v25.2.1, v26.7.0 |
@@ -81,8 +80,9 @@ DSH(DeepSeek Harness)용 **완전 오프라인** Token 사용량 통계 플러�
 `dsh-client-ui-layout`, `dsh-client-ui-cordis`에는 버전 문자열, 분석 호출 하나, 타이틀바 CSS만 다릅니다.
 `sidebar.footer.action` 슬롯 계약과 그 `{ wide }` owner props는 그대로이며, 이 플러그인이 import하는
 패키지(`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`)도 이름을 유지합니다. `0.2.0-rc.1`에서의
-수동 시험은 대시보드와 Remote 호출이 동작한다고 보고했고, 플러그인 `0.1.3` 역시 `0.2.0-rc.2`에서 수동으로 시험해 같은
-결과를 보고했습니다.
+수동 시험은 대시보드와 Remote 호출이 동작한다고 보고했고, 이어서 `0.2.0-rc.2`에서는 이 플러그인의 개발 머신에서 전체
+실행을 했습니다: `fiberPhase: active`까지의 활성화, 사이드바 카드와 대시보드가 보내는 실제 Remote 호출(`calls.json`),
+그리고 `boot.json`에 반영된 창이 profile과 일치하는 것까지 확인했습니다.
 
 이 플러그인은 `@deepseek-ai/dsh*` peer dependency를 **선언하지 않으며**, DSH가 실제로 검증하는 것도 바로 그것입니다 —
 peer 범위가 없으면 아무 버전 제한도 걸리지 않습니다. `engines.dsh`는 `^0.1.7-rc.2 || ^0.2.0-rc.1`로 선언되어 있지만
@@ -111,7 +111,15 @@ peer 범위가 없으면 아무 버전 제한도 걸리지 않습니다. `engine
 ## 설치
 
 이 저장소는 DSH 번들입니다(`package.json`는 `dsh.bundle.patch`와 `dsh.client`를 선언합니다). 공식 진입점을 통해
-설치하면 되며, profile 파일을 손으로 수정할 필요는 없습니다:
+설치하면 되며, profile 파일을 손으로 수정할 필요는 없습니다. 이 패키지는 공식 npm 레지스트리에 공개되어 있으므로 패키지 이름만으로
+충분합니다 — 관리자가 레지스트리에서 해석해 현재 profile에 설치합니다:
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+로컬 디렉터리에서 설치하려면(예: 아직 공개되지 않은 `main` 실행) `install_bundle`에 이 디렉터리의 절대 경로를
+지정하면 됩니다.
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

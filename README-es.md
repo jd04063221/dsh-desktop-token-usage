@@ -64,12 +64,11 @@ página del plugin en el gestor de plugins contiene los intervalos de las ventan
 
 ## Compatibilidad y entorno probado
 
-**Verificado por completo en DSH Desktop 0.1.7-rc.2, comprobado para compatibilidad con 0.2.0-rc.1, y el plugin 0.1.3 se
-probó a mano en 0.2.0-rc.2 sin problemas.**
+**Verificado por completo en DSH Desktop 0.1.7-rc.2 y 0.2.0-rc.2, comprobado para compatibilidad con 0.2.0-rc.1.**
 
 | Elemento | Entorno probado |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (verificación completa), `0.2.0-rc.1` (comprobación de compatibilidad) y `0.2.0-rc.2` (prueba manual de `0.1.3`) |
+| DSH | Desktop `0.1.7-rc.2` y `0.2.0-rc.2` (verificación completa), `0.2.0-rc.1` (comprobación de compatibilidad) |
 | Runtime incluido | Electron 44 / Chromium 152 / Node 24.18.1 (convertir el asiento en columna necesita `:has()`, Chrome 105+; el temado de las paletas necesita `light-dark()`, Chrome 123+) |
 | Sistema operativo | Windows 11 Pro, compilación 26200, AMD64 |
 | Node (para ejecutar las pruebas) | v25.2.1, v26.7.0 |
@@ -84,8 +83,9 @@ este plugin se comparó por diff contra `0.1.7-rc.2`: `dsh-plugin-manager` es id
 `dsh-client-ui-layout` y `dsh-client-ui-cordis` solo difieren la cadena de versión, una llamada de analíticas y el CSS de la
 barra de título. El contrato del slot `sidebar.footer.action` y sus props propietarias `{ wide }` permanecen sin cambios, y los
 paquetes que importa este plugin (`dsh-api-remotes`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar`) conservan sus nombres. Una
-prueba manual en `0.2.0-rc.1` informa de que el panel y las llamadas Remote funcionan; el plugin `0.1.3` también se probó a mano
-en `0.2.0-rc.2` e informa lo mismo.
+prueba manual en `0.2.0-rc.1` informa de que el panel y las llamadas Remote funcionan; en `0.2.0-rc.2` se hizo después la
+ejecución completa en la máquina de desarrollo de este plugin: activación hasta `fiberPhase: active`, la tarjeta y el panel
+emitiendo llamadas Remote reales (`calls.json`), y las ventanas activas en `boot.json` coincidiendo con el profile.
 
 Este plugin **no** declara ninguna dependencia peer `@deepseek-ai/dsh*`, y eso es lo que DSH realmente valida —un rango peer
 ausente no aplica ninguna restricción de versión en absoluto. `engines.dsh` se declara como `^0.1.7-rc.2 || ^0.2.0-rc.1` solo
@@ -116,7 +116,15 @@ en la siguiente escritura.
 ## Instalación
 
 Este repositorio es un bundle de DSH (`package.json` declara `dsh.bundle.patch` y `dsh.client`). Instálelo a través del punto de
-entrada oficial; no es necesario editar manualmente los archivos del profile:
+entrada oficial; no es necesario editar manualmente los archivos del profile. El paquete está publicado en el registro oficial de npm,
+así que basta el nombre del paquete: el gestor lo resuelve en el registro y lo instala en el profile actual:
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+Para instalarlo desde un directorio local (por ejemplo, para ejecutar un `main` aún no publicado), indique a
+`install_bundle` la ruta absoluta de este directorio.
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>

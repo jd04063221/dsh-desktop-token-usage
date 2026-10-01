@@ -68,11 +68,11 @@ ci-dessus. La page du plugin dans le gestionnaire de plugins porte les plages de
 
 ## Compatibilité et environnement testé
 
-**Entièrement vérifié sur DSH Desktop 0.1.7-rc.2, contrôlé pour compatibilité avec 0.2.0-rc.1, et le plugin 0.1.3 a été essayé à la main sur 0.2.0-rc.2 sans aucun problème.**
+**Entièrement vérifié sur DSH Desktop 0.1.7-rc.2 et 0.2.0-rc.2, contrôlé pour compatibilité avec 0.2.0-rc.1.**
 
 | Élément | Environnement testé |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` (vérification complète), `0.2.0-rc.1` (contrôle de compatibilité) et `0.2.0-rc.2` (essai manuel de `0.1.3`) |
+| DSH | Desktop `0.1.7-rc.2` et `0.2.0-rc.2` (vérification complète), `0.2.0-rc.1` (contrôle de compatibilité) |
 | Environnement d'exécution embarqué | Electron 44 / Chromium 152 / Node 24.18.1 (transformer le siège en colonne nécessite `:has()`, Chrome 105+ ; le thème des palettes nécessite `light-dark()`, Chrome 123+) |
 | Système d'exploitation | Windows 11 Pro, build 26200, AMD64 |
 | Node (utilisé pour lancer les tests) | v25.2.1, v26.7.0 |
@@ -88,7 +88,9 @@ plugin touche a été comparé à `0.1.7-rc.2` : `dsh-plugin-manager` est identi
 d'analyse et le CSS de la barre de titre diffèrent. Le contrat de slot `sidebar.footer.action` et ses props propriétaires
 `{ wide }` sont inchangés, et les paquets que ce plugin importe (`dsh-api-remotes`, `dsh-client-ui-layout`,
 `dsh-client-ui-sidebar`) conservent leurs noms. Un essai manuel sur `0.2.0-rc.1` rend le tableau de bord et les appels
-Remote fonctionnels ; le plugin `0.1.3` a de même été essayé à la main sur `0.2.0-rc.2` et rend le même verdict.
+Remote fonctionnels ; `0.2.0-rc.2` a ensuite eu droit à l'exécution complète sur la machine de développement de ce
+plugin : activation jusqu'à `fiberPhase: active`, carte et tableau de bord émettant de vrais appels Remote
+(`calls.json`), et les fenêtres actives dans `boot.json` conformes au profile.
 
 Ce plugin ne déclare **aucune** peer dependency `@deepseek-ai/dsh*`, et c'est ce que DSH valide réellement — une plage
 peer absente n'applique aucune contrainte de version. `engines.dsh` est déclaré comme `^0.1.7-rc.2 || ^0.2.0-rc.1` pour
@@ -120,7 +122,16 @@ demande), et tout `.tmp` laissé par un crash est balayé à l'écriture suivant
 ## Installation
 
 Ce dépôt est un bundle DSH (`package.json` déclare `dsh.bundle.patch` et `dsh.client`). Installez-le par le point
-d'entrée officiel ; aucune modification manuelle des fichiers du profile n'est nécessaire :
+d'entrée officiel ; aucune modification manuelle des fichiers du profile n'est nécessaire. Le paquet est publié sur le registre npm
+officiel, le nom du paquet suffit donc — le gestionnaire le résout dans le registre et l'installe dans le profile
+courant :
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+Pour une installation depuis un répertoire local (par exemple pour exécuter un `main` non publié), indiquez plutôt à
+`install_bundle` le chemin absolu de ce répertoire.
 
 ```
 plugin_manager  action: install_bundle  target: <absolute path to this directory>
