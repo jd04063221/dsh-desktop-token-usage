@@ -53,6 +53,11 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 </head><body>
 <div id="wrap"><div id="panel"></div><div id="sidebar"></div></div>
 <script>
+const SVG_NS = "http://www.w3.org/2000/svg";
+// createElement("svg") yields an HTMLUnknownElement, and a whole <svg> subtree
+// built that way paints nothing — the namespace has to be explicit, which is
+// what React DOM does for these same elements in the real app.
+const SVG_TAGS = new Set(["svg","g","path","circle","ellipse","rect","line","polyline","polygon","text","tspan","defs","use","clipPath","mask","linearGradient","radialGradient","stop"]);
 const SVG_ATTRS = """ + json.dumps(SVG_ATTRS) + """;
 const SVG_VERBATIM = new Set(""" + json.dumps(sorted(SVG_VERBATIM)) + """);
 const DATA = """ + json.dumps(payload["trees"]).replace("<", "\\u003c") + """;
@@ -65,8 +70,8 @@ function build(node) {
     return frag;
   }
   if (typeof node === "string" || typeof node === "number") return document.createTextNode(String(node));
-  const el = document.createElement(node.tag);
-  const isSvg = el instanceof SVGElement;
+  const el = SVG_TAGS.has(node.tag) ? document.createElementNS(SVG_NS, node.tag) : document.createElement(node.tag);
+  const isSvg = el.namespaceURI === SVG_NS;
   for (const [key, value] of Object.entries(node.props || {})) {
     if (value === undefined || value === null || key === "children" || typeof value === "function") continue;
     if (key === "className") { el.setAttribute("class", value); continue; }
@@ -134,7 +139,27 @@ def main():
                 # deliberately not emulated, so the shot proves which one wins.
                 page.evaluate("document.body.setAttribute('data-ds-dark-theme','')")
             page.wait_for_timeout(400)
-            print(theme + ":")
+            # Guard: a namespace slip once produced a page whose <svg> subtrees
+            # painted nothing — the bars were fine, the hit-rate curve and the
+            # donut silently vanished. Fail loudly instead of shipping that.
+            check = page.evaluate(
+                """() => {
+                  const path = document.querySelector('svg path');
+                  const circle = document.querySelector('svg circle');
+                  return {
+                    paths: document.querySelectorAll('svg path').length,
+                    circles: document.querySelectorAll('svg circle').length,
+                    strokes: [...document.querySelectorAll('svg path')].map((el) => getComputedStyle(el).stroke),
+                    circleStrokes: [...document.querySelectorAll('svg circle')].map((el) => getComputedStyle(el).stroke),
+                  };
+                }"""
+            )
+            # Halo + curve must both be there, and painted in different colours:
+            # a page with only the halo would otherwise pass while the curve is gone.
+            assert check["paths"] >= 2 and check["circles"] >= 1, "SVG geometry is missing: " + str(check)
+            assert len(set(check["strokes"])) >= 2, "the curve is indistinguishable from its halo: " + str(check)
+            assert "none" not in check["strokes"] + check["circleStrokes"], "something would be invisible: " + str(check)
+            print(theme + ":", check["paths"], "paths,", check["circles"], "circles,", len(set(check["strokes"])), "stroke colours")
             shoot(page, out_dir, "#panel", "screenshot-dashboard-" + theme + ".png")
             shoot(page, out_dir, "#sidebar", "screenshot-sidebar-" + theme + ".png")
             shoot(page, out_dir, ".dtu-cards", "screenshot-cards-" + theme + ".png")
