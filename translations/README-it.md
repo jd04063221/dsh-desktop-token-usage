@@ -236,6 +236,7 @@ Questa sezione conta — il significato dei numeri è determinato interamente da
 | Percentuale media di cache hit | `cache read ÷ (cache read + uncached input + cache write)` — il lato dei miss include le scritture in cache |
 | Numero di richieste | Numero di chiamate al modello dopo il settlement (vedi "fold" sotto) |
 | Turni completati | Numero di eventi `turn/end` |
+| Giorni attivi | Numero di giorni locali con token o turni (secondo il **fuso orario locale**, non UTC) |
 | Raggrappamento per modello | L'**ultimo segmento** dell'id del modello: un modello arriva come `deepseek/deepseek-v4.1-flash` da `commandcode` e come `deepseek-v4.1-flash` da `opencode-go`, e entrambi finiscono in una riga sola; il raggruppamento per provider li tiene ancora distinti |
 
 **Semantica del fold (il luogo più facile per sbagliare i conti)**: nello stesso `(turn, step)` una voce di utilizzo successiva

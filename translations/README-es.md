@@ -245,6 +245,7 @@ Esta sección importa —lo que significan los números lo determina por complet
 | Tasa media de aciertos de caché | `cache read ÷ (cache read + uncached input + cache write)` —el lado de fallo incluye las escrituras de caché |
 | Número de solicitudes | Número de llamadas al modelo tras la liquidación (véase «plegado» más abajo) |
 | Turnos completados | Número de eventos `turn/end` |
+| Días activos | Número de días locales con tokens o turnos (según la **zona horaria local**, no UTC) |
 | Agrupar por modelo | El **último segmento** del id del modelo: un modelo llega como `deepseek/deepseek-v4.1-flash` desde `commandcode` y como `deepseek-v4.1-flash` desde `opencode-go`, y ambos se pliegan en una sola fila; agrupar por proveedor aún los mantiene separados |
 
 **Semántica de plegado (un lugar fácil para equivocarse en el cálculo)**: dentro del mismo `(turn, step)`, una entrada de uso

@@ -273,8 +273,7 @@ Erstes Release: vollständig offline Token-Nutzungsstatistik, mit allen Daten au
 - `private: true` entfernt und `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public` (gescopete Pakete sind standardmäßig eingeschränkt) / `engines.dsh` (deklarativ; DSH erzwingt es nicht) / `prepublishOnly: npm test` hinzugefügt,
   plus eine neue MIT-`LICENSE`.
-- ⚠️ **`jd04063221` in `name` / `author` / den Repository-URLs ist ein Platzhalter-Benutzername**: er muss vor dem Veröffentlichen durch Ihre eigene npm-Scope und Ihren eigenen GitHub-Benutzernamen ersetzt werden
-  (siehe „Veröffentlichen auf npm“ im README für die Liste Punkt für Punkt).
+- ⚠️ **`jd04063221` in `name` / `author` / den Repository-URLs ist ein Platzhalter-Benutzername**: er muss vor dem Veröffentlichen durch Ihre eigene npm-Scope und Ihren eigenen GitHub-Benutzernamen ersetzt werden.
 
 ### Kompatibilität und Fallbacks
 

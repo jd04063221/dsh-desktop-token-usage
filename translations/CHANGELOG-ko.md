@@ -264,7 +264,7 @@
   `publishConfig.access=public`(스코프 패키지는 기본이 restricted) / `engines.dsh`(선언적; DSH는 강제하지 않음) /
   `prepublishOnly: npm test`를 추가했으며, 새로운 MIT `LICENSE`도 넣었습니다.
 - ⚠️ **`name` / `author` / 저장소 URL의 `jd04063221`는 자리 표시자 사용자 이름입니다**: 게시하기 전에 자기 npm 스코프와
-  GitHub 사용자 이름으로 바꿔야 합니다(항목별 목록은 README의 "Publishing to npm" 참조).
+  GitHub 사용자 이름으로 바꿔야 합니다.
 
 ### 호환성과 대체 동작
 

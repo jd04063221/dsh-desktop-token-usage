@@ -239,6 +239,7 @@ Dieser Abschnitt ist wichtig — was die Zahlen bedeuten, wird vollständig durc
 | Durchschnittliche Cache-Trefferquote | `cache read ÷ (cache read + uncached input + cache write)` — die Fehltreffer-Seite enthält auch Cache-Schreibungen |
 | Anzahl der Anfragen | Anzahl der Modellaufrufe nach der Abrechnung (siehe „fold“ unten) |
 | Abgeschlossene Runden | Anzahl der `turn/end`-Ereignisse |
+| Aktive Tage | Anzahl der lokalen Tage mit Token oder Runden (nach **lokaler Zeitzone**, nicht UTC) |
 | Nach Modell gruppieren | Das **letzte Segment** der Modell-id: ein Modell kommt als `deepseek/deepseek-v4.1-flash` von `commandcode` und als `deepseek-v4.1-flash` von `opencode-go` an, und beide folden in eine Zeile; die Gruppierung nach Anbieter trennt die beiden weiterhin |
 
 **Fold-Semantik (hier ist es leicht, die Rechnung falsch zu machen)**: innerhalb desselben `(turn, step)` **ersetzt** ein späterer Nutzungs-

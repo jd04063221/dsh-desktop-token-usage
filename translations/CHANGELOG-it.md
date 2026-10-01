@@ -273,8 +273,7 @@ Prima release: statistiche sull'utilizzo dei token completamente offline, con tu
 - Rimossi `private: true` e aggiunti `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public` (i package con scope hanno accesso restricted di default) / `engines.dsh` (dichiarativo; DSH non lo fa rispettare) / `prepublishOnly: npm test`,
   più un nuovo `LICENSE` MIT.
-- ⚠️ **`jd04063221` in `name` / `author` / gli URL del repository è un username segnaposto**: va sostituito con il tuo scope npm e il tuo username GitHub prima della pubblicazione
-  (vedi "Pubblicazione su npm" nel README per l'elenco item per item).
+- ⚠️ **`jd04063221` in `name` / `author` / gli URL del repository è un username segnaposto**: va sostituito con il tuo scope npm e il tuo username GitHub prima della pubblicazione.
 
 ### Compatibilità e fallback
 

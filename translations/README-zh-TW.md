@@ -213,6 +213,7 @@ DSH **不會**從 `Config` schema 自動產生編輯器——自帶設定的插�
 | 平均快取命中率 | `cache read ÷ (cache read + uncached input + cache write)`——未命中側包含快取寫入 |
 | 請求數 | 結算後的模型呼叫次數（見下方的「折疊」） |
 | 完成輪次 | `turn/end` 事件數 |
+| 活躍天數 | 有 token 或輪次的本地日期數（按**本地時區**，不是 UTC） |
 | 按模型分組 | 模型 id 的**最後一段**：同一個模型，`commandcode` 報成 `deepseek/deepseek-v4.1-flash`、`opencode-go` 報成 `deepseek-v4.1-flash`，兩者折疊進同一列；按供應商分組仍會把兩者分開 |
 
 **折疊語義（容易把數學算錯的地方）**：在同一個 `(turn, step)` 內，較晚的 usage 條目會**取代**較早的那條——

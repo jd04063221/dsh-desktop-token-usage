@@ -142,7 +142,7 @@
 - **パケージ名・行id・リポジトリ名を `@jd04063221/dsh-desktop-token-usage` に統一**（スコープは0.1.2で廃止）：このプラグインは **DSH Desktop** だけを対象とし（データはDesktopの `$DSH_HOME/sessions` から来る）、名前に `desktop` を含めて他のあらゆるサーフェスと区別します。あわせて更新：パケージ名、Hostの `REMOTE_PACKAGE`、Clientモジュールの `id`（公式の慣例ではモジュールの `id` はそのパケージ名 — `dsh-api-remotes/lib/client.js` を参照）、`cordis.patch.yml` の行の `name` **と**行の `id`、設定カードのスロットキー（`plugins.bundle.config` は**パケージ名**をキーにする）、診断とインデックスキャッシュのディレクトリ、GitHubリポジトリURL。
 - **どれか1つでも欠けると静かに失敗します**：モジュールの `id` と設定カードのキーはパケージ名と等しく、行の `name` はprofileにインストールされた正確なパケージ名でなければなりません。行の `id` はprofileの `- id: …` 設定オーバーライドのアンカーでもあり — 変更するにはそのオーバーライドを移行しないと、保存された `hours`/`days` が効かなくなります（ここでは移行済み）。Hostが自分のLoaderエントリを認識する際は**パケージ名**と**行id**の両方にマッチするため、レガシー行でも設定の読み書きができます（テストでカバーされています）。
 - `private: true` を削除し、`author` / `repository` / `homepage` / `bugs` / `keywords` / `publishConfig.access=public`（スコープ付きパケージはデフォルトrestricted）/ `engines.dsh`（宣言的。DSHは強制しません）/ `prepublishOnly: npm test` を追加、さらに新しいMITの `LICENSE`。
-- ⚠️ **`name` / `author` / リポジトリURLの `jd04063221` はプレースホルダのユーザー名です**：公開前に自分のnpmスコープとGitHubユーザー名に置き換えてください（項目ごとの一覧はREADMEの「npmへの公開」を参照）。
+- ⚠️ **`name` / `author` / リポジトリURLの `jd04063221` はプレースホルダのユーザー名です**：公開前に自分のnpmスコープとGitHubユーザー名に置き換えてください。
 
 ### 互換性とフォールバック
 

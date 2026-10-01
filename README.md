@@ -239,6 +239,7 @@ This section matters — what the numbers mean is determined entirely by DSH's l
 | Average cache hit rate | `cache read ÷ (cache read + uncached input + cache write)` — the miss side includes cache writes |
 | Request count | Number of model calls after settlement (see "fold" below) |
 | Completed turns | Number of `turn/end` events |
+| Active days | Number of local dates with tokens or turns (by **local time zone**, not UTC) |
 | Group by model | The **last segment** of the model id: one model arrives as `deepseek/deepseek-v4.1-flash` from `commandcode` and as `deepseek-v4.1-flash` from `opencode-go`, and both fold into one row; grouping by provider still keeps the two apart |
 
 **Fold semantics (an easy place to get the math wrong)**: within the same `(turn, step)`, a later usage entry

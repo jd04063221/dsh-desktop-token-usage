@@ -256,6 +256,7 @@ de DSH.
 | Taux de réussite du cache moyen | `cache read ÷ (cache read + uncached input + cache write)` — le côté échec inclut les écritures de cache |
 | Nombre de requêtes | Nombre d'appels de modèle après règlement (voir « pliage » ci-dessous) |
 | Tours terminés | Nombre d'événements `turn/end` |
+| Jours d'activité | Nombre de jours locaux avec des token ou des tours (selon le **fuseau horaire local**, pas UTC) |
 | Regroupement par modèle | Le **dernier segment** de l'id de modèle : un modèle arrive comme `deepseek/deepseek-v4.1-flash` depuis `commandcode` et comme `deepseek-v4.1-flash` depuis `opencode-go`, et les deux se replient en une ligne ; le regroupement par fournisseur les garde toujours séparés |
 
 **Sémantique de pliage (un endroit facile pour se tromper dans le calcul)** : dans le même `(turn, step)`, une entrée

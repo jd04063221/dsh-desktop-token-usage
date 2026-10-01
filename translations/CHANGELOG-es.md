@@ -307,8 +307,7 @@ sesión bajo el local `$DSH_HOME/sessions`.
   `publishConfig.access=public` (los paquetes con scope son restringidos por defecto) / `engines.dsh` (declarativo; DSH no lo
   hace cumplir) / `prepublishOnly: npm test`, más un nuevo `LICENSE` MIT.
 - ⚠️ **`jd04063221` en `name` / `author` / las URL del repositorio es un nombre de usuario de marcador de posición**: debe
-  reemplazarse por su propio scope de npm y su nombre de usuario de GitHub antes de publicar (véase «Publicar en npm» en el
-  README para la lista elemento por elemento).
+  reemplazarse por su propio scope de npm y su nombre de usuario de GitHub antes de publicar.
 
 ### Compatibilidad y alternativas
 

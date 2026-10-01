@@ -232,6 +232,7 @@ DSH는 `Config` 스키마에서 편집기를 **자동으로 생성하지 않습�
 | 평균 캐시 적중률 | `cache read ÷ (cache read + uncached input + cache write)` — 미적중 쪽에 캐시 쓰기가 포함됩니다 |
 | 요청 수 | 정산 후 모델 호출 수(아래 "폴딩" 참조) |
 | 완료된 턴 | `turn/end` 이벤트 수 |
+| 활동 일수 | 토큰 또는 턴이 있는 로컬 날짜 수(**로컬 시간대** 기준, UTC 아님) |
 | 모델별 분류 | 모델 id의 **마지막 조각**: 같은 모델이 `commandcode`에서는 `deepseek/deepseek-v4.1-flash`로, `opencode-go`에서는 `deepseek-v4.1-flash`로 들어와 둘 다 한 행으로 합쳐집니다. 공급자별로 묶으면 둘은 여전히 분리됩니다 |
 
 **폴딩 의미론(계산이 쉽게 어긋나는 지점)**: 같은 `(turn, step)` 안에서 나중 usage 항목이 이전 항목을 **대체**합니다 —

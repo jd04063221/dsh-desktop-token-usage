@@ -273,8 +273,7 @@ First release: fully offline token usage statistics, with all data taken from th
 - Removed `private: true` and added `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public` (scoped packages default to restricted) / `engines.dsh` (declarative; DSH does not enforce it) / `prepublishOnly: npm test`,
   plus a new MIT `LICENSE`.
-- ⚠️ **`jd04063221` in `name` / `author` / the repository URLs is a placeholder username**: it must be replaced with your own npm scope and GitHub username before publishing
-  (see "Publishing to npm" in the README for the item-by-item list).
+- ⚠️ **`jd04063221` in `name` / `author` / the repository URLs is a placeholder username**: it must be replaced with your own npm scope and GitHub username before publishing.
 
 ### Compatibility and fallbacks
 

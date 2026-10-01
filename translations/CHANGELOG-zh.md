@@ -235,8 +235,7 @@
 - 去掉 `private: true`，补齐 `author` / `repository` / `homepage` / `bugs` / `keywords` /
   `publishConfig.access=public`（scoped 包默认 restricted）/ `engines.dsh`（声明性，DSH 不强制）/ `prepublishOnly: npm test`，
   新增 MIT `LICENSE`。
-- ⚠️ `name` / `author` / 仓库地址里的 **`jd04063221` 是占位用户名**：发布前必须换成你自己的 npm scope 与 GitHub 用户名
-  （逐处清单见 README「发布到 npm」）。
+- ⚠️ `name` / `author` / 仓库地址里的 **`jd04063221` 是占位用户名**：发布前必须换成你自己的 npm scope 与 GitHub 用户名。
 
 ### 兼容与回退
 

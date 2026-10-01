@@ -236,7 +236,7 @@
   `publishConfig.access=public`（有 scope 的套件預設為 restricted）/ `engines.dsh`（聲明性；DSH 不強制）/
   `prepublishOnly: npm test`，外加新的 MIT `LICENSE`。
 - ⚠️ **`name` / `author` / 儲存庫 URL 中的 `jd04063221` 是佔位使用者名稱**：發布前必須換成你自己的 npm scope 與
-  GitHub 使用者名稱（逐項清單見 README 的「發布到 npm」）。
+  GitHub 使用者名稱。
 
 ### 相容性與回退
 

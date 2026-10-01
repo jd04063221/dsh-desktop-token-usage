@@ -321,8 +321,7 @@ journaux de sessions sous le `$DSH_HOME/sessions` local.
   `publishConfig.access=public` (les paquets scopés sont restreints par défaut) / `engines.dsh` (déclaratif ; DSH ne
   l'applique pas) / `prepublishOnly: npm test`, plus un nouveau `LICENSE` MIT.
 - ⚠️ **`jd04063221` dans `name` / `author` / les URLs du dépôt est un nom d'utilisateur provisoire** : il doit être
-  remplacé par votre propre scope npm et votre nom d'utilisateur GitHub avant de publier (voir « Publier sur npm » dans le
-  README pour la liste détaillée).
+  remplacé par votre propre scope npm et votre nom d'utilisateur GitHub avant de publier.
 
 ### Compatibilité et replis
 
