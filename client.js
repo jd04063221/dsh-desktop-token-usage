@@ -290,7 +290,7 @@ window.__ModuleLoader__.load({
 .dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.dtu-trend{position:relative}
+.dtu-trend{position:relative;padding-bottom:20px}
 .dtu-trendHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .dtu-chartBars{position:relative;height:190px;margin-top:4px}
 .dtu-chartHit{position:relative;height:44px;margin-top:16px}
@@ -300,7 +300,8 @@ window.__ModuleLoader__.load({
    so one percentage scale positions all three in the same coordinate system. */
 .dtu-hitPlot{position:absolute;left:52px;right:44px;top:0;bottom:0;pointer-events:none}
 .dtu-hitPlot svg{position:absolute;left:0;right:0;top:0;width:100%;height:44px}
-.dtu-plotLine{position:absolute;left:52px;right:44px;top:0;bottom:26px;pointer-events:none}
+.dtu-plotLine{position:absolute;left:52px;right:44px;top:0;bottom:20px;pointer-events:none}
+.dtu-lineKey{display:inline-block;width:14px;height:2px;background:var(--dtu-hit);border-radius:2px;margin-right:5px;vertical-align:middle}
 .dtu-hitDot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--dtu-hit);transform:translate(-50%,-50%);pointer-events:auto}
 .dtu-hitDotEmpty{background:transparent}
 .dtu-cursor{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--dsw-alias-border-l1)}
@@ -308,15 +309,15 @@ window.__ModuleLoader__.load({
 .dtu-tipTitle{font-weight:600;margin-bottom:4px}
 .dtu-tipRow{display:flex;align-items:center;gap:6px}
 .dtu-tipRow b{margin-left:auto;font-weight:600}
-.dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
+.dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:0;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
 .dtu-seg{width:100%}
-.dtu-axisX{position:absolute;left:52px;right:44px;bottom:0;height:18px;color:var(--dsw-alias-label-secondary);font-size:11px}
+.dtu-axisX{position:absolute;left:52px;right:44px;bottom:2px;height:14px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisX span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.dtu-axisY{position:absolute;left:0;top:0;bottom:22px;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
+.dtu-axisY{position:absolute;left:0;top:0;bottom:0;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisY span{position:absolute;right:4px;transform:translateY(-50%);white-space:nowrap}
-.dtu-grid{position:absolute;left:52px;right:44px;top:0;bottom:22px}
+.dtu-grid{position:absolute;left:52px;right:44px;top:0;bottom:0}
 .dtu-gridline{position:absolute;left:0;right:0;border-top:1px solid var(--dsw-alias-border-l1);opacity:.6}
 .dtu-models{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:20px;align-items:start}
 .dtu-donut{position:relative;width:100%;max-width:240px;aspect-ratio:1/1;margin:0 auto}
@@ -882,7 +883,9 @@ window.__ModuleLoader__.load({
 
     const EQUAL = [0, 0, 0, 0, 0]
 
-    /** Cache-hit share of a day, in 0-1; null when the day saw no prompt tokens. */
+    /** Cache-hit share of a day, in 0-1; null when the day saw no prompt tokens.
+     *  Deliberately mirrored from lib/session-usage.js hitRateOf — the browser bundle
+     *  cannot import that ESM module, so keep the two in sync. */
     function hitRateOf(buckets) {
       const hit = buckets[2]
       const miss = buckets[0] + buckets[3]
@@ -990,6 +993,20 @@ window.__ModuleLoader__.load({
           groupBy === 'both'
             ? h(ChipGroup, { items: CHIP_GROUPS, value: mode, onSelect: setMode, label: '统计口径' })
             : null,
+        ),
+        h(
+          'div',
+          { className: 'dtu-legend', style: { marginBottom: '6px' } },
+          top.map((entry) =>
+            h(
+              'span',
+              { key: entry.key, title: entry.key },
+              h('span', { className: 'dtu-dot', style: { background: colorOf.get(entry.key) } }),
+              entry.key,
+            ),
+          ),
+          h('span', null, h('span', { className: 'dtu-dot', style: { background: OTHER } }), '其他'),
+          h('span', null, h('span', { className: 'dtu-lineKey' }), '缓存命中率'),
         ),
         h(
           'div',
@@ -1157,6 +1174,65 @@ window.__ModuleLoader__.load({
 
     // ── dashboard ───────────────────────────────────────────────────────────
 
+    /**
+     * The grouping this half renders. A Host newer than this Client ships
+     * `groups`/`byGroup` with the summary; an older one only carries route-keyed
+     * `byModel`/`models`, and the Client can hot-update before the Host restarts —
+     * so rebuild both groupings locally instead of degrading into one grey "其他"
+     * bar and an empty breakdown. Mirrors the Host's split (provider/model of the
+     * route, provider = model = route without a slash) and its ranking:
+     * totalTokens desc, then key asc.
+     */
+    function normalizeGrouping(data) {
+      if (!data) return { days: [], groups: null }
+      if (!Array.isArray(data.days)) return { days: data.days, groups: data.groups ?? null }
+      if (data.groups && data.days.every((day) => day && day.byGroup)) {
+        return { days: data.days, groups: data.groups }
+      }
+      const days = data.days
+      const routeKeys = new Map()
+      for (const model of Array.isArray(data.models) ? data.models : []) {
+        routeKeys.set(model.route, { provider: model.provider, model: model.model })
+      }
+      const keysOf = (route) => {
+        const known = routeKeys.get(route)
+        if (known) return [known.model, known.provider]
+        const slash = route.indexOf('/')
+        return slash > 0 ? [route.slice(slash + 1), route.slice(0, slash)] : [route, route]
+      }
+      const groupMaps = { model: new Map(), provider: new Map() }
+      const groupedDays = days.map((day) => {
+        const perDay = { model: new Map(), provider: new Map() }
+        for (const [route, buckets] of Object.entries((day && day.byModel) || {})) {
+          const [modelKey, providerKey] = keysOf(route)
+          for (const [mode, key] of [['model', modelKey], ['provider', providerKey]]) {
+            for (const map of [perDay[mode], groupMaps[mode]]) {
+              let slot = map.get(key)
+              if (!slot) {
+                slot = [0, 0, 0, 0, 0]
+                map.set(key, slot)
+              }
+              buckets.forEach((value, index) => {
+                slot[index] += value
+              })
+            }
+          }
+        }
+        return {
+          ...day,
+          byGroup: { model: Object.fromEntries(perDay.model), provider: Object.fromEntries(perDay.provider) },
+        }
+      })
+      const ranked = (map) =>
+        [...map.entries()]
+          .map(([key, buckets]) => ({ key, buckets, totalTokens: totalOf(buckets) }))
+          .sort((a, b) => b.totalTokens - a.totalTokens || (a.key < b.key ? -1 : 1))
+      return {
+        days: groupedDays,
+        groups: { model: ranked(groupMaps.model), provider: ranked(groupMaps.provider) },
+      }
+    }
+
     function DashboardBody() {
       const state = useStore()
       const [hovered, setHovered] = React.useState(null)
@@ -1168,7 +1244,9 @@ window.__ModuleLoader__.load({
       const buckets = totals ? totals.buckets : [0, 0, 0, 0, 0]
       const [breakdownMode, setBreakdownMode] = React.useState('model')
       const groupByMode = state.config?.groupBy ?? 'both'
-      const activeGroups = (data && data.groups && data.groups[breakdownMode]) || []
+      const activeBreakdown = groupByMode === 'both' ? breakdownMode : groupByMode
+      const grouping = normalizeGrouping(data)
+      const activeGroups = (grouping.groups && grouping.groups[activeBreakdown]) || []
       const topGroup = activeGroups.length > 0 ? activeGroups[0] : null
 
       const head = h(
@@ -1236,10 +1314,10 @@ window.__ModuleLoader__.load({
             h(Card, {
               label: '平均缓存命中率',
               value: percent(totals.cacheHitRate),
-              sub: '缓存读取 / (缓存读取 + 未缓存输入)',
+              sub: '缓存命中 / (缓存命中 + 未命中)',
             }),
             h(Card, {
-              label: breakdownMode === 'provider' ? '最常用供应商' : '最常用模型',
+              label: activeBreakdown === 'provider' ? '最常用供应商' : '最常用模型',
               value: topGroup ? topGroup.key : '—',
               sub: topGroup ? '占比 ' + percent(topGroup.totalTokens / Math.max(1, totals.totalTokens)) : null,
               title: topGroup ? topGroup.key : undefined,
@@ -1278,7 +1356,7 @@ window.__ModuleLoader__.load({
             { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
             h(Heatmap, { heatmap: data.heatmap, days: data.days }),
           ),
-          h(Section, { title: '按天 Token 趋势' }, h(TrendSection, { days: data.days, groups: data.groups, groupBy: groupByMode })),
+          h(Section, { title: '按天 Token 趋势' }, h(TrendSection, { days: grouping.days, groups: grouping.groups, groupBy: groupByMode })),
           h(
             Section,
             {
@@ -1286,7 +1364,7 @@ window.__ModuleLoader__.load({
               extra:
                 groupByMode === 'both'
                   ? h(ChipGroup, { items: CHIP_GROUPS, value: breakdownMode, onSelect: setBreakdownMode, label: '拆分口径' })
-                  : h('span', { className: 'dtu-hint' }, breakdownMode === 'provider' ? '按供应商' : '按模型'),
+                  : h('span', { className: 'dtu-hint' }, activeBreakdown === 'provider' ? '按供应商' : '按模型'),
             },
             h(
               'div',

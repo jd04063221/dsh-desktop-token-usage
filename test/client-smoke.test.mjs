@@ -370,7 +370,8 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.match(rail.props['aria-label'], /Token 用量/)
 
   const main = record.slots.find((item) => item.options?.name === 'main')
-  const body = collect(render({ type: main.component, props: main.options.inject() })).join(' ')
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const body = collect(tree).join(' ')
   for (const expected of [
     'Token 用量',
     'Tokens 用量',
@@ -378,17 +379,45 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
     '请求数量',
     '活跃天数',
     '平均缓存命中率',
+    '缓存命中 / (缓存命中 + 未命中)',
     '最常用模型',
     '活跃热力图',
     '按天 Token 趋势',
     '用量拆分',
-    '缓存命中率',
     '未联网',
   ]) {
     assert.ok(body.includes(expected), `the dashboard must render "${expected}"`)
   }
   // The source tabs must stay honest about what is derivable offline.
   assert.ok(body.includes('桌面·网页') && body.includes('命令行·机器人'), 'expected the derived source tabs')
+
+  // The trend legend is scoped: it keys the stacked colours and the hit-rate line.
+  // A whole-page match would be satisfied by the stat card's 缓存命中率 instead.
+  const legendNodes = []
+  const collectLegends = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectLegends)
+    if (node.props?.className === 'dtu-legend') legendNodes.push(node)
+    collectLegends(node.children)
+  }
+  collectLegends(tree)
+  const trendLegend = legendNodes.find((node) => collect(node).includes('其他'))
+  assert.ok(trendLegend, 'the trend section must carry its own legend')
+  const legendTexts = collect(trendLegend)
+  for (const entry of summaryPayload().groups.model.slice(0, 5)) {
+    assert.ok(legendTexts.includes(entry.key), `the legend must name the Top5 key ${entry.key}`)
+  }
+  assert.ok(legendTexts.includes('缓存命中率'), 'the daily-total key was replaced by a hit-rate key')
+  const legendClasses = []
+  const collectLegendClasses = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectLegendClasses)
+    if (typeof node.props?.className === 'string') legendClasses.push(node.props.className)
+    collectLegendClasses(node.children)
+  }
+  collectLegendClasses(trendLegend)
+  assert.ok(legendClasses.includes('dtu-lineKey'), 'the hit-rate key draws as a line swatch')
+  assert.ok(legendClasses.filter((name) => name === 'dtu-dot').length >= 3, 'the colour keys draw as dots')
 
   // The configured windows are wall-clock figures the Host builds without the
   // source filter, so they get their own section instead of a filter-following card.
@@ -597,6 +626,69 @@ test('the breakdown offers its own chip and the last stat card speaks its langua
   assert.ok(labels.includes('按供应商'), 'the breakdown section must offer the provider switch')
 })
 
+test('a locked groupBy hides both switches and the breakdown follows the lock', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext({
+    config: async () => ({ ok: true, value: { hours: 6, days: 7, groupBy: 'provider', palette: 'primer', writable: true } }),
+  })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const text = collect(tree).join(' ')
+  assert.match(text, /最常用供应商/, 'the stat card must speak of providers when the mode is locked')
+  const rowNames = []
+  const labels = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-rowName') rowNames.push(collect(node).join(''))
+    if (node.props?.className === 'dtu-chip') labels.push(collect(node).join(''))
+    walk(node.children)
+  }
+  walk(tree)
+  assert.deepEqual(rowNames, ['p', 'q'], 'the locked breakdown must render provider rows, not model rows')
+  assert.ok(
+    !labels.includes('按模型') && !labels.includes('按供应商'),
+    'a locked config hides both switches instead of offering a dead one',
+  )
+})
+
+test('an older Host without groups still fills the breakdown and stacks named bars', async () => {
+  const { plugin } = loadClient()
+  // The upgrade state the Host actually ships: route-keyed byModel/models only.
+  const payload = summaryPayload()
+  delete payload.groups
+  for (const day of payload.days) delete day.byGroup
+  const { ctx, record } = fakeContext({ summary: async () => ({ ok: true, value: payload }) })
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const main = record.slots.find((item) => item.options?.name === 'main')
+
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const rowNames = []
+  const rowShares = []
+  const segments = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-rowName') rowNames.push(collect(node).join(''))
+    if (node.props?.className === 'dtu-rowShare') rowShares.push(collect(node).join(''))
+    if (node.props?.className === 'dtu-seg') segments.push(node)
+    walk(node.children)
+  }
+  walk(tree)
+  assert.deepEqual(rowNames, ['a', 'b'], 'the model rows must be rebuilt locally, not left empty')
+  assert.deepEqual(rowShares, ['76.2%', '23.8%'], 'each rebuilt row carries its share of the range')
+  const named = segments.filter((segment) => segment.props.style?.background !== 'var(--dtu-other)')
+  assert.ok(segments.length > 0, 'the trend must still draw its stacked bars')
+  assert.ok(
+    named.length > 0,
+    'bars must keep a real series colour — folding everything into 其他 is the failure mode',
+  )
+})
+
 // ── the trend line ──────────────────────────────────────────────────────────
 
 /** Five days: two empty, a spike, then a dip — hit rates live in 90-95%. */
@@ -760,6 +852,19 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
   const styles = document.head.children[0].textContent
   assert.ok(styles.includes('.dtu-hitPlot{position:absolute;left:52px;right:44px'), "the dot frame must share the bars' insets")
   assert.ok(styles.includes('.dtu-plotLine{position:absolute;left:52px;right:44px'), "the cursor frame must share the bars' insets")
+  assert.ok(
+    styles.includes('.dtu-trend{position:relative;padding-bottom:20px}'),
+    'the date band needs its own space below both segments',
+  )
+  assert.ok(
+    styles.includes('.dtu-axisX{position:absolute;left:52px;right:44px;bottom:2px;height:14px'),
+    'the date band must sit below the hit strip, not under it',
+  )
+  assert.ok(
+    styles.includes('.dtu-plotLine{position:absolute;left:52px;right:44px;top:0;bottom:20px'),
+    'the cursor spans both segments and stops where the axis band starts',
+  )
+  assert.ok(!styles.includes('bottom:22px'), 'the dead 22px axis reserve inside the bars panel is gone')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {
@@ -934,4 +1039,37 @@ test('the Host descriptor and the Client contribution agree', async () => {
     hostDescriptor('config').result.create().parse({ hours: 0, days: 0, writable: false }),
     'an older Host without the two new keys must still parse',
   )
+
+  // The form hardcodes its six <option> values — the Client cannot import the
+  // Host's schema — so pin both halves to each other: the option sets must equal
+  // the Config schema's enums, and the write codec must accept every option.
+  const configSlot = record.slots.find((item) => item.options?.name === 'plugins.bundle.config')
+  const formTree = render({ type: configSlot.component, props: { entryKey: 'dsh-desktop-token-usage', view: 'page' } })
+  const optionSets = []
+  const collectSelects = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectSelects)
+    if (node.tag === 'select') {
+      const values = []
+      const collectOptions = (child) => {
+        if (!child || typeof child !== 'object') return
+        if (Array.isArray(child)) return child.forEach(collectOptions)
+        if (child.tag === 'option') values.push(child.props.value)
+        collectOptions(child.children)
+      }
+      collectOptions(node.children)
+      optionSets.push(values)
+    }
+    collectSelects(node.children)
+  }
+  collectSelects(formTree)
+  assert.equal(optionSets.length, 2, 'both enums must be selects in the form')
+  const schemaEnums = (key) => host.Config.dict[key].list.map((member) => member.value).sort()
+  assert.deepEqual([...optionSets[0]].sort(), schemaEnums('groupBy'), 'the groupBy options must match the Host schema')
+  assert.deepEqual([...optionSets[1]].sort(), schemaEnums('palette'), 'the palette options must match the Host schema')
+  for (const [key, values] of [['groupBy', optionSets[0]], ['palette', optionSets[1]]]) {
+    for (const value of values) {
+      assert.equal(patch({ [key]: value })[key], value, `the Host must accept its own ${key} value ${value}`)
+    }
+  }
 })
