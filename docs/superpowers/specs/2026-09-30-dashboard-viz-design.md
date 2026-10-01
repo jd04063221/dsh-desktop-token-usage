@@ -173,7 +173,7 @@
 
 ### 6.3 Client：`client.js`
 
-- **`TrendChart` → 单张图叠加**：柱仍用「flex 列 + 百分比高度」的 div 布局（不测宽）；命中率曲线画在同一绘图区上层的 `preserveAspectRatio="none"` SVG overlay 里（曲线本身没有文字，横向压缩不失真），右侧百分比刻度用 HTML 绝对定位。X 轴刻度在柱图底部只画一次。
+- **`TrendChart` → 单张图叠加**：柱仍用「flex 列 + 百分比高度」的 div 布局（不测宽）；命中率曲线画在同一绘图区上层的 `preserveAspectRatio="none"` SVG overlay 里（曲线本身没有文字，横向压缩不失真），**主线之下加一条同 `d` 的底色光晕描边**（`var(--dsw-alias-bg-layer-1)`、3.5px、opacity .75、圆头），使曲线压在亮色柱段上仍然可辨；主线 2px、opacity 1；圆点用 1.5px 底色 `box-shadow` 环浮起（空数据日不描边）。右侧百分比刻度用 HTML 绝对定位。X 轴刻度在柱图底部只画一次。
 - **命中率曲线**：复用现有 `curvePath()` 的单调三次插值（Fritsch–Carlson），把 Y 值换成命中率；删除柱图上的「每日合计」曲线与图例里对应那一项，图例改为「缓存命中率」。
 - **chip**：`ChipGroup` 已是现成组件，趋势区与拆分区各挂一个，状态各自独立；`groupBy != both` 时不渲染。
 - **悬停联动**：柱子与命中率点共用一个 hover 状态（日期）；悬停 → 该日柱子提亮、命中率圆点放大、一条竖直指示线贯穿绘图区；移出清除。
