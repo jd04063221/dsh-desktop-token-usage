@@ -23,10 +23,12 @@ import {
   clearIndexCache,
   dayKey,
   enumerateSessionFiles,
+  foldGroups,
   foldUsage,
   localDayStart,
   readSessionRecords,
   scanZstdFrames,
+  splitRoute,
   summarize,
   totalOf, hitRateOf,
 } from '../lib/session-usage.js'
@@ -130,6 +132,7 @@ test('the rollup is internally consistent', { skip: !haveSessions }, () => {
   const [input, output, cacheRead, cacheWrite, reasoning] = payload.totals.buckets
   assert.equal(payload.totals.totalTokens, input + output + cacheRead + cacheWrite)
   assert.ok(reasoning <= output, 'reasoningTokens must stay inside outputTokens')
+  assert.equal(payload.totals.cacheHitRate, hitRateOf(payload.totals.buckets) ?? 0)
 
   // Days and models must re-sum to the same grand total.
   const daySum = payload.days.reduce((sum, day) => sum + totalOf(day.buckets), 0)
@@ -442,9 +445,38 @@ test('the summarizer groups every day by model and by provider', { skip: !haveSe
   assert.equal(groupTotal(payload.groups.model), payload.totals.totalTokens)
   assert.equal(groupTotal(payload.groups.provider), payload.totals.totalTokens)
   assert.ok(payload.groups.model.length <= payload.models.length, 'models merge across providers')
+  for (const list of [payload.groups.model, payload.groups.provider]) {
+    for (let i = 1; i < list.length; i += 1) {
+      assert.ok(list[i - 1].totalTokens >= list[i].totalTokens, 'group lists must be ranked by totalTokens desc')
+    }
+  }
   assert.deepEqual(
     payload.groups.provider.map((entry) => entry.key).sort(),
     [...new Set(payload.models.map((model) => model.provider))].sort(),
     'every provider seen in the range appears exactly once',
   )
+})
+
+test('splitRoute cuts at the first slash and falls back to the whole route', () => {
+  assert.deepEqual(splitRoute('p/a'), { provider: 'p', model: 'a' })
+  assert.deepEqual(splitRoute('unknown'), { provider: 'unknown', model: 'unknown' }, 'no slash: the route is both halves')
+  assert.deepEqual(
+    splitRoute('commandcode/deepseek/deepseek-v4.1-flash'),
+    { provider: 'commandcode', model: 'deepseek/deepseek-v4.1-flash' },
+    'only the first slash separates; later ones stay inside the model',
+  )
+})
+
+test('foldGroups merges a model name seen under different providers', () => {
+  // The live logs never show this shape, so the merge rule needs its own fixture.
+  const groups = foldGroups([
+    { route: 'p/shared', buckets: [1, 2, 3, 4, 5] },
+    { route: 'q/shared', buckets: [10, 20, 30, 40, 50] },
+    { route: 'p/solo', buckets: [100, 0, 0, 0, 0] },
+  ])
+  assert.equal(groups.model.size, 2, 'same name under two providers folds into one model entry')
+  assert.deepEqual(groups.model.get('shared'), [11, 22, 33, 44, 55])
+  assert.equal(groups.provider.size, 2, 'the two providers stay apart')
+  assert.deepEqual(groups.provider.get('p'), [101, 2, 3, 4, 5])
+  assert.deepEqual(groups.provider.get('q'), [10, 20, 30, 40, 50])
 })
