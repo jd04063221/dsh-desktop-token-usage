@@ -46,7 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   (once the calendar spans the card, a wall of solid grey reads as data); today is marked with a two-tone inset ring
   (panel colour outside, label colour inside) that stays visible on the palest and the darkest step alike; and hovering a
   day now raises the dashboard's own tooltip — the same box the trend chart shows, clamped to the plot by a share of the
-  column centre — instead of the delayed, unstylable native `title`.
+  column centre, and laid out as four lines: date / Tokens / turns / requests — instead of the delayed, unstylable
+  native `title`.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
