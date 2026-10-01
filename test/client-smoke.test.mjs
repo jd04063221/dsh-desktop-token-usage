@@ -1094,6 +1094,12 @@ test('the rendered hit rate matches the Host formula, cache writes included', as
     return collect(tips[0])
   }
   const withWrite = shown('2026-09-21')
+  // The box reads like the heatmap's: the date alone, then one figure per row.
+  assert.equal(withWrite[0], '2026-09-21', 'the title is the date, not "date · tokens"')
+  assert.ok(
+    withWrite.includes('Tokens') && !withWrite.some((line) => / · .*tokens/.test(line)),
+    'the total moved into its own row, and no line glues the date to it',
+  )
   assert.ok(withWrite.includes('缓存命中率'), 'the tooltip must carry the rate row')
   assert.ok(withWrite.includes(expected), `the rendered rate must equal the Host hitRateOf, got: ${withWrite.join(' ')}`)
   const empty = shown('2026-09-22')

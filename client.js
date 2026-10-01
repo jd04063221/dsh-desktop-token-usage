@@ -1210,7 +1210,11 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                 h(
                   'div',
                   { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipAnchor + '%' } },
-                  h('div', { className: 'dtu-tipTitle' }, hovered.day + ' · ' + grouped(hovered.total) + ' tokens'),
+                  // Same shape as the heatmap's box: the date on its own, then one
+                  // figure per row — gluing the date to a number reads as one string,
+                  // and a long total would widen the box past its rails.
+                  h('div', { className: 'dtu-tipTitle' }, hovered.day),
+                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, compact(hovered.total))),
                   hovered.segments
                     .filter((segment) => segment.value > 0)
                     .map((segment) =>

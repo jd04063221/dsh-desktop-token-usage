@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **The trend tooltip reads like the heatmap's**: its title no longer glues the date to the token total — the date
+  stands alone and the total is a `Tokens` row of its own (compact form), so one line is one figure.
+
 ### Planned
 
 - **Localization (i18n)**: designed, not implemented yet — the dashboard follows DSH's own language setting, with
