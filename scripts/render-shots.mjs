@@ -8,7 +8,7 @@
  *
  * Output: one JSON file with { css, tokens, trees } for scripts/render-shots.py.
  *
- *   node scripts/render-shots.mjs <out.json>
+ *   node scripts/render-shots.mjs <out.json> [--locale <id>]
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -18,6 +18,9 @@ import { fileURLToPath } from 'node:url'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.dirname(here)
 const out = process.argv[2] || path.join(root, 'assets', 'shots.json')
+// The README set is rendered in Chinese; `--locale xx` renders any other language
+// so a layout can be inspected where its words are longest.
+const LOCALE = process.argv.includes('--locale') ? process.argv[process.argv.indexOf('--locale') + 1] : 'zh'
 
 // ---- fake React (same shape as the smoke-test shim) ------------------------
 let hooks = []
@@ -77,7 +80,7 @@ function render(node) {
 }
 
 // ---- fake Host context ----------------------------------------------------
-function fakeContext(summary, config) {
+function fakeContext(summary, config, active) {
   const record = {}
   const namespace = {
     summary: async () => ({ ok: true, value: summary }),
@@ -90,12 +93,24 @@ function fakeContext(summary, config) {
     // The shell's register takes (options, component) — keep both.
     register: (options, component) => { record[options.name] = { options, component }; return () => {} },
   }
-  const make = (remote) => ({
+  // The plugin takes its language from whoever owns the shell, so the harness has
+  // to be that owner: with `inject` handing out no locale service, the shots would
+  // come from the browser fallback below instead of the language being rendered.
+  const locale = {
+    getLocale: () => ({ active, locales: [{ id: 'zh' }, { id: 'en' }], revision: 0 }),
+    subscribe: () => () => {},
+    addLanguage: () => () => {},
+    register: () => () => {},
+  }
+  // `extra` is how a service reaches the plugin: the scoped context an `inject`
+  // callback receives carries it as a property, not inside `remote`.
+  const make = (remote, extra = {}) => ({
     remote,
+    ...extra,
     slots,
     effect: (fn) => { fn() },
     get: () => ({ selectPanel: () => {} }),
-    inject: (_deps, cb) => cb(make({ dshUsage: namespace })),
+    inject: (_deps, cb) => cb(make({ dshUsage: namespace }, { locale })),
   })
   return { ctx: make({ $mount: async () => () => {} }), record }
 }
@@ -225,7 +240,9 @@ const sandbox = {
   console,
   setInterval: () => 1,
   clearInterval: () => {},
-  navigator: { language: 'zh-CN', languages: ['zh-CN'] },
+  // Deliberately no `navigator`: the locale service above decides the language, so
+  // a broken service shows up as English shots instead of hiding behind the
+  // browser fallback (which is exactly how it hid once).
   Intl,
   Date,
   Math,
@@ -248,7 +265,7 @@ const plugin = registration.factory((name) => {
   if (name === 'react') return React
   throw new Error('unexpected module: ' + name)
 })
-const { ctx, record } = fakeContext(summary, config)
+const { ctx, record } = fakeContext(summary, config, LOCALE)
 plugin.apply(ctx)
 // apply() kicks the summary call off asynchronously: let the store settle before
 // rendering, or the dashboard renders its "reading local logs…" note.
@@ -302,6 +319,15 @@ const payload = {
     // The config card the shell renders on this plugin's page in the Plugins manager.
     settings: treeOf('plugins.bundle.config'),
   },
+}
+
+// The requested language has to be the language the render used: a silent slip
+// here would publish English shots under a Chinese name.
+const dictionary = path.join(root, 'locales', `${LOCALE}.json`)
+if (!fs.existsSync(dictionary)) throw new Error(`no dictionary for --locale ${LOCALE}`)
+const probe = JSON.parse(fs.readFileSync(dictionary, 'utf8'))['dash.title']
+if (!JSON.stringify(payload.trees.dashboard).includes(probe)) {
+  throw new Error(`the dashboard did not render ${LOCALE} copy (expected "${probe}")`)
 }
 
 fs.mkdirSync(path.dirname(out), { recursive: true })

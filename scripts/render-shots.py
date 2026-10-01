@@ -116,6 +116,19 @@ document.getElementById("settings").appendChild(build(DATA.settings));
 
 RESIZE_WIDTH = 1200
 
+# The width each shot is published at, and for the two tall dashboard panels a
+# palette size as well: a full-size 2x capture of the whole panel is a 500 KiB
+# PNG, which is more than a README screenshot is worth. Everything not listed
+# here is published at RESIZE_WIDTH.
+SHOT_SIZES = {
+    "screenshot-dashboard-light.png": (900, 192),
+    "screenshot-dashboard-dark.png": (900, 192),
+    "screenshot-sidebar-light.png": (384, None),
+    "screenshot-sidebar-dark.png": (384, None),
+    "screenshot-settings-light.png": (800, None),
+    "screenshot-settings-dark.png": (800, None),
+}
+
 
 def shoot(page, out_dir, selector, name, handle_js=None):
     path = out_dir / name
@@ -128,10 +141,13 @@ def shoot(page, out_dir, selector, name, handle_js=None):
     # README-sized: the 2x capture is downscaled, which also cuts the file a lot.
     from PIL import Image
 
+    width, colors = SHOT_SIZES.get(name, (RESIZE_WIDTH, None))
     with Image.open(raw) as image:
-        if image.width > RESIZE_WIDTH:
-            height = round(image.height * RESIZE_WIDTH / image.width)
-            image = image.resize((RESIZE_WIDTH, height), Image.LANCZOS)
+        if image.width > width:
+            height = round(image.height * width / image.width)
+            image = image.resize((width, height), Image.LANCZOS)
+        if colors is not None:
+            image = image.convert("P", palette=Image.ADAPTIVE, colors=colors)
         image.save(path, optimize=True)
     raw.unlink()
     print("  ->", path.name, str(path.stat().st_size // 1024) + " KiB", path.stat().st_size and "")
