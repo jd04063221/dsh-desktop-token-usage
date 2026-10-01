@@ -939,7 +939,10 @@ window.__ModuleLoader__.load({
                   // Four lines, one number each: the date on its own, then the
                   // same label/value row the trend tooltip uses for every figure.
                   h('div', { className: 'dtu-tipTitle' }, hovered.day),
-                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, grouped(hovered.tokens))),
+                  // The same compact formatter the stat cards and the trend tooltip use:
+                  // a full 1,451,563,110 would be the widest thing in a box that has to
+                  // lean inside half a column span.
+                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, compact(hovered.tokens))),
                   h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
                   h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
                 )

@@ -382,7 +382,7 @@ function summaryPayload() {
       days: [
         { day: dayKeyAgo(2), tokens: 0, turns: 2, requests: 2 },
         { day: dayKeyAgo(1), tokens: 5000, turns: 3, requests: 4 },
-        { day: dayKeyAgo(0), tokens: 200, turns: 4, requests: 5 },
+        { day: dayKeyAgo(0), tokens: 1_250_000, turns: 4, requests: 5 },
       ],
     },
   }
@@ -1740,7 +1740,7 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   const lines = [tip.children].flat().map((child) => collect(child).join(' '))
   assert.deepEqual(
     lines,
-    [today, 'Tokens 200', '轮次 4', '请求 5'],
+    [today, 'Tokens 125.0万', '轮次 4', '请求 5'],
     'four lines: the date on its own, then one figure per row, like the trend tooltip',
   )
   // Today is in the last of three columns, so its box hangs off the column's
