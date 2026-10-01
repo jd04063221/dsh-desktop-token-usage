@@ -1376,6 +1376,10 @@ test('the hit-rate dots and the hover line each live in their own inset plot fra
     )
   }
   assert.ok(ruleBody('dtu-plot').includes('padding-bottom:20px'), 'the segment frame reserves the date band below both segments')
+  assert.ok(
+    ruleBody('dtu-plot').includes('position:relative'),
+    'the segment frame must anchor the absolute plot line, or it spans the header again',
+  )
   assert.ok(ruleBody('dtu-axisX').includes('bottom:2px;height:14px'), 'the date band must sit below the hit strip, not under it')
   assert.ok(ruleBody('dtu-plotLine').includes('top:0;bottom:20px'), 'the cursor spans both segments and stops where the axis band starts')
 })
@@ -1440,6 +1444,10 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
     assert.match(String(fill.props.style.background), /^var\(--dtu-heat-[0-4]\)$/, 'each swatch paints a scale colour directly')
     assert.ok(!('opacity' in fill.props.style), 'the colour scale must not be graded a second time by opacity')
   }
+  assert.ok(
+    fills.some((fill) => String(fill.props.style.background) === 'var(--dtu-heat-0)'),
+    'empty days paint scale step 0, so the lowest step is neither dead nor restyled',
+  )
 })
 
 test('the Host descriptor and the Client contribution agree', async () => {
