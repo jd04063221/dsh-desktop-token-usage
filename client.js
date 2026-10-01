@@ -282,16 +282,22 @@ window.__ModuleLoader__.load({
 .dtu-heatHead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dtu-heatControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .dtu-heatScroll{overflow-x:auto;padding-bottom:4px}
-.dtu-heatInner{width:max-content;margin-left:auto}
+/* 53 fixed weeks, but the card is not: the whole block stretches to the row it
+   sits in, every week growing on the same 11px basis so the cells stay square
+   and the month axis keeps step. Only a card too narrow for an 11px cell falls
+   back to scrolling. */
+.dtu-heatInner{width:max-content;min-width:100%}
 .dtu-heatMonths{display:flex;gap:3px;height:15px;margin-bottom:4px;color:var(--dsw-alias-label-secondary);font-size:10.5px}
 .dtu-monthSpace{width:22px;flex:none}
-.dtu-monthCell{width:11px;flex:none;white-space:nowrap;overflow:visible}
+.dtu-monthCell{flex:1 0 11px;min-width:0;white-space:nowrap;overflow:visible}
 .dtu-heatRows{display:flex;gap:3px}
 .dtu-weekdays{display:flex;flex-direction:column;gap:3px;width:22px;flex:none;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:11px}
-.dtu-weekdays span{height:11px}
-.dtu-heat{display:flex;gap:3px}
-.dtu-week{display:flex;flex-direction:column;gap:3px}
+.dtu-weekdays span{flex:1 1 0;min-height:11px;display:flex;align-items:center}
+.dtu-heat{display:flex;gap:3px;flex:1 1 0;min-width:0}
+.dtu-week{display:flex;flex-direction:column;gap:3px;flex:1 0 11px;min-width:0}
 .dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
+/* Calendar days share this box with the legend swatches, but not their size. */
+.dtu-heat .dtu-cell{width:100%;height:auto;aspect-ratio:1}
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-trend{position:relative;--dtu-plot-l:52px;--dtu-plot-r:44px}

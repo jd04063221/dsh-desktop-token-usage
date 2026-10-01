@@ -1616,10 +1616,26 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
     'the effect needs a ref on that box to jump it to the newest week',
   )
   const styles = document.head.children[0].textContent
-  const innerRule = (styles.match(/\.dtu-heatInner\{([^}]*)\}/) ?? [])[1]
+  const ruleBody = (name) => (styles.match(new RegExp('\\.' + name + '\\{([^}]*)\\}')) ?? [])[1]
   assert.ok(
-    innerRule?.includes('margin-left:auto'),
-    'a card wider than the calendar anchors it to the right edge, not to the left one',
+    ruleBody('dtu-heatInner').includes('min-width:100%') && !ruleBody('dtu-heatInner').includes('margin-left:auto'),
+    'the calendar stretches to its row instead of hugging one edge of it',
+  )
+  assert.ok(ruleBody('dtu-heat').includes('flex:1 1 0'), 'the day grid takes every pixel left of the weekday axis')
+  assert.ok(ruleBody('dtu-week').includes('flex:1 0 11px'), 'every week grows on that basis, and never below an 11px cell')
+  assert.ok(
+    ruleBody('dtu-monthCell').includes('flex:1 0 11px'),
+    'the month axis grows on the very same basis, or the labels drift off their columns',
+  )
+  assert.ok(ruleBody('dtu-weekdays span').includes('flex:1 1 0'), 'the weekday labels stretch with the bands they name')
+  const calendarCell = (styles.match(/\.dtu-heat \.dtu-cell\{([^}]*)\}/) ?? [])[1]
+  assert.ok(
+    calendarCell?.includes('width:100%') && calendarCell?.includes('aspect-ratio:1'),
+    'a calendar day fills its stretched column and stays square',
+  )
+  assert.ok(
+    ruleBody('dtu-cell').includes('width:11px'),
+    'the legend swatches keep the fixed 11px box they share that class with',
   )
 })
 
