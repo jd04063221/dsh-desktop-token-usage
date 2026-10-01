@@ -48,10 +48,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   day now raises the dashboard's own tooltip — the same box the trend chart shows, clamped to the plot by a share of the
   column centre, and laid out as four lines: date / Tokens / turns / requests — instead of the delayed, unstylable
   native `title`. The whole calendar is **centred with 15px either side**, and its 53 columns share the remaining width,
-  so **nothing scrolls at all** now: the bottom scrollbar was the hover box all along — once a token count gets long it
-  is wider than the 160px min-width it was clamped for, so at the edge columns it poked out of the scrolling box, and a
-  single pixel was enough. The box now pins its width to 190px and the clamp rails are 101px (half of it plus a 6px
-  margin), which makes the anchor exact.
+  so **nothing scrolls at all** now — the scrolling box is gone. The bottom bar was the hover box all along: once a
+  token count gets long it is wider than the 160px min-width it was clamped for, so at the edge columns it poked out of
+  the scrolling box, and one pixel was enough. The box now leans away from whichever edge it is near — a column in the
+  left half is left-aligned and grows rightwards, a column in the right half is right-aligned and grows leftwards — with
+  `max-width:calc(50% - 25px)` guaranteeing that half the column span can hold the whole box. It never crosses the
+  calendar at any width, and it needs no measurement of its own width to guarantee that.
 - **The dashboard footer reads as one fact per line.** Three flex items of very different lengths wrapped into a ragged
   paragraph, and the long note broke mid-sentence inside a 「…」 term; every quoted term is now unbreakable.
 
