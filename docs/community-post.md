@@ -25,7 +25,7 @@
 - **按天趋势**：token 堆叠柱上叠加缓存命中率曲线（右侧标真实百分比，纵轴按统计期最小值/最大值留 10% 余量）；
 - **设置页**（设置 → 插件 → Token 用量）：两个窗口的跨度（小时 0–23、天数 1–30）、统计口径
   （按模型 / 按供应商 / 都统计）与配色方案（primer / cvd / muted 三套，各自的浅色与深色跟随 DSH 自己的明暗开关）；
-- **多语言**：看板跟随 **DSH 自身的语言设置**，插件没有自己的语言选择器；内置 en / zh 字典，
+- **多语言**（`main` 上待发布的 0.1.6，npm 上的 0.1.5 尚无）：看板跟随 **DSH 自身的语言设置**，插件没有自己的语言选择器；内置 en / zh 字典，
   另把 zh-TW、zh-HK、de、fr、es、it、ja、ko 注册进 DSH 的语言目录；数字、百分比、日期与复数全部走 `Intl`。
 
 **与 DSH 的集成方式**
@@ -79,19 +79,26 @@
 
 **安装**
 
+直接用 npm 上的包名安装即可（`install_bundle` 接受 registry 包名：它先用 `pnpm view` 查询注册表，
+再以 `pnpm add` 装进当前 profile）：
+
+```
+plugin_manager  action: install_bundle  target: dsh-desktop-token-usage
+```
+
+卸载：`plugin_manager action: remove_bundle target: dsh-desktop-token-usage`。
+
+想用 `main` 上待发布的功能（多语言、最新的热力图/趋势图修复），从源码安装：
+
 ```bash
 git clone https://github.com/jd04063221/dsh-desktop-token-usage.git
 cd dsh-desktop-token-usage
-npm install        # 只为 @deepseek-ai/schemastery（link 安装不会为被链接的包装依赖）
+npm install        # 本地目录走 link: 安装，不会为被链接的包装依赖，所以先装一次 @deepseek-ai/schemastery
 ```
-
-然后在 DSH 里用官方入口安装（`target` 填本目录的绝对路径）：
 
 ```
 plugin_manager  action: install_bundle  target: <本目录的绝对路径>
 ```
-
-卸载：`plugin_manager action: remove_bundle target: dsh-desktop-token-usage`。
 
 改完代码后：`client.js`（界面）走 HMR 热更新，必要时硬刷新页面；`index.js` / `lib/*`（Host）**必须重启 DSH**——
 Node 按 realpath 缓存 ESM，重新启用插件、重装甚至改包名都不会重新导入。
@@ -154,6 +161,12 @@ follows **DSH's own language setting** and ships ten locales.
 
 **Screenshots:** the six images above (dashboard light/dark, heatmap, trend, sidebar card, settings page), rendered
 offline from the plugin's own components with sample data.
+
+**Install:** `plugin_manager action: install_bundle target: dsh-desktop-token-usage` — a plain npm install from the
+official registry (the manager queries it with `pnpm view` and then `pnpm add`s the package into the current profile);
+`remove_bundle target: dsh-desktop-token-usage` uninstalls. npm `latest` is 0.1.5; the localization and the latest
+heatmap/trend fixes are on `main`, waiting for 0.1.6 — get those from a source checkout (`npm install`, then
+`install_bundle` with the directory's absolute path).
 
 **Tested environment:** DSH Desktop `0.1.7-rc.2` (full verification), `0.2.0-rc.1` (compatibility check) and
 `0.2.0-rc.2` (manual trial of 0.1.3); Electron 44 / Chromium 152 / Node 24.18.1; Windows 11 Pro, build 26200, AMD64.
