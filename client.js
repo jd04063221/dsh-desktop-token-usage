@@ -932,7 +932,10 @@ window.__ModuleLoader__.load({
                 ? h(
                     'div',
                     { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipLeft(hovered.week) } },
-                    h('div', { className: 'dtu-tipTitle' }, hovered.day + ' · ' + grouped(hovered.tokens) + ' tokens'),
+                    // Four lines, one number each: the date on its own, then the
+                    // same label/value row the trend tooltip uses for every figure.
+                    h('div', { className: 'dtu-tipTitle' }, hovered.day),
+                    h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, grouped(hovered.tokens))),
                     h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
                     h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
                   )

@@ -1734,10 +1734,12 @@ test('hovering a day raises the dashboard tooltip, anchored like the trend one',
   findTip(shown)
   assert.ok(tip, 'hovering a calendar day raises the same tooltip box the trend chart uses')
   assert.equal(tip.props['data-day'], today, 'the box names the hovered day')
-  const text = collect(tip).join(' ')
-  assert.match(text, new RegExp(today + ' · 200 tokens'), 'the hovered day reads its own tokens')
-  assert.match(text, /轮次 4/, 'and its turns')
-  assert.match(text, /请求 5/, 'and its requests')
+  const lines = [tip.children].flat().map((child) => collect(child).join(' '))
+  assert.deepEqual(
+    lines,
+    [today, 'Tokens 200', '轮次 4', '请求 5'],
+    'four lines: the date on its own, then one figure per row, like the trend tooltip',
+  )
   // The anchor is the trend chart's rule: the column centre as a fraction of the
   // plot, clamped so the box can never leave it.
   assert.equal(
