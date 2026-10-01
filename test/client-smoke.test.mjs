@@ -225,13 +225,43 @@ function summaryPayload() {
       topModel: 'p/a',
     },
     days: [
-      { day: '2026-09-25', buckets: [500, 100, 2000, 0, 25], turns: 3, requests: 4, byModel: { 'p/a': [500, 100, 2000, 0, 25] } },
-      { day: '2026-09-26', buckets: [500, 100, 2000, 0, 25], turns: 4, requests: 5, byModel: { 'p/a': [300, 60, 1000, 0, 15], 'q/b': [200, 40, 1000, 0, 10] } },
+      {
+        day: '2026-09-25',
+        buckets: [500, 100, 2000, 0, 25],
+        turns: 3,
+        requests: 4,
+        byModel: { 'p/a': [500, 100, 2000, 0, 25] },
+        byGroup: {
+          model: { a: [500, 100, 2000, 0, 25] },
+          provider: { p: [500, 100, 2000, 0, 25] },
+        },
+      },
+      {
+        day: '2026-09-26',
+        buckets: [500, 100, 2000, 0, 25],
+        turns: 4,
+        requests: 5,
+        byModel: { 'p/a': [300, 60, 1000, 0, 15], 'q/b': [200, 40, 1000, 0, 10] },
+        byGroup: {
+          model: { a: [300, 60, 1000, 0, 15], b: [200, 40, 1000, 0, 10] },
+          provider: { p: [300, 60, 1000, 0, 15], q: [200, 40, 1000, 0, 10] },
+        },
+      },
     ],
     models: [
       { route: 'p/a', provider: 'p', model: 'a', buckets: [800, 160, 3000, 0, 40], totalTokens: 3960 },
       { route: 'q/b', provider: 'q', model: 'b', buckets: [200, 40, 1000, 0, 10], totalTokens: 1240 },
     ],
+    groups: {
+      model: [
+        { key: 'a', buckets: [800, 160, 3000, 0, 40], totalTokens: 3960 },
+        { key: 'b', buckets: [200, 40, 1000, 0, 10], totalTokens: 1240 },
+      ],
+      provider: [
+        { key: 'p', buckets: [800, 160, 3000, 0, 40], totalTokens: 3960 },
+        { key: 'q', buckets: [200, 40, 1000, 0, 10], totalTokens: 1240 },
+      ],
+    },
     card: {
       hours: 6,
       days: 7,
@@ -540,21 +570,31 @@ test('without a Host config editor the card is read-only and says so', async () 
 
 // ── the trend line ──────────────────────────────────────────────────────────
 
-/** Five days: a zero plateau, a spike, then a drop. */
+/** Five days: two empty, a spike, then a dip — hit rates live in 90-95%. */
 function trendPayload() {
   const payload = summaryPayload()
-  const day = (name, total) => ({ day: name, buckets: [total, 0, 0, 0, 0], turns: 1, requests: 1, byModel: {} })
+  const day = (name, total, cacheRead) => ({
+    day: name,
+    buckets: [total - cacheRead, 0, cacheRead, 0, 0],
+    turns: 1,
+    requests: 1,
+    byModel: { 'p/a': [total - cacheRead, 0, cacheRead, 0, 0] },
+    byGroup: {
+      model: { a: [total - cacheRead, 0, cacheRead, 0, 0] },
+      provider: { p: [total - cacheRead, 0, cacheRead, 0, 0] },
+    },
+  })
   payload.days = [
-    day('2026-09-21', 0),
-    day('2026-09-22', 0),
-    day('2026-09-23', 400),
-    day('2026-09-24', 1000),
-    day('2026-09-25', 200),
+    day('2026-09-21', 0, 0),
+    day('2026-09-22', 0, 0),
+    day('2026-09-23', 400, 380),
+    day('2026-09-24', 1000, 900),
+    day('2026-09-25', 200, 190),
   ]
   return payload
 }
 
-/** Renders the dashboard and reports the trend line's geometry. */
+/** Renders the dashboard and reports the trend section's parts. */
 async function renderTrend(payload) {
   const { plugin } = loadClient()
   const summary = payload ? async () => ({ ok: true, value: payload }) : undefined
@@ -564,77 +604,57 @@ async function renderTrend(payload) {
 
   const main = record.slots.find((item) => item.options?.name === 'main')
   const classes = []
-  const curves = []
-  const charts = []
-  const visit = (node) => {
+  const curves = {}
+  const texts = []
+  const walk = (node) => {
     if (node === null || node === undefined || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const child of node) visit(child)
-      return
-    }
-    if (typeof node.props?.className === 'string') {
-      const name = node.props.className
+    if (Array.isArray(node)) return node.forEach(walk)
+    const name = typeof node.props?.className === 'string' ? node.props.className : null
+    if (name) {
       classes.push(name)
-      if (name === 'dtu-chart') charts.push(node)
-      if (name === 'dtu-line') {
+      if (name === 'dtu-chartHit') {
         const sweep = (child) => {
           if (child === null || child === undefined || typeof child !== 'object') return
-          if (Array.isArray(child)) {
-            for (const entry of child) sweep(entry)
-            return
-          }
-          if (child.tag === 'path') curves.push(child.props.d)
-          if (child.tag === 'polyline') curves.push(child.props.points)
+          if (Array.isArray(child)) return child.forEach(sweep)
+          if (child.tag === 'path') curves.hit = child.props.d
           sweep(child.children)
         }
         sweep(node)
       }
     }
-    visit(node.children)
+    if (typeof node.children === 'string' || typeof node.children === 'number') texts.push(String(node.children))
+    walk(node.children)
   }
-  visit(render({ type: main.component, props: main.options.inject() }))
-  return { classes, curves, charts }
+  walk(render({ type: main.component, props: main.options.inject() }))
+  return { classes, curves, texts }
 }
 
-/** [x0, y0, x1, y1, ...] of a path's `d`, in the svg's 0-100 space. */
-const curveCoordinates = (d) => (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+test('the trend stacks bars and a hit-rate strip under one shared axis', async () => {
+  const { classes, curves } = await renderTrend(trendPayload())
 
-test('the trend overlays a daily-total line on the bars instead of a second scale', async () => {
-  const { classes, curves } = await renderTrend(null)
-
-  assert.equal(classes.filter((name) => name === 'dtu-chart').length, 1, 'the bars and the line share one plot')
-  assert.ok(!classes.includes('dtu-chartHit'), 'the separate cache-hit band is gone')
-  assert.ok(!classes.includes('dtu-axisYr'), 'the trend must not carry a second scale')
-  assert.equal(classes.filter((name) => name === 'dtu-point').length, 2, 'one dot per day')
-  assert.equal(curves.length, 1, 'the daily total is drawn as a single curve')
-  assert.match(curves[0], /^M/, 'the line must be one path, not a polyline of straight hops')
-
-  // both fixture days total 2,600 tokens against a 5,000 axis, so both plot 48% down;
-  // a cache-hit curve would have plotted 80% instead
-  assert.match(curves[0], /^M25,48 C/, 'the curve starts at the first column centre, 48% down')
-  assert.equal(curves[0].match(/C/g).length, 1, 'two days means one cubic segment')
-  assert.match(curves[0], /75,48$/, 'and ends on the second column centre')
+  assert.equal(classes.filter((name) => name === 'dtu-chartBars').length, 1, 'the bars keep one plot')
+  assert.equal(classes.filter((name) => name === 'dtu-chartHit').length, 1, 'the hit rate gets its own strip')
+  assert.equal(classes.filter((name) => name === 'dtu-line').length, 0, 'the daily-total curve is gone')
+  assert.equal(classes.filter((name) => name === 'dtu-axisX').length, 1, 'the X axis is drawn once, under both')
+  assert.equal(classes.filter((name) => name === 'dtu-axisHit').length, 1, 'the strip carries its own labels')
+  assert.match(curves.hit, /^M/, 'the hit rate is one smooth path, not a polyline')
 })
 
-test('the trend curve is smoothed, and monotone enough not to overshoot', async () => {
-  const { curves } = await renderTrend(trendPayload())
-  assert.equal(curves.length, 1, 'expected exactly one curve')
-  const numbers = curveCoordinates(curves[0])
-  // the axis tops out at the 1,000-token spike, so the days plot at 100/100/60/0/80%
-  const dayY = numbers.filter((_, index) => index % 2 === 1)
-  assert.equal(numbers.length, 2 + 6 * 4, 'five days means four cubic segments')
-  assert.ok(
-    dayY.every((y) => y >= 0 && y <= 100),
-    `a monotone curve must stay inside the plot, got ${dayY.join(', ')}`,
-  )
-  assert.deepEqual(
-    [numbers[1], ...[0, 1, 2, 3].map((segment) => numbers[2 + 6 * segment + 5])],
-    [100, 100, 60, 0, 80],
-    'the curve must still pass through every day',
-  )
-  // A straight line from day 2 (100%) to day 3 (60%) would put its first control point at
-  // 86.67%; the tangent is flat there, so the curve eases out of the plateau instead.
-  assert.equal(numbers[2 + 6 + 1], 100, 'the curve should leave the zero plateau without a corner')
+test('the hit-rate strip scales to the visible days with 10% headroom', async () => {
+  const { curves, texts } = await renderTrend(trendPayload())
+  // rates: 95%, 90%, 95% -> min 90, max 95, span 5, pad 0.5 -> axis 89.5-95.5
+  assert.ok(texts.includes('89.5%'), 'the lower bound is min - 10% of the span')
+  assert.ok(texts.includes('95.5%'), 'the upper bound is max + 10% of the span')
+  assert.ok(texts.includes('92.5%'), 'the middle gridline is the band centre')
+  const numbers = (curves.hit.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+  // the path is 'M x,y' plus 6 coordinates per cubic segment, so a day's own y
+  // sits at index 1 and at 2 + 6 * segment + 5; the in-between y's are control
+  // points and must not be mistaken for plotted days.
+  const dayY = [numbers[1], ...[0, 1].map((segment) => numbers[2 + 6 * segment + 5])]
+  assert.ok(dayY.every((y) => y >= 0 && y <= 100), 'the curve stays inside the strip')
+  // the two empty days carry no rate, so only three points are plotted; 95% sits 8.33%
+  // down from the band top (89.5-95.5) and 90% sits 91.67% down
+  assert.deepEqual(dayY, [8.33, 91.67, 8.33], '95% near the top, 90% near the bottom')
 })
 
 test('the heatmap renders a Monday-aligned calendar with axes and a metric switch', async () => {

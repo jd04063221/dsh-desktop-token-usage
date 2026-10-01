@@ -297,17 +297,24 @@ window.__ModuleLoader__.load({
 .dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
 .dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.dtu-chart{position:relative;height:260px;margin-top:4px}
-/* The daily-total line shares the bars' plot insets, so both read off the same
-   token axis; the dots are positioned in % so they stay round. */
-.dtu-lineKey{display:inline-block;width:14px;height:2px;border-radius:1px;background:var(--dsw-alias-label-primary);margin-right:5px;vertical-align:middle}
-.dtu-point{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--dsw-alias-label-primary)}
+.dtu-trend{position:relative}
+.dtu-trendHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.dtu-chartBars{position:relative;height:190px;margin-top:4px}
+.dtu-chartHit{position:relative;height:44px;margin-top:16px}
+.dtu-chartHit svg{position:absolute;left:52px;right:44px;top:0;width:auto;height:44px}
+.dtu-axisHit{position:absolute;left:0;top:0;bottom:0;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
+.dtu-axisHit span{position:absolute;right:6px;transform:translateY(-50%)}
+.dtu-hitDot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--dtu-hit);transform:translate(-50%,-50%)}
+.dtu-hitDotEmpty{background:transparent}
+.dtu-cursor{position:absolute;top:0;bottom:26px;width:1px;background:var(--dsw-alias-border-l1);pointer-events:none}
+.dtu-tip{position:absolute;top:6px;left:0;transform:translateX(-50%);min-width:160px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12px;pointer-events:none;z-index:3}
+.dtu-tipTitle{font-weight:600;margin-bottom:4px}
+.dtu-tipRow{display:flex;align-items:center;gap:6px}
+.dtu-tipRow b{margin-left:auto;font-weight:600}
 .dtu-bars{position:absolute;left:52px;right:44px;top:0;bottom:22px;display:flex;align-items:flex-end;gap:2px}
 .dtu-col{flex:1 1 0;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .dtu-col:hover{outline:1px solid var(--dsw-alias-border-l2);outline-offset:1px;border-radius:2px}
 .dtu-seg{width:100%}
-.dtu-line{position:absolute;left:52px;right:44px;top:0;bottom:22px;pointer-events:none}
-.dtu-line svg{width:100%;height:100%;display:block}
 .dtu-axisX{position:absolute;left:52px;right:44px;bottom:0;height:18px;color:var(--dsw-alias-label-secondary);font-size:11px}
 .dtu-axisX span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .dtu-axisY{position:absolute;left:0;top:0;bottom:22px;width:50px;color:var(--dsw-alias-label-secondary);font-size:11px}
@@ -842,166 +849,222 @@ window.__ModuleLoader__.load({
       return step * magnitude
     }
 
-    function TrendChart({ days, models }) {
-      const top = models.slice(0, 5)
-      const routes = top.map((model) => model.route)
-      const colorOf = new Map(top.map((model, index) => [model.route, SERIES[index % SERIES.length]]))
-      const columns = days.map((day) => {
-        const segments = top.map((model) => ({ route: model.route, value: totalOf(day.byModel[model.route] ?? [0, 0, 0, 0, 0]) }))
-        const named = segments.reduce((sum, segment) => sum + segment.value, 0)
-        const dayTotal = totalOf(day.buckets)
-        if (dayTotal - named > 0) segments.push({ route: '其他', value: dayTotal - named })
-        const input = day.buckets[0]
-        const cacheRead = day.buckets[2]
-        return {
-          day: day.day,
-          total: dayTotal,
-          turns: day.turns,
-          segments,
-          hit: cacheRead + input > 0 ? cacheRead / (cacheRead + input) : null,
+    const EQUAL = [0, 0, 0, 0, 0]
+
+    /** Cache-hit share of a day, in 0-1; null when the day saw no prompt tokens. */
+    function hitRateOf(buckets) {
+      const hit = buckets[2]
+      const miss = buckets[0] + buckets[3]
+      return hit + miss > 0 ? hit / (hit + miss) : null
+    }
+
+    /**
+     * The strip's scale, from the visible days: min - 10% of the span to max + 10%.
+     * A flat (or single-day) series gets +/-1pp, and a range with no hit rate at all
+     * falls back to 0-100 so the empty strip still reads as a scale.
+     */
+    function hitRateBand(rates) {
+      const seen = rates.filter((rate) => rate !== null)
+      if (seen.length === 0) return { lo: 0, hi: 100 }
+      const min = Math.min(...seen) * 100
+      const max = Math.max(...seen) * 100
+      const pad = max - min > 0 ? (max - min) * 0.1 : 1
+      return { lo: Math.max(0, min - pad), hi: Math.min(100, max + pad) }
+    }
+
+    /**
+     * Monotone cubic interpolation (Fritsch-Carlson) through points in 0-100 space,
+     * as a single path. Straight hops corner at every day; a plain spline overshoots,
+     * and next to a day with no usage that means dipping out of the plot.
+     */
+    function monotonePath(points) {
+      const n = points.length
+      const round = (value) => Math.round(value * 100) / 100
+      if (n === 0) return ''
+      if (n === 1) return 'M' + round(points[0].x) + ',' + round(points[0].y)
+      const slopes = []
+      for (let i = 0; i < n - 1; i += 1) slopes.push((points[i + 1].y - points[i].y) / (points[i + 1].x - points[i].x))
+      const tangents = [slopes[0]]
+      for (let i = 1; i < n - 1; i += 1) {
+        tangents.push(slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2)
+      }
+      tangents.push(slopes[n - 2])
+      for (let i = 0; i < n - 1; i += 1) {
+        if (slopes[i] === 0) {
+          tangents[i] = 0
+          tangents[i + 1] = 0
+          continue
         }
+        const before = tangents[i] / slopes[i]
+        const after = tangents[i + 1] / slopes[i]
+        const sum = before * before + after * after
+        if (sum > 9) {
+          const scale = 3 / Math.sqrt(sum)
+          tangents[i] = scale * before * slopes[i]
+          tangents[i + 1] = scale * after * slopes[i]
+        }
+      }
+      let d = 'M' + round(points[0].x) + ',' + round(points[0].y)
+      for (let i = 0; i < n - 1; i += 1) {
+        const span = (points[i + 1].x - points[i].x) / 3
+        d +=
+          ' C' + round(points[i].x + span) + ',' + round(points[i].y + tangents[i] * span) +
+          ' ' + round(points[i + 1].x - span) + ',' + round(points[i + 1].y - tangents[i + 1] * span) +
+          ' ' + round(points[i + 1].x) + ',' + round(points[i + 1].y)
+      }
+      return d
+    }
+
+    const CHIP_GROUPS = [
+      { id: 'model', label: '按模型' },
+      { id: 'provider', label: '按供应商' },
+    ]
+
+    function TrendSection({ days, groups, groupBy }) {
+      const [mode, setMode] = React.useState('model')
+      const [hover, setHover] = React.useState(null)
+      const active = groupBy === 'both' ? mode : groupBy
+      const entries = (groups && groups[active]) || []
+      const top = entries.slice(0, 5)
+      const colorOf = new Map(top.map((entry, index) => [entry.key, SERIES[index % SERIES.length]]))
+      const columns = days.map((day) => {
+        const grouped = (day.byGroup && day.byGroup[active]) || {}
+        const total = totalOf(day.buckets)
+        const named = top.reduce((sum, entry) => sum + totalOf(grouped[entry.key] ?? EQUAL), 0)
+        const segments = top.map((entry) => ({ key: entry.key, value: totalOf(grouped[entry.key] ?? EQUAL) }))
+        if (total - named > 0) segments.push({ key: OTHER_KEY, value: total - named })
+        return { day: day.day, total, turns: day.turns, segments, hit: hitRateOf(day.buckets) }
       })
       const max = niceMax(columns.reduce((peak, column) => Math.max(peak, column.total), 0))
-      const labelled = columns.length <= 16 ? columns.map((_, index) => index) : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
-      const ticks = [0, 0.25, 0.5, 0.75, 1]
-      const pointX = (index) => ((index + 0.5) / columns.length) * 100
-      const pointY = (column) => (1 - column.total / max) * 100
-      // Daily totals joined by a monotone cubic (Fritsch-Carlson), so the line
-      // flows through the days instead of cornering at each one. Monotone rather
-      // than a plain spline on purpose: a plain one overshoots, and next to a day
-      // with no usage that means dipping past the axis.
-      const curvePath = (() => {
-        const xs = columns.map((_, index) => pointX(index))
-        const ys = columns.map((column) => pointY(column))
-        const n = xs.length
-        const round = (value) => Math.round(value * 100) / 100
-        if (n === 0) return ''
-        if (n === 1) return `M${round(xs[0])},${round(ys[0])}`
-        const slopes = []
-        for (let i = 0; i < n - 1; i += 1) slopes.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]))
-        const tangents = [slopes[0]]
-        for (let i = 1; i < n - 1; i += 1) {
-          tangents.push(slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2)
-        }
-        tangents.push(slopes[n - 2])
-        for (let i = 0; i < n - 1; i += 1) {
-          if (slopes[i] === 0) {
-            tangents[i] = 0
-            tangents[i + 1] = 0
-            continue
-          }
-          const before = tangents[i] / slopes[i]
-          const after = tangents[i + 1] / slopes[i]
-          const sum = before * before + after * after
-          if (sum > 9) {
-            const scale = 3 / Math.sqrt(sum)
-            tangents[i] = scale * before * slopes[i]
-            tangents[i + 1] = scale * after * slopes[i]
-          }
-        }
-        let d = `M${round(xs[0])},${round(ys[0])}`
-        for (let i = 0; i < n - 1; i += 1) {
-          const span = (xs[i + 1] - xs[i]) / 3
-          const c1 = `${round(xs[i] + span)},${round(ys[i] + tangents[i] * span)}`
-          const c2 = `${round(xs[i + 1] - span)},${round(ys[i + 1] - tangents[i + 1] * span)}`
-          d += ` C${c1} ${c2} ${round(xs[i + 1])},${round(ys[i + 1])}`
-        }
-        return d
-      })()
+      const band = hitRateBand(columns.map((column) => column.hit))
+      const axisX = (index) => ((index + 0.5) / columns.length) * 100
+      const hitY = (rate) => (1 - (rate * 100 - band.lo) / (band.hi - band.lo)) * 100
+      const hitPoints = columns
+        .map((column, index) => (column.hit === null ? null : { x: axisX(index), y: hitY(column.hit) }))
+        .filter((point) => point !== null)
+      const hitPath = monotonePath(hitPoints)
+      const bandTicks = [band.lo, (band.lo + band.hi) / 2, band.hi]
+      const labelled =
+        columns.length <= 16
+          ? columns.map((_, index) => index)
+          : [0, Math.floor((columns.length - 1) / 3), Math.floor((2 * (columns.length - 1)) / 3), columns.length - 1]
+      const hovered = hover === null ? null : columns[hover]
       return h(
         'div',
-        null,
+        { className: 'dtu-trend' },
         h(
           'div',
-          { className: 'dtu-legend', style: { marginBottom: '6px' } },
-          top.map((model, index) =>
-            h(
-              'span',
-              { key: model.route, title: model.route },
-              h('span', { className: 'dtu-dot', style: { background: SERIES[index % SERIES.length] } }),
-              shortRoute(model.route),
-            ),
-          ),
-          h(
-            'span',
-            null,
-            h('span', { className: 'dtu-dot', style: { background: OTHER } }),
-            '其他',
-          ),
-          h('span', null, h('span', { className: 'dtu-lineKey' }), '每日合计'),
+          { className: 'dtu-trendHead' },
+          h('div', { className: 'dtu-hint' }, '柱按 token 堆叠；下面的细条是缓存命中率，两段共用同一条 X 轴'),
+          groupBy === 'both'
+            ? h(ChipGroup, { items: CHIP_GROUPS, value: mode, onSelect: setMode, label: '统计口径' })
+            : null,
         ),
         h(
           'div',
-          { className: 'dtu-chart' },
+          { className: 'dtu-chartBars' },
           h(
             'div',
-            { className: 'dtu-grid' },
-            ticks.map((tick) =>
-              h('div', { key: tick, className: 'dtu-gridline', style: { top: `${tick * 100}%` } }),
+            { className: 'dtu-axisY' },
+            [0, 0.25, 0.5, 0.75, 1].map((tick) =>
+              h('span', { key: tick, style: { top: tick * 100 + '%' } }, compact(max * (1 - tick))),
             ),
           ),
           h(
             'div',
-            { className: 'dtu-axisY' },
-            ticks.map((tick) => h('span', { key: tick, style: { top: `${tick * 100}%` } }, compact(max * (1 - tick)))),
+            { className: 'dtu-grid' },
+            [0, 0.25, 0.5, 0.75, 1].map((tick) =>
+              h('div', { key: tick, className: 'dtu-gridline', style: { top: tick * 100 + '%' } }),
+            ),
           ),
           h(
             'div',
             { className: 'dtu-bars' },
-            columns.map((column) =>
+            columns.map((column, index) =>
               h(
                 'div',
                 {
                   key: column.day,
                   className: 'dtu-col',
-                  title: `${column.day} · ${grouped(column.total)} tokens · ${column.turns} 轮${
-                    column.hit === null ? '' : ` · 缓存命中 ${percent(column.hit)}`
-                  }`,
+                  'data-day': column.day,
+                  onMouseEnter: () => setHover(index),
+                  onMouseLeave: () => setHover(null),
                 },
-                column.segments.map((segment, index) =>
+                column.segments.map((segment, segmentIndex) =>
                   h('div', {
-                    key: `${segment.route}-${index}`,
+                    key: segment.key + '-' + segmentIndex,
                     className: 'dtu-seg',
                     style: {
-                      height: `${(segment.value / max) * 100}%`,
-                      background: colorOf.get(segment.route) ?? OTHER,
+                      height: (segment.value / max) * 100 + '%',
+                      background: segment.key === OTHER_KEY ? OTHER : colorOf.get(segment.key),
                     },
                   }),
                 ),
               ),
             ),
           ),
+        ),
+        h(
+          'div',
+          { className: 'dtu-chartHit' },
           h(
             'div',
-            { className: 'dtu-line' },
-            h(
-              'svg',
-              { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
-              h('path', {
-                d: curvePath,
-                fill: 'none',
-                stroke: 'var(--dsw-alias-label-primary)',
-                strokeWidth: 1.5,
-                strokeLinecap: 'round',
-                vectorEffect: 'non-scaling-stroke',
-              }),
-            ),
-            columns.map((column, index) =>
-              h('span', {
-                key: column.day,
-                className: 'dtu-point',
-                style: { left: `${pointX(index)}%`, top: `${pointY(column)}%` },
-              }),
-            ),
+            { className: 'dtu-axisHit' },
+            bandTicks.map((tick) => h('span', { key: tick, style: { top: hitY(tick / 100) + '%' } }, tick.toFixed(1) + '%')),
           ),
           h(
-            'div',
-            { className: 'dtu-axisX' },
-            labelled.map((index) =>
-              h('span', { key: index, style: { left: `${pointX(index)}%` } }, columns[index].day.slice(5)),
-            ),
+            'svg',
+            { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
+            h('path', {
+              d: hitPath,
+              fill: 'none',
+              stroke: 'var(--dtu-hit)',
+              strokeWidth: 1.5,
+              strokeLinecap: 'round',
+              vectorEffect: 'non-scaling-stroke',
+            }),
+          ),
+          columns.map((column, index) =>
+            h('span', {
+              key: column.day,
+              className: column.hit === null ? 'dtu-hitDot dtu-hitDotEmpty' : 'dtu-hitDot',
+              style: { left: axisX(index) + '%', top: column.hit === null ? '100%' : hitY(column.hit) + '%' },
+              onMouseEnter: () => setHover(index),
+              onMouseLeave: () => setHover(null),
+            }),
           ),
         ),
+        h(
+          'div',
+          { className: 'dtu-axisX' },
+          labelled.map((index) => h('span', { key: index, style: { left: axisX(index) + '%' } }, columns[index].day.slice(5))),
+        ),
+        hovered
+          ? h(
+              'div',
+              { className: 'dtu-cursor', style: { left: axisX(hover) + '%' } },
+              h(
+                'div',
+                { className: 'dtu-tip', 'data-day': hovered.day },
+                h('div', { className: 'dtu-tipTitle' }, hovered.day + ' · ' + grouped(hovered.total) + ' tokens'),
+                hovered.segments
+                  .filter((segment) => segment.value > 0)
+                  .map((segment) =>
+                    h(
+                      'div',
+                      { key: segment.key, className: 'dtu-tipRow' },
+                      h('span', {
+                        className: 'dtu-dot',
+                        style: { background: segment.key === OTHER_KEY ? OTHER : colorOf.get(segment.key) },
+                      }),
+                      segment.key === OTHER_KEY ? '其他' : segment.key,
+                      h('b', null, compact(segment.value)),
+                    ),
+                  ),
+                h('div', { className: 'dtu-tipRow' }, '缓存命中率', h('b', null, hovered.hit === null ? '—' : percent(hovered.hit))),
+              ),
+            )
+          : null,
       )
     }
 
@@ -1065,6 +1128,8 @@ window.__ModuleLoader__.load({
       const totals = data ? data.totals : null
       const buckets = totals ? totals.buckets : [0, 0, 0, 0, 0]
       const topShare = totals && totals.totalTokens > 0 && data.models.length > 0 ? data.models[0].totalTokens / totals.totalTokens : 0
+      // Task 6 swaps this for the configured groupBy; fixed to models for now.
+      const groupByMode = 'model'
 
       const head = h(
         'div',
@@ -1173,7 +1238,7 @@ window.__ModuleLoader__.load({
             { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
             h(Heatmap, { heatmap: data.heatmap, days: data.days }),
           ),
-          h(Section, { title: '按天 Token 趋势' }, h(TrendChart, { days: data.days, models: data.models })),
+          h(Section, { title: '按天 Token 趋势' }, h(TrendSection, { days: data.days, groups: data.groups, groupBy: groupByMode })),
           h(
             Section,
             { title: '模型用量' },
