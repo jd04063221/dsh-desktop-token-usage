@@ -1224,7 +1224,7 @@ async function renderTrend(payload) {
   const classes = []
   const texts = []
   /** Class-name chains plus the captured nodes the trend assertions lean on. */
-  const frames = {}
+  const frames = { dots: [], pathOrder: [] }
   const walk = (node, chain) => {
     if (node === null || node === undefined || typeof node !== 'object') return
     if (Array.isArray(node)) return node.forEach((child) => walk(child, chain))
@@ -1233,6 +1233,9 @@ async function renderTrend(payload) {
     if (name) {
       classes.push(name)
       if (name === 'dtu-bars') frames.bars = next
+      if (name.split(' ').includes('dtu-hitDot')) {
+        frames.dots.push({ empty: name.includes('dtu-hitDotEmpty'), border: node.props.style?.border })
+      }
       if (name === 'dtu-axisHit') {
         frames.rateLabels = []
         const sweep = (child) => {
@@ -1244,12 +1247,20 @@ async function renderTrend(payload) {
         sweep(node)
       }
     }
-    // The hit-rate curve is the only path under .dtu-hitPlot; the sidebar icons
-    // carry paths of their own, so the frame is what identifies this one.
+    // Two paths live under .dtu-hitPlot now — the halo and the line it lifts —
+    // so the hit colour is what picks the curve out; the sidebar icons carry
+    // paths of their own, so the frame is what identifies this overlay.
     if (node.tag === 'path' && next.includes('dtu-hitPlot')) {
-      frames.curve = next
-      frames.curveD = node.props.d
-      frames.curveProps = node.props
+      frames.pathOrder.push(node.props.stroke)
+      if (node.props.stroke === 'var(--dtu-hit)') {
+        frames.curve = next
+        frames.curveD = node.props.d
+        frames.curveProps = node.props
+      } else if (node.props.stroke === 'var(--dsw-alias-bg-layer-1)') {
+        frames.halo = next
+        frames.haloD = node.props.d
+        frames.haloProps = node.props
+      }
     }
     if (typeof node.children === 'string' || typeof node.children === 'number') texts.push(String(node.children))
     walk(node.children, next)
@@ -1271,7 +1282,36 @@ test('the trend overlays the hit-rate curve on the bars under one shared axis', 
   assert.ok(frames.curve?.includes('dtu-chartBars'), 'the curve overlays the bars in that same plot area')
   assert.ok(frames.curve?.includes('dtu-hitPlot'), 'the curve keeps the shared inset frame')
   assert.match(frames.curveD, /^M/, 'the hit rate is one smooth path, not a polyline')
-  assert.equal(frames.curveProps.opacity, 0.9, 'the curve is drawn translucently above the bars')
+  assert.equal(frames.curveProps.opacity, 1, 'the line is solid; the halo does the lifting')
+  assert.equal(frames.curveProps.strokeWidth, 2, 'the line reads at 2px over the bars')
+  // Without the halo the line disappears into a filled column: same path, panel
+  // colour, wider, translucent — and painted before the line it lifts.
+  assert.ok(frames.halo, 'the halo path is drawn under the curve')
+  assert.equal(frames.haloD, frames.curveD, 'the halo traces the very same curve')
+  assert.equal(frames.haloProps.stroke, 'var(--dsw-alias-bg-layer-1)', 'the halo is the panel colour')
+  assert.ok(frames.haloProps.strokeWidth >= 3, 'the halo is wider than the line it surrounds')
+  assert.equal(frames.haloProps.opacity, 0.75, 'the halo is translucent')
+  assert.equal(frames.haloProps.pointerEvents, 'none', 'the halo never eats a hover')
+  assert.equal(frames.haloProps.fill, 'none', 'the halo is a stroke, not a shape')
+  assert.deepEqual(
+    frames.pathOrder,
+    ['var(--dsw-alias-bg-layer-1)', 'var(--dtu-hit)'],
+    'the halo is painted first, the hit-rate line on top of it',
+  )
+  // The markers float too: a panel-coloured ring on real days, never on empty ones.
+  const realDots = frames.dots.filter((dot) => !dot.empty)
+  assert.equal(realDots.length, 3, 'three of the five days carry a real marker')
+  for (const dot of realDots) {
+    assert.ok(
+      /var\(--dsw-alias-bg-layer-1\)/.test(dot.border ?? ''),
+      `each marker is ringed in the panel colour, got ${dot.border}`,
+    )
+  }
+  const emptyDots = frames.dots.filter((dot) => dot.empty)
+  assert.equal(emptyDots.length, 2, 'the two rateless days keep a marker for hover')
+  for (const dot of emptyDots) {
+    assert.equal(dot.border, undefined, 'the empty-day marker stays transparent and borderless')
+  }
   assert.ok(
     texts.includes('柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）'),
     'the head hint describes the overlay instead of two stacked strips',

@@ -301,7 +301,7 @@ window.__ModuleLoader__.load({
 /* The rate labels own the right gutter — the plot's right inset — and carry the
    real percentages of the band the curve is drawn against. */
 .dtu-axisHit{position:absolute;right:0;top:0;bottom:0;width:var(--dtu-plot-r);color:var(--dsw-alias-label-secondary);font-size:11px;text-align:left}
-.dtu-axisHit span{position:absolute;left:4px;transform:translateY(-50%)}
+.dtu-axisHit span{position:absolute;left:4px;transform:translateY(-50%);white-space:nowrap}
 /* The curve and the dots overlay the bars and share the bars' plot insets (52/44),
    so one percentage scale positions them alongside the hover line. */
 .dtu-hitPlot{position:absolute;left:var(--dtu-plot-l);right:var(--dtu-plot-r);top:0;bottom:0;pointer-events:none}
@@ -898,9 +898,10 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The strip's scale, from the visible days: min - 10% of the span to max + 10%.
-     * A flat (or single-day) series gets +/-1pp, and a range with no hit rate at all
-     * falls back to 0-100 so the empty strip still reads as a scale.
+     * The band the hit-rate curve is drawn against, from the visible days:
+     * min - 10% of the span to max + 10%. A flat (or single-day) series gets
+     * +/-1pp, and a range with no hit rate at all falls back to 0-100 so an
+     * all-empty range still reads as a scale.
      */
     function hitRateBand(rates) {
       const seen = rates.filter((rate) => rate !== null)
@@ -1076,12 +1077,25 @@ window.__ModuleLoader__.load({
               h(
                 'svg',
                 { viewBox: '0 0 100 100', preserveAspectRatio: 'none' },
+                // The curve is busiest exactly where the columns are tall (a high
+                // hit rate means a high bar), and the hit colour alone sits near
+                // 1-2:1 against those fills — a wider panel-coloured halo under the
+                // line is what keeps it readable where it crosses them.
+                h('path', {
+                  d: hitPath,
+                  fill: 'none',
+                  stroke: 'var(--dsw-alias-bg-layer-1)',
+                  strokeWidth: 3.5,
+                  opacity: 0.75,
+                  pointerEvents: 'none',
+                  vectorEffect: 'non-scaling-stroke',
+                }),
                 h('path', {
                   d: hitPath,
                   fill: 'none',
                   stroke: 'var(--dtu-hit)',
-                  opacity: 0.9,
-                  strokeWidth: 1.5,
+                  strokeWidth: 2,
+                  opacity: 1,
                   strokeLinecap: 'round',
                   vectorEffect: 'non-scaling-stroke',
                 }),
@@ -1090,7 +1104,13 @@ window.__ModuleLoader__.load({
                 h('span', {
                   key: column.day,
                   className: column.hit === null ? 'dtu-hitDot dtu-hitDotEmpty' : 'dtu-hitDot',
-                  style: { left: axisX(index) + '%', top: column.hit === null ? '100%' : hitY(column.hit) + '%' },
+                  style: {
+                    left: axisX(index) + '%',
+                    top: column.hit === null ? '100%' : hitY(column.hit) + '%',
+                    // A panel-coloured ring lifts the marker off the bars; the
+                    // empty-day marker stays transparent and borderless.
+                    border: column.hit === null ? undefined : '1.5px solid var(--dsw-alias-bg-layer-1)',
+                  },
                   onMouseEnter: () => setHover(index),
                   onMouseLeave: () => setHover(null),
                 }),
