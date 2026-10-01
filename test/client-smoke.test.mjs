@@ -1637,6 +1637,21 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
     ruleBody('dtu-cell').includes('width:11px'),
     'the legend swatches keep the fixed 11px box they share that class with',
   )
+  // 24% of the box, not a fixed 2px: the cell is stretched now, and a fixed
+  // radius would keep looking sharper the bigger the card gets.
+  assert.ok(
+    ruleBody('dtu-cell').includes('border-radius:24%') && ruleBody('dtu-cellFill').includes('border-radius:inherit'),
+    'the corner radius is a share of the box, and the fill inherits it instead of keeping its own',
+  )
+  const hoverFill = (styles.match(/\.dtu-heat \.dtu-cell:hover \.dtu-cellFill\{([^}]*)\}/) ?? [])[1]
+  assert.ok(
+    hoverFill?.includes('filter:brightness('),
+    'hover brightens a day through a property that cannot move a single box',
+  )
+  assert.ok(
+    (styles.match(/@media \(prefers-reduced-motion: reduce\)\{([^}]*)\}/) ?? [])[1]?.includes('transition:none'),
+    'the motion is opt-out for anyone who asks for less of it',
+  )
 })
 
 test('the footer stacks one fact per line and never splits a quoted term', async () => {

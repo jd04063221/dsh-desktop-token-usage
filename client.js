@@ -295,10 +295,16 @@ window.__ModuleLoader__.load({
 .dtu-weekdays span{flex:1 1 0;min-height:11px;display:flex;align-items:center}
 .dtu-heat{display:flex;gap:3px;flex:1 1 0;min-width:0}
 .dtu-week{display:flex;flex-direction:column;gap:3px;flex:1 0 11px;min-width:0}
-.dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
+.dtu-cell{width:11px;height:11px;border-radius:24%;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
 /* Calendar days share this box with the legend swatches, but not their size. */
 .dtu-heat .dtu-cell{width:100%;height:auto;aspect-ratio:1}
-.dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
+/* The radius is a share of the box, so a stretched cell keeps the roundness of
+   an 11px one; the fill inherits it instead of carrying a second number. */
+.dtu-cellFill{position:absolute;inset:0;border-radius:inherit;display:block;transition:background-color .18s ease,filter .12s ease}
+/* A day brightens under the cursor: brightness moves nothing, so the grid cannot
+   reflow — and the same declaration softens a palette or metric switch too. */
+.dtu-heat .dtu-cell:hover .dtu-cellFill{filter:brightness(1.16)}
+@media (prefers-reduced-motion: reduce){.dtu-cellFill{transition:none}}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-trend{position:relative;--dtu-plot-l:52px;--dtu-plot-r:44px}
 .dtu-plot{position:relative;padding-bottom:20px}
