@@ -42,7 +42,7 @@ test('the cache-hit rate puts cache writes on the miss side', () => {
   // buckets = [uncachedInput, output, cacheRead, cacheWrite, reasoning]
   assert.equal(hitRateOf([100, 0, 900, 0, 0]), 0.9)
   assert.ok(Math.abs(hitRateOf([100, 0, 900, 100, 0]) - 9 / 11) < 1e-12, 'cache writes are a miss')
-  assert.equal(hitRateOf([0, 10, 0, 0, 0]), 0, 'no hit and no prompt-side miss reads as 0')
+  assert.equal(hitRateOf([100, 10, 0, 0, 0]), 0, 'prompt tokens but no cache hit reads as 0')
   assert.equal(hitRateOf([0, 0, 0, 0, 0]), null, 'and an empty range is null, not a fake 0')
 })
 ```
@@ -352,6 +352,9 @@ function parseConfigView(value) {
 Run: `node --test "test/*.test.mjs"`
 Expected: 全部 PASS（`client.js` 还没消费新键，但 Host 侧契约已成立）。
 
+> ⚠️ 实施时发现计划漏了三处断言：`test/session-usage.test.mjs` 里 `service.config()` / `service.setConfig()` 的深等断言（约 :315、:316、:381、:400）只期望 `{ hours, days, writable }`，而新契约会多返回 `groupBy: 'both', palette: 'primer'`。这些断言必须同步更新，否则全量测试会红。
+> ⚠️ 另：`hitRateOf` 的「0%」用例要用 `[100, 10, 0, 0, 0]`（有 prompt token 但无命中）；`[0, 10, 0, 0, 0]` 没有 prompt 侧 token，按设计返回 `null`。
+
 - [ ] **Step 5: 提交**
 
 ```bash
@@ -489,7 +492,7 @@ git commit -m "feat(client): 三套配色变量（浅/深各一份）与 data-dt
 
 - [ ] **Step 1: 写失败用例**
 
-把 `test/client-smoke.test.mjs` 的 `trendPayload()` 换成带分组与命中率的夹具，并把 `renderTrend()` 与两个趋势用例替换为：
+同时把 `test/client-smoke.test.mjs` 的 `summaryPayload()` 补上 `groups`（`{ model: [...], provider: [...] }`，条目形如 `{ key, buckets, totalTokens }`）与每天的 `byGroup`（`{ model: {...}, provider: {...} }`）——Task 6 的拆分区用例也依赖它。然后把 `trendPayload()` 换成带分组与命中率的夹具，并把 `renderTrend()` 与两个趋势用例替换为：
 
 ```js
 /** Five days: two empty, a spike, then a dip — hit rates live in 90-95%. */
