@@ -21,8 +21,10 @@ window.__ModuleLoader__.load({
     const REMOTE_SERVICE = 'dshTokenUsage'
     const REMOTE_NAMESPACE = 'dshUsage'
 
-    const SERIES = ['#4c8dff', '#3fb950', '#d29922', '#a371f7', '#ec6a5e', '#39c5cf']
-    const OTHER = '#6e7681'
+    const SERIES = ['var(--dtu-s1)', 'var(--dtu-s2)', 'var(--dtu-s3)', 'var(--dtu-s4)', 'var(--dtu-s5)']
+    const OTHER = 'var(--dtu-other)'
+    /** The folded bucket key: its label is 其他 everywhere. */
+    const OTHER_KEY = '__other__'
     /** Quiet refresh period; keeps hour windows honest without polling hard. */
     const REFRESH_MS = 5 * 60_000
 
@@ -229,7 +231,33 @@ window.__ModuleLoader__.load({
     // ── styles ──────────────────────────────────────────────────────────────
 
     const CSS = `
-.dtu-root{display:block;height:100%;overflow:auto;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}
+.dtu-root{
+  --dtu-s1:#4c8dff; --dtu-s2:#3fb950; --dtu-s3:#d29922; --dtu-s4:#a371f7; --dtu-s5:#ec6a5e;
+  --dtu-other:#6e7681; --dtu-hit:#57606a;
+  --dtu-heat-0:#ebedf0; --dtu-heat-1:#9be9a8; --dtu-heat-2:#40c463; --dtu-heat-3:#30a14e; --dtu-heat-4:#216e39;
+  display:block;height:100%;overflow:auto;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}
+.dtu-root[data-dtu-palette="cvd"]{
+  --dtu-s1:#0072b2; --dtu-s2:#e69f00; --dtu-s3:#009e73; --dtu-s4:#cc79a7; --dtu-s5:#56b4e9;
+  --dtu-other:#7b8794; --dtu-hit:#0072b2;
+  --dtu-heat-0:#eef4fa; --dtu-heat-1:#c6dbef; --dtu-heat-2:#7fb3d9; --dtu-heat-3:#3d85c6; --dtu-heat-4:#084594}
+.dtu-root[data-dtu-palette="muted"]{
+  --dtu-s1:#4c6a92; --dtu-s2:#6e9c7a; --dtu-s3:#c9a227; --dtu-s4:#9a6b8f; --dtu-s5:#7a8ca3;
+  --dtu-other:#8a857c; --dtu-hit:#4c6a92;
+  --dtu-heat-0:#f0efe9; --dtu-heat-1:#cfd8c4; --dtu-heat-2:#a8bb98; --dtu-heat-3:#7d9a6d; --dtu-heat-4:#547049}
+@media (prefers-color-scheme: dark){
+  .dtu-root{
+    --dtu-s1:#4c8dff; --dtu-s2:#3fb950; --dtu-s3:#d29922; --dtu-s4:#a371f7; --dtu-s5:#ec6a5e;
+    --dtu-other:#8b949e; --dtu-hit:#8b949e;
+    --dtu-heat-0:#161b22; --dtu-heat-1:#0e4429; --dtu-heat-2:#006d32; --dtu-heat-3:#26a641; --dtu-heat-4:#39d353}
+  .dtu-root[data-dtu-palette="cvd"]{
+    --dtu-s1:#58a6ff; --dtu-s2:#ffc857; --dtu-s3:#4dd4ac; --dtu-s4:#f0a6c8; --dtu-s5:#83c9f4;
+    --dtu-other:#9aa5b1; --dtu-hit:#58a6ff;
+    --dtu-heat-0:#111823; --dtu-heat-1:#12395c; --dtu-heat-2:#1b5a8a; --dtu-heat-3:#2f7fbd; --dtu-heat-4:#5fb0e8}
+  .dtu-root[data-dtu-palette="muted"]{
+    --dtu-s1:#8fa8c8; --dtu-s2:#9dc0a6; --dtu-s3:#e0c46a; --dtu-s4:#c49ab8; --dtu-s5:#a8b6c6;
+    --dtu-other:#a8a196; --dtu-hit:#8fa8c8;
+    --dtu-heat-0:#1a1a17; --dtu-heat-1:#2c3a28; --dtu-heat-2:#47603e; --dtu-heat-3:#688a56; --dtu-heat-4:#8fb273}
+}
 .dtu-head{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--dsw-alias-bg-base);border-bottom:1px solid var(--dsw-alias-border-l1)}
 .dtu-title{font-size:15px;font-weight:600}
 .dtu-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -267,7 +295,7 @@ window.__ModuleLoader__.load({
 .dtu-heat{display:flex;gap:3px}
 .dtu-week{display:flex;flex-direction:column;gap:3px}
 .dtu-cell{width:11px;height:11px;border-radius:2px;background:var(--dsw-alias-bg-layer-2);position:relative;flex:none}
-.dtu-cellFill{position:absolute;inset:0;border-radius:2px;background:var(--dsw-alias-brand-primary);display:block}
+.dtu-cellFill{position:absolute;inset:0;border-radius:2px;display:block}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-chart{position:relative;height:260px;margin-top:4px}
 /* The daily-total line shares the bars' plot insets, so both read off the same
@@ -737,7 +765,10 @@ window.__ModuleLoader__.load({
                 h(
                   'span',
                   { key: level, className: 'dtu-cell' },
-                  h('span', { className: 'dtu-cellFill', style: { opacity: HEAT_LEVEL_OPACITY[level] } }),
+                  h('span', {
+                    className: 'dtu-cellFill',
+                    style: { background: 'var(--dtu-heat-' + level + ')', opacity: HEAT_LEVEL_OPACITY[level] },
+                  }),
                 ),
               ),
               h('span', null, '较多'),
@@ -784,7 +815,13 @@ window.__ModuleLoader__.load({
                             : day.key,
                         },
                         levelOf(value) > 0
-                          ? h('span', { className: 'dtu-cellFill', style: { opacity: HEAT_LEVEL_OPACITY[levelOf(value)] } })
+                          ? h('span', {
+                              className: 'dtu-cellFill',
+                              style: {
+                                background: 'var(--dtu-heat-' + levelOf(value) + ')',
+                                opacity: HEAT_LEVEL_OPACITY[levelOf(value)],
+                              },
+                            })
                           : null,
                       )
                     }),
@@ -1168,9 +1205,10 @@ window.__ModuleLoader__.load({
         )
       }
 
+      const palette = state.config?.palette ?? 'primer'
       return h(
         'div',
-        { className: 'dtu-root' },
+        { className: 'dtu-root', 'data-dtu-palette': palette },
         head,
         h(
           'div',

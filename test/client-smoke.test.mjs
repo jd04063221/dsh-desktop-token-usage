@@ -372,6 +372,34 @@ test('the sidebar entry and the dashboard render without a browser', async () =>
   assert.ok(body.includes('不随上方来源筛选变化'), 'the section must not claim to follow the filter')
 })
 
+test('the dashboard carries its palette on the root and ships three light/dark sets', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const main = record.slots.find((item) => item.options?.name === 'main')
+  const tree = render({ type: main.component, props: main.options.inject() })
+  const roots = []
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.props?.className === 'dtu-root') roots.push(node)
+    walk(node.children)
+  }
+  walk(tree)
+  assert.equal(roots.length, 1)
+  assert.equal(roots[0].props['data-dtu-palette'], 'primer', 'the default palette is primer')
+
+  const styles = document.head.children[0].textContent
+  for (const palette of ['cvd', 'muted']) {
+    assert.ok(styles.includes('[data-dtu-palette="' + palette + '"]'), palette + ' must have a variable block')
+  }
+  assert.ok(styles.includes('prefers-color-scheme: dark'), 'light/dark switch is a media query')
+  assert.ok(styles.includes('--dtu-s1:#0072b2'), 'the cvd series colour must be a variable value')
+  assert.ok(styles.includes('--dtu-other:'), 'the folded bucket keeps its own grey')
+})
+
 test('with both windows off the dashboard falls back to the all-time rollup', async () => {
   const { plugin } = loadClient()
   const payload = summaryPayload()
