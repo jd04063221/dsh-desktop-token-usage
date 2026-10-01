@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README.md) | 中文 | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
 
 一个**完全离线**的 DSH（DeepSeek Harness）token 用量统计插件。
 
@@ -31,7 +31,8 @@
 
 用本插件**自己的组件**渲染，数据是**示例数据**：截图由 [`scripts/render-shots.mjs`](scripts/render-shots.mjs)
 （真实 `client.js` + 真实 CSS，接一个假 Host）与 [`scripts/render-shots.py`](scripts/render-shots.py)
-（无头 Chrome）离线生成，不涉及任何会话日志、路径或账号信息。先是浅色，再是深色。
+（无头 Chrome）离线生成，不涉及任何会话日志、路径或账号信息。先是浅色，再是深色。截图统一用中文渲染（第一个脚本
+加 `--locale <id>` 可换语言），十种语言的 README 共用同一组图。
 
 ![看板·浅色](assets/dashboard-light.png)
 
@@ -134,16 +135,31 @@ npm install            # 只装 dev/运行依赖，不联网获取任何数据
 
 ### 活跃热力图怎么读
 
-- 是**日历**（周一对齐、近 53 周），带**月份**与**星期**坐标；格子固定 11px，不会随面板宽度被拉伸；
+- 是**日历**（周一对齐、近 53 周），带**月份**与**星期**坐标；格子分摊卡片宽度、随之伸缩并保持正方形（11px 是参考尺寸）；
 - 色阶取**非零日的四分位**，而不是"当日 ÷ 最大值"——后者只要有一天特别大，其余就全被压成同一档灰；
 - 顶部可切换 **Tokens / 轮次**；默认选**有数据天数更多**的那一维（导入历史较多的机器上 token 很少，
   默认按 token 画会几乎是空网格）；
 - 它**跟随来源筛选，但不受时间范围影响**：日历被筛成 7 天，就是"一年网格里亮 7 格"，那正是热力图不该有的样子。
 
+## 本地化
+
+看板**跟随 DSH 自身的语言设置**，插件不提供语言选择器：在 DSH 里改语言，看板立即跟着切换，无需刷新。
+
+- `en` 与 `zh` 是 DSH 内置语言，本插件为两者都提供了字典；
+- 以下语言包注册进 DSH 的语言目录，因此会出现在 DSH 自己的语言选择器里：`zh-TW`（臺灣正體）、`zh-HK`（香港繁體）、
+  `de`、`fr`、`es`、`it`、`ja`、`ko`。其余六个代码 `pt-BR`、`ru`、`vi`、`th`、`id`、`ar`（RTL）设计已定稿、
+  尚未实现，见 [设计稿](docs/superpowers/specs/2026-10-01-i18n-design.md)；
+- 文案放在 `locales/<id>.json`，一种语言一个扁平文件，由 `node scripts/build-dicts.mjs` 生成进 `client.js`。
+  生成块**不要手改**：过期时 `npm test` 会失败；
+- 数字、百分比、日期、星期与月份名、复数形式全部来自 `Intl`，因此千分位写法不同、用 `萬`/`億` 而非 `K`/`M`/`B`、
+  或需要复数的语言都能正确显示；
+- `README-<id>.md` 与 `CHANGELOG-<id>.md` 提供这十种语言的同款文档，留在仓库里供 GitHub 阅读；npm 只显示
+  `README.md`。
+
 ## 配置项
 
-在 **插件 → Token 用量** 页里编辑（侧边栏 `Plugins` 入口 → Token 用量）：页面中部会出现
-「侧边栏卡片显示的时间跨度」两个输入框与保存按钮。
+在 **插件 → Token 用量** 页里编辑（侧边栏 `Plugins` 入口 → Token 用量）：页面中部由插件自己渲染一张卡片——
+小时与天数的两个输入框、统计口径与配色方案两个下拉框，以及保存按钮。
 
 DSH **不会**从 `Config` schema 自动生成编辑器——自己带配置的插件必须把表单渲染到
 `plugins.bundle.config` 槽（按包名寻址）。本插件就是这么做的：保存时调用官方 `configEditor`，
@@ -210,7 +226,8 @@ DSH 0.1.7-rc.2 的会话日志里**没有**「客户端来源」字段：`Sessio
   缓存写在 `$DSH_HOME/cache/dsh-desktop-token-usage/sessions-index.json`，删掉它只会让下次变慢。
 - **导入的历史会话可能用量为 0**：如果历史会话是导入的（例如 reasonix 迁移），其 usage 字段确实全为 0，
   这是有效数据，不是缺失，本插件不会回退去估算。
-- **界面文案为中文硬编码**：没有接 Client locale 服务，避免多引入一条会随版本变化的依赖。
+- **只翻译了十种语言**：看板跟随 DSH 的语言设置，但并非 DSH 能设的每种语言都有译文；
+  上面「本地化」一节列出了仍缺的六种。
 - **窗口取整到小时**：日志里没有分钟级分桶，所以「最近 1 小时」按整点对齐。
 - **卡片刷新有延迟**：没有 Host→Client 的推送通道，卡片靠 5 分钟定时静默刷新；刚改完配置或刚想立刻更新时，
   点一下卡片打开看板再点「刷新」即可。
@@ -283,8 +300,8 @@ docs/research/               前期调研记录与可复用的会话日志探针
 CHANGELOG-zh.md              中文版本变更记录（含提交索引）
 ```
 
-文档都提供中英两份：英文为默认（`README.md` / `CHANGELOG.md`），中文为 `README-zh.md` / `CHANGELOG-zh.md`，
-两份顶部互相链接。
+文档提供十种语言：英文为默认（`README.md` / `CHANGELOG.md`），其余每种语言各有自己的 `README-<id>.md` /
+`CHANGELOG-<id>.md`，十份文档由各自第 3 行的语言切换条互链。
 
 ## License
 

@@ -1,6 +1,6 @@
 # 更新日志
 
-[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | 中文
+[English](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG.md) | 中文 | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ko.md)
 
 本文件记录 `dsh-desktop-token-usage` 的所有重要变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
@@ -13,6 +13,16 @@
 
 ## [未发布]
 
+### 新增
+
+- **多语言（i18n）**：看板现在跟随 **DSH 自身的语言设置**——插件不带选择器，在 DSH 里切换语言后看板立即跟着切换，
+  无需刷新。本次实现十种语言：`en` 与 `zh` 走 DSH 内置字典，另有本插件注册进 DSH 语言目录的 `zh-TW`（臺灣正體）、
+  `zh-HK`（香港繁體）、`de`、`fr`、`es`、`it`、`ja`、`ko` 八套语言包。数字、百分比、日期、星期与月份名、复数形式
+  全部交给 `Intl`，因此千分位写法、`萬`/`億` 与 `K`/`M`/`B` 的差异、以及各语言自己的复数类别都能正确呈现。文案放在
+  `locales/<id>.json`，由 [`scripts/build-dicts.mjs`](scripts/build-dicts.mjs) 生成进客户端产物：生成块**不可手改**，
+  一旦过期测试即红。`README-<id>.md` 与 `CHANGELOG-<id>.md` 提供这些语言的同款文档。注意：选中语言包后
+  **DSH 自身界面仍回落 `zh`/`en`**，只有本插件切换。
+
 ### 修复
 
 - **趋势图的悬停框改成和热力图同一种读法**：标题不再把日期和 token 总数拼在一行——日期单独一行，
@@ -22,10 +32,9 @@
 
 ### 计划中
 
-- **多语言（i18n）**：设计已定稿、**待实现**——见 [设计稿](docs/superpowers/specs/2026-10-01-i18n-design.md)。
-  语言跟随 DSH 自身的语言设置（插件不自带选择器），15 个语言代码 / 3 梯队（`en`/`zh` 内置，`zh-TW` `zh-HK` `de`
-  `fr` `es` `it` `ja` `ko` `pt-BR` `ru` `vi` `th` `id` `ar` 为语言包），`ar` 需 RTL，数字/日期/复数按 `Intl` 本地化。
-  注意：选中语言包后 **DSH 自身界面仍回落 `zh`/`en`**，只有本插件切换。
+- **多语言的第 3 梯队**：其余六个语言代码 `pt-BR`、`ru`、`vi`、`th`、`id`、`ar` 设计已定稿、尚未实现。`ar` 还需要
+  RTL 外壳（内缩、悬停框、坐标轴侧别镜像，时间轴仍保持从左到右），当前这十种语言都不需要。见
+  [设计稿](docs/superpowers/specs/2026-10-01-i18n-design.md)。
 
 ## [0.1.5] - 2026-10-01
 

@@ -1,6 +1,6 @@
 # dsh-desktop-token-usage
 
-English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md)
+English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/README-ko.md)
 
 A **fully offline** token usage statistics plugin for DSH (DeepSeek Harness).
 
@@ -37,7 +37,8 @@ No network access, no telemetry, no API calls: every number comes from session l
 Rendered from this plugin's own components with **sample data** — the shots are produced offline by
 [`scripts/render-shots.mjs`](scripts/render-shots.mjs) (the real `client.js` and CSS against a fake Host) plus
 [`scripts/render-shots.py`](scripts/render-shots.py) (headless Chrome), so no session logs, paths or account
-details are involved. Light theme first, dark theme second.
+details are involved. Light theme first, dark theme second. The shots are rendered in Chinese — the first script takes
+`--locale <id>` to render another language — and all ten language variants of this README share the same set.
 
 ![Dashboard, light theme](assets/dashboard-light.png)
 
@@ -154,8 +155,8 @@ there is no new usage.
 
 ### How to read the activity heatmap
 
-- It is a **calendar** (Monday-aligned, the last 53 weeks) with **month** and **weekday** axes; cells are a fixed
-  11px and are never stretched to the panel width;
+- It is a **calendar** (Monday-aligned, the last 53 weeks) with **month** and **weekday** axes; the cells share out
+  the card's width, so they stretch with it and stay square (11px is the reference size);
 - The color scale uses **quartiles over non-zero days**, not "day ÷ maximum" — with the latter, a single
   exceptionally large day presses everything else into the same shade of gray;
 - The header toggles between **Tokens / turns**; the default is whichever dimension has **more days with data** (on a
@@ -164,11 +165,29 @@ there is no new usage.
 - It **follows the source filter but is not affected by the time range**: a calendar filtered down to 7 days would
   mean "7 lit cells in a year grid", which is exactly what a heatmap should not look like.
 
+## Localization
+
+The dashboard follows **DSH's own language setting**. It has no language picker of its own: change the language in
+DSH and the dashboard switches with it, immediately and without a reload.
+
+- `en` and `zh` are DSH's built-in locales, and this plugin ships a dictionary for both;
+- The following language packs are registered into DSH's catalog, so they appear in its own selector: `zh-TW`
+  (臺灣正體), `zh-HK` (香港繁體), `de`, `fr`, `es`, `it`, `ja` and `ko`. The remaining six codes — `pt-BR`, `ru`,
+  `vi`, `th`, `id` and `ar` (right-to-left) — are designed but not implemented yet; see
+  [the design](docs/superpowers/specs/2026-10-01-i18n-design.md);
+- Copy lives in `locales/<id>.json`, one flat file per language, and is generated into `client.js` by
+  `node scripts/build-dicts.mjs`. Never edit the generated block by hand — `npm test` fails while it is stale;
+- Numbers, percentages, dates, weekday and month names, and plural forms all come from `Intl`, so a language that
+  groups thousands differently, writes `萬`/`億` where English writes `K`/`M`/`B`, or inflects its plurals reads
+  correctly;
+- `README-<id>.md` and `CHANGELOG-<id>.md` carry both documents in each of the ten languages. They stay in the
+  repository for GitHub; npm shows `README.md` only.
+
 ## Configuration
 
 Edit these in the **Plugins → `Token 用量`** page (Token usage) — the `Plugins` entry in the sidebar → `Token 用量`:
-in the middle of the page you get two input boxes labelled `侧边栏卡片显示的时间跨度` (the time span shown on the
-sidebar card) and a save button.
+in the middle of the page the plugin draws its own card — the hours box, the days box, the grouping and palette
+selects, and a save button.
 
 DSH does **not** generate an editor automatically from the `Config` schema — a plugin that brings its own configuration
 has to render the form into the `plugins.bundle.config` slot (addressed by package name). That is what this plugin
@@ -243,8 +262,8 @@ not listed separately.
 - **Imported historical sessions may report zero usage**: if a historical session was imported (a reasonix migration,
   for instance), its usage fields really are all 0. That is valid data, not missing data, and this plugin does not
   fall back to estimating it.
-- **The UI copy is hard-coded Chinese**: the Client locale service is not wired up, to avoid pulling in one more
-  dependency that changes with versions.
+- **Only ten languages are translated**: the dashboard follows DSH's language setting, but its copy does not yet cover
+  every language DSH can be set to; the Localization section above lists the six that are still missing.
 - **Windows round to the hour**: the logs have no minute-level buckets, so "last 1 hour" aligns to the top of the
   hour.
 - **The card refreshes with a delay**: there is no Host→Client push channel, so the card relies on a 5-minute silent
@@ -327,8 +346,8 @@ docs/research/               Earlier research notes and reusable session-log pro
 CHANGELOG.md                 Version history (with a commit index)
 ```
 
-The docs come in both languages: English is the default (`README.md` / `CHANGELOG.md`) and Chinese is `README-zh.md` /
-`CHANGELOG-zh.md`, with the two top-of-file switchers linking to each other.
+The docs come in ten languages: English is the default (`README.md` / `CHANGELOG.md`), and every other language has its
+own `README-<id>.md` / `CHANGELOG-<id>.md`. All ten are cross-linked by the switcher on line 3 of each file.
 
 ## License
 

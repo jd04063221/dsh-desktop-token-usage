@@ -1,6 +1,6 @@
 # Changelog
 
-English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md)
+English | [中文](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh.md) | [繁體中文（臺灣）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-TW.md) | [繁體中文（香港）](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-zh-HK.md) | [Deutsch](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-de.md) | [Français](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-fr.md) | [Español](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-es.md) | [Italiano](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-it.md) | [日本語](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ja.md) | [한국어](https://github.com/jd04063221/dsh-desktop-token-usage/blob/main/CHANGELOG-ko.md)
 
 This file documents all notable changes to `dsh-desktop-token-usage`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the version numbers follow [Semantic Versioning](https://semver.org/).
@@ -14,6 +14,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Localization (i18n)**: the dashboard now follows **DSH's own language setting** — it has no picker of its own,
+  and switching the language in DSH switches the dashboard immediately, without a reload. Ten languages ship here:
+  `en` and `zh` through DSH's built-in dictionaries, plus the `zh-TW` (臺灣正體), `zh-HK` (香港繁體), `de`, `fr`,
+  `es`, `it`, `ja` and `ko` packs this plugin registers into DSH's catalog. Numbers, percentages, dates, weekday and
+  month names and plural forms all come from `Intl`, so thousands separators, `萬`/`億` where English writes
+  `K`/`M`/`B`, and each language's own plural categories all come out right. The copy lives in `locales/<id>.json`
+  and is generated into the client bundle by [`scripts/build-dicts.mjs`](scripts/build-dicts.mjs): the generated
+  block must never be hand-edited, and a test fails while it is stale. `README-<id>.md` and `CHANGELOG-<id>.md`
+  carry both documents in each shipped language. Note: selecting a language pack leaves **DSH's own interface** on
+  `zh`/`en` — only this plugin switches.
+
 ### Fixed
 
 - **The trend tooltip reads like the heatmap's**: its title no longer glues the date to the token total — the date
@@ -25,11 +38,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Planned
 
-- **Localization (i18n)**: designed, not implemented yet — the dashboard follows DSH's own language setting, with
-  15 language codes across three tiers (`en`/`zh` built in; `zh-TW` `zh-HK` `de` `fr` `es` `it` `ja` `ko` `pt-BR`
-  `ru` `vi` `th` `id` `ar` as language packs), `ar` right-to-left, and localized numbers/dates/plurals. See
-  [the design](docs/superpowers/specs/2026-10-01-i18n-design.md). Note: selecting a language pack leaves DSH's own
-  interface on `zh`/`en`; only this plugin switches.
+- **Localization, the remaining tier**: the six language codes `pt-BR`, `ru`, `vi`, `th`, `id` and `ar` are designed
+  but not implemented yet. `ar` also needs the right-to-left shell — mirrored insets, tooltips and axis sides, with
+  the time axis left-to-right — which none of the ten shipped languages require. See
+  [the design](docs/superpowers/specs/2026-10-01-i18n-design.md).
 
 ## [0.1.5] - 2026-10-01
 

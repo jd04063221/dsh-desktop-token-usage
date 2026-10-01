@@ -267,7 +267,9 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 - 样式只用 `--dsw-alias-*` 主题 token（`cordis_inspect_query` 的 `Theme` 列出的那 14 个），
   图表配色用字面量色值——按官方说法字面量只用于"artwork"；
 - 样式标签在 `apply` 里用 `ctx.effect` 注入并在卸载时移除，不在组件里注入；
-- 不做 locale 命名空间，中文文案直接写在模块里，少一条会随版本变化的链路。
+- 文案不写死在组件里：`locales/<id>.json` 是唯一真相，由 `scripts/build-dicts.mjs` 生成成 `client.js` 里的
+  字典块——成品仍是**零依赖单文件**，同时 14 种语言可以一语言一文件并行开发（见 §6）；
+- `Intl` 只用于数字/百分比/日期/星期月份/复数，缺哪个键就沿 `语言 → 上级语言 → en` 回落。
 
 ### 4.2 挂载点
 
@@ -359,10 +361,14 @@ Host 会把自诊断写到 `$DSH_HOME/cache/dsh-desktop-token-usage/`：
 
 ## 6. 后续可做
 
-- **多语言（i18n）**：设计已定稿、**待实现**——[spec](superpowers/specs/2026-10-01-i18n-design.md)。要点：语言跟随
-  DSH 的语言服务（`ctx.locale`，插件不自带选择器）、15 个语言代码 / 3 梯队（`en`/`zh` 为 DSH 内置，其余 14 个用
-  `addLanguage` 语言包扩展）、16 本字典由 `locales/<id>.json` 生成进 `client.js`（保持无构建）、`ar` 需 RTL、
-  数字/日期/复数全部按 `Intl` 本地化。注意：选中语言包后 **DSH 自身界面仍回落 `zh`/`en`**，只有本插件切换。
+- **多语言（i18n）· 第 3 梯队**：第 1、2 梯队（`zh-TW`/`zh-HK`/`de`/`fr`/`es`/`it`/`ja`/`ko`）已实现，见
+  [spec](superpowers/specs/2026-10-01-i18n-design.md) 与 [plan](superpowers/plans/2026-10-01-i18n-l1-l2.md)。
+  已落地的机制：语言跟随 DSH 的语言服务（`ctx.locale`，插件不自带选择器；没有该服务时按 `navigator` 回落）、
+  8 个语言包用 `addLanguage` 注册、10 本字典由 `locales/<id>.json` 生成进 `client.js`（成品无构建）、
+  数字/百分比/日期/星期月份/复数全部按 `Intl`、Host 四条 schema 描述改为语言中立短句、
+  `index.js` 不再含任何中文字面量。注意：选中语言包后 **DSH 自身界面仍回落 `zh`/`en`**，只有本插件切换。
+  待做：`pt-BR`/`ru`/`vi`/`th`/`id`/`ar` 六个代码，其中 `ar` 还需 RTL 外壳（内缩、悬停框、坐标轴侧别镜像，
+  时间轴保持从左到右）。
 - 会话明细表（数据已在 `summarize` 的中间结构里，只是没有暴露到 payload）；
 - 成本估算（需要单价表，会引入外部数据，与"不联网"取舍冲突）；
 - 若将来 DSH 的会话 header 增加客户端来源字段，把来源筛选扩到六项，判定函数集中在 `inferSurface`。
