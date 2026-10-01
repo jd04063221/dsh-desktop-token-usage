@@ -312,8 +312,8 @@ test('the Remote service answers a filter and records the call', { skip: !haveSe
   // The config endpoints report the windows in force and write through the
   // Loader's own editor, choosing this plugin's row out of the whole profile.
   const service = provided[0].value
-  assert.deepEqual(await service.config(), { hours: 6, days: 7, writable: true })
-  assert.deepEqual(await service.setConfig({ hours: 12, days: -4 }), { hours: 12, days: 0, writable: true })
+  assert.deepEqual(await service.config(), { hours: 6, days: 7, writable: true, groupBy: 'both', palette: 'primer' })
+  assert.deepEqual(await service.setConfig({ hours: 12, days: -4 }), { hours: 12, days: 0, writable: true, groupBy: 'both', palette: 'primer' })
   assert.equal(edits.length, 1)
   assert.equal(edits[0].entryId, 'include:dsh-desktop-token-usage')
   assert.deepEqual(edits[0].next, { hours: 12, days: 0 })
@@ -378,7 +378,7 @@ test('the Loader row is found by id even when its name is not the scoped package
     { hours: 2, days: 0 },
   )
   const service = provided[0].value
-  assert.deepEqual(await service.config(), { hours: 2, days: 0, writable: true })
+  assert.deepEqual(await service.config(), { hours: 2, days: 0, writable: true, groupBy: 'both', palette: 'primer' })
   await service.setConfig({ hours: 3, days: 0 })
   assert.deepEqual(edits, ['include:dsh-desktop-token-usage'])
 })
@@ -397,7 +397,7 @@ test('without a Loader config editor the config endpoints degrade honestly', asy
     },
   })
   const service = provided[0].value
-  assert.deepEqual(await service.config(), { hours: 0, days: 0, writable: false })
+  assert.deepEqual(await service.config(), { hours: 0, days: 0, writable: false, groupBy: 'both', palette: 'primer' })
   await assert.rejects(() => service.setConfig({ hours: 1, days: 1 }), /找不到本插件的 Loader 条目/)
 })
 
