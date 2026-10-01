@@ -290,7 +290,7 @@ window.__ModuleLoader__.load({
 .dtu-heatMonths{display:flex;gap:3px;height:15px;margin-bottom:4px;color:var(--dsw-alias-label-secondary);font-size:10.5px}
 .dtu-monthSpace{width:22px;flex:none}
 .dtu-monthCell{flex:1 0 11px;min-width:0;white-space:nowrap;overflow:visible}
-.dtu-heatRows{display:flex;gap:3px}
+.dtu-heatRows{display:flex;gap:3px;position:relative}
 .dtu-weekdays{display:flex;flex-direction:column;gap:3px;width:22px;flex:none;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:11px}
 .dtu-weekdays span{flex:1 1 0;min-height:11px;display:flex;align-items:center}
 .dtu-heat{display:flex;gap:3px;flex:1 1 0;min-width:0}
@@ -304,6 +304,14 @@ window.__ModuleLoader__.load({
 /* A day brightens under the cursor: brightness moves nothing, so the grid cannot
    reflow — and the same declaration softens a palette or metric switch too. */
 .dtu-heat .dtu-cell:hover .dtu-cellFill{filter:brightness(1.16)}
+/* A day with no activity is a hairline rather than a solid block: the calendar
+   now spans the card, and a wall of solid greys would read as data instead of as
+   emptiness. The step-0 colour is reused as the line, so it is not dead paint. */
+.dtu-heat .dtu-cell[data-level="0"]{background:transparent;box-shadow:inset 0 0 0 1px var(--dtu-heat-0)}
+/* Today wears a two-tone ring: the panel-coloured line separates it from the
+   cell's own colour, the inner line from its neighbours. One line alone vanishes
+   on either the palest or the darkest step. */
+.dtu-heat .dtu-cell[data-today="true"] .dtu-cellFill{box-shadow:inset 0 0 0 1px var(--dsw-alias-bg-layer-1),inset 0 0 0 2px var(--dsw-alias-label-primary)}
 @media (prefers-reduced-motion: reduce){.dtu-cellFill{transition:none}}
 .dtu-heatScale{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .dtu-trend{position:relative;--dtu-plot-l:52px;--dtu-plot-r:44px}
@@ -751,6 +759,7 @@ window.__ModuleLoader__.load({
      */
     function Heatmap({ heatmap, days }) {
       const [chosen, setMetric] = React.useState(null)
+      const [hovered, setHover] = React.useState(null)
       const scrollRef = React.useRef(null)
       // A Host older than this Client answers without `heatmap`; the requested
       // range's days still fill the calendar rather than leaving it blank.
@@ -767,6 +776,7 @@ window.__ModuleLoader__.load({
       const scope = heatmap ? `近 ${weeks} 周` : '当前筛选'
       const today = Date.now()
       const firstWeek = weekStartOf(today - (weeks - 1) * 7 * DAY_MS)
+      const todayKey = dayKeyOf(new Date(today))
       // Days that carry a figure for each metric. Tokens are sparse on a machine
       // whose history is mostly imported sessions, so defaulting to the richer
       // dimension is what keeps the calendar from rendering as an empty grid.
@@ -804,6 +814,12 @@ window.__ModuleLoader__.load({
         }
         columns.push({ key: `w${week}`, days, monthLabel })
       }
+
+      // Anchored the way the trend chart anchors its tooltip — a pure share of
+      // the hovered column — and clamped so the box never leaves the plot. The
+      // 25px is the weekday axis and its gap, which the columns start after.
+      const tipLeft = (week) =>
+        'clamp(86px, calc(25px + (100% - 25px) * ' + Number((week + 0.5) / weeks).toFixed(6) + '), calc(100% - 86px))'
 
       const values = entries
         .map((day) => day[metric] ?? 0)
@@ -873,31 +889,54 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 { className: 'dtu-heat' },
-                columns.map((column) =>
+                columns.map((column, week) =>
                   h(
                     'div',
                     { key: column.key, className: 'dtu-week' },
                     column.days.map((day) => {
                       const entry = day.entry
-                      const value = day.value
+                      const level = levelOf(day.value)
                       return h(
                         'div',
                         {
                           key: day.key,
                           className: 'dtu-cell',
-                          title: entry
-                            ? `${day.key} · ${grouped(entry.tokens)} tokens · ${entry.turns} 轮 · ${entry.requests} 次请求`
-                            : day.key,
+                          'data-day': day.key,
+                          'data-level': level,
+                          'data-today': day.key === todayKey ? 'true' : undefined,
+                          // A native title used to be a day's only readout; the
+                          // dashboard already owns a tooltip, so the calendar
+                          // hovers into the very same box the trend chart shows.
+                          onMouseEnter: () =>
+                            setHover({
+                              week,
+                              day: day.key,
+                              tokens: entry ? entry.tokens : 0,
+                              turns: entry ? entry.turns : 0,
+                              requests: entry ? entry.requests : 0,
+                            }),
+                          onMouseLeave: () => setHover(null),
                         },
                         h('span', {
                           className: 'dtu-cellFill',
-                          style: { background: 'var(--dtu-heat-' + levelOf(value) + ')' },
+                          // Step 0 keeps the box but not the paint: the hairline
+                          // comes from the [data-level="0"] rule instead.
+                          style: { background: level === 0 ? 'transparent' : 'var(--dtu-heat-' + level + ')' },
                         }),
                       )
                     }),
                   ),
                 ),
               ),
+              hovered
+                ? h(
+                    'div',
+                    { className: 'dtu-tip', 'data-day': hovered.day, style: { left: tipLeft(hovered.week) } },
+                    h('div', { className: 'dtu-tipTitle' }, hovered.day + ' · ' + grouped(hovered.tokens) + ' tokens'),
+                    h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
+                    h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
+                  )
+                : null,
             ),
           ),
         ),

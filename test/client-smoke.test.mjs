@@ -174,16 +174,27 @@ function trendElementOf(record) {
   )
 }
 
+/** The Heatmap element inside the dashboard body. */
+function heatmapElementOf(record) {
+  const body = bodyElementOf(record)
+  hooks = []
+  hookIndex = 0
+  return findElement(
+    body.type(body.props),
+    (el) => typeof el.type === 'function' && el.props?.heatmap !== undefined,
+  )
+}
+
 /** Fire a handler on the element tree, then replay the component with the hook
  *  state it just set — the fake React keeps hooks only across back-to-back
  *  invocations of the same component, which is exactly one re-render. */
-function driveComponent(element, label, pick) {
+function driveComponent(element, label, pick, handler) {
   hooks = []
   hookIndex = 0
   const first = element.type(element.props)
   const target = pick(first)
   if (!target) throw new Error(`drive target not found: ${label}`)
-  const fire = target.props.onClick ?? target.props.onMouseEnter
+  const fire = (handler && target.props[handler]) || target.props.onClick || target.props.onMouseEnter
   fire()
   hookIndex = 0
   return element.type(element.props)
@@ -202,6 +213,10 @@ const pickChip = (groupLabel, itemLabel) => (tree) => {
 
 const pickColumn = (day) => (tree) =>
   findElement(tree, (el) => el.props?.className === 'dtu-col' && el.props?.['data-day'] === day)
+
+/** A calendar day cell, found the way `pickColumn` finds a bar. */
+const pickDay = (day) => (tree) =>
+  findElement(tree, (el) => el.props?.className === 'dtu-cell' && el.props?.['data-day'] === day)
 
 // ── loading the Client half ─────────────────────────────────────────────────
 
@@ -288,6 +303,13 @@ function cardBlock(id, label, buckets, cacheHitRate, turns) {
   }
 }
 
+/** The local date `daysAgo` back, in the key the Host ships. */
+function dayKeyAgo(daysAgo) {
+  const date = new Date(Date.now() - daysAgo * 86_400_000)
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 function summaryPayload() {
   return {
     version: 2,
@@ -355,10 +377,12 @@ function summaryPayload() {
     },
     heatmap: {
       weeks: 3,
+      // Anchored to today: this calendar's window is built from `Date.now()`,
+      // so a fixed date would quietly fall out of it as the clock moves on.
       days: [
-        { day: '2026-09-24', tokens: 0, turns: 2, requests: 2 },
-        { day: '2026-09-25', tokens: 5000, turns: 3, requests: 4 },
-        { day: '2026-09-26', tokens: 200, turns: 4, requests: 5 },
+        { day: dayKeyAgo(2), tokens: 0, turns: 2, requests: 2 },
+        { day: dayKeyAgo(1), tokens: 5000, turns: 3, requests: 4 },
+        { day: dayKeyAgo(0), tokens: 200, turns: 4, requests: 5 },
       ],
     },
   }
@@ -1591,12 +1615,49 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
   collectFills(tree)
   assert.ok(fills.length > 0, 'the legend and the active days must paint their swatches')
   for (const fill of fills) {
-    assert.match(String(fill.props.style.background), /^var\(--dtu-heat-[0-4]\)$/, 'each swatch paints a scale colour directly')
+    assert.match(
+      String(fill.props.style.background),
+      /^(transparent|var\(--dtu-heat-[1-4]\))$/,
+      'a day paints a scale colour directly, or stays bare when it has no activity',
+    )
     assert.ok(!('opacity' in fill.props.style), 'the colour scale must not be graded a second time by opacity')
   }
   assert.ok(
-    fills.some((fill) => String(fill.props.style.background) === 'var(--dtu-heat-0)'),
-    'empty days paint scale step 0, so the lowest step is neither dead nor restyled',
+    fills.some((fill) => String(fill.props.style.background) === 'transparent'),
+    'a day with nothing on it keeps the box but drops the paint',
+  )
+
+  // Every day cell declares its level and its date, exactly one of them is today,
+  // and the calendar ends on that very cell.
+  const calCells = []
+  const collectCells = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectCells)
+    if (node.props?.className === 'dtu-cell' && node.props?.['data-day']) calCells.push(node)
+    collectCells(node.children)
+  }
+  collectCells(tree)
+  assert.equal(calCells.length, 21, 'three weeks of day cells')
+  for (const cell of calCells) {
+    assert.match(String(cell.props['data-level']), /^[0-4]$/, 'a day cell carries the step it was painted with')
+    assert.ok(!('title' in cell.props), 'the native title gave way to the dashboard tooltip')
+  }
+  const ringed = calCells.filter((cell) => cell.props['data-today'] === 'true')
+  assert.equal(ringed.length, 1, 'exactly one cell is today')
+  assert.equal(ringed[0].props['data-day'], dayKeyAgo(0), 'and it is the local date the calendar ends on')
+  assert.ok(
+    calCells.indexOf(ringed[0]) >= calCells.length - 7,
+    'the today ring lands inside the last column, whatever weekday today is',
+  )
+
+  const styles2 = document.head.children[0].textContent
+  assert.ok(
+    /\.dtu-heat \.dtu-cell\[data-level="0"\]\{[^}]*background:transparent[^}]*var\(--dtu-heat-0\)\}/.test(styles2),
+    'an empty day is a step-0 hairline, not a solid block',
+  )
+  assert.ok(
+    /\.dtu-heat \.dtu-cell\[data-today="true"\] \.dtu-cellFill\{[^}]*--dsw-alias-bg-layer-1[^}]*--dsw-alias-label-primary\)\}/.test(styles2),
+    'today wears two rings, so one of them always reads against the cell colour',
   )
 
   // 53 fixed-size weeks do not fit every card, and this machine's activity sits
@@ -1651,6 +1712,56 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
   assert.ok(
     (styles.match(/@media \(prefers-reduced-motion: reduce\)\{([^}]*)\}/) ?? [])[1]?.includes('transition:none'),
     'the motion is opt-out for anyone who asks for less of it',
+  )
+})
+
+test('hovering a day raises the dashboard tooltip, anchored like the trend one', async () => {
+  const { plugin } = loadClient()
+  const { ctx, record } = fakeContext()
+  plugin.apply(ctx)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const today = dayKeyAgo(0)
+  const shown = render(driveComponent(heatmapElementOf(record), 'day ' + today, pickDay(today)))
+
+  let tip = null
+  const findTip = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(findTip)
+    if (node.props?.className === 'dtu-tip') tip = node
+    findTip(node.children)
+  }
+  findTip(shown)
+  assert.ok(tip, 'hovering a calendar day raises the same tooltip box the trend chart uses')
+  assert.equal(tip.props['data-day'], today, 'the box names the hovered day')
+  const text = collect(tip).join(' ')
+  assert.match(text, new RegExp(today + ' · 200 tokens'), 'the hovered day reads its own tokens')
+  assert.match(text, /轮次 4/, 'and its turns')
+  assert.match(text, /请求 5/, 'and its requests')
+  // The anchor is the trend chart's rule: the column centre as a fraction of the
+  // plot, clamped so the box can never leave it.
+  assert.equal(
+    tip.props.style.left,
+    'clamp(86px, calc(25px + (100% - 25px) * 0.833333), calc(100% - 86px))',
+    'the last of three columns anchors on that column, clamped to the plot',
+  )
+
+  // One mount, two steps: hovering raises the box, moving off the cell clears it.
+  const heat = heatmapElementOf(record)
+  hooks = []
+  hookIndex = 0
+  const enter = heat.type(heat.props)
+  findElement(enter, (el) => el.props?.['data-day'] === today).props.onMouseEnter()
+  hookIndex = 0
+  const afterEnter = heat.type(heat.props)
+  assert.ok(findElement(afterEnter, (el) => el.props?.className === 'dtu-tip'), 'the hover state raises the box')
+  findElement(afterEnter, (el) => el.props?.['data-day'] === today).props.onMouseLeave()
+  hookIndex = 0
+  const afterLeave = heat.type(heat.props)
+  assert.equal(
+    findElement(afterLeave, (el) => el.props?.className === 'dtu-tip'),
+    null,
+    'and moving off the cell takes it away again',
   )
 })
 
