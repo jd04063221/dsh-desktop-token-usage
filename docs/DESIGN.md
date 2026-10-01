@@ -295,8 +295,12 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 
 - **热力图**：CSS grid（`grid-auto-flow: column` + 7 行），格子用主题背景色 + 内层 `opacity` 分级，
   固定 53 周 × 7 天，日期按本地时区逐格推算；
-- **趋势图**：柱子是 flex 列 + 百分比高度的堆叠 div（文字由 HTML 渲染，保持清晰），
-  缓存命中率折线用一层 `preserveAspectRatio="none"` 的 SVG overlay（折线没有文字，压缩不失真）；
+- **趋势图**：柱是 flex 列 + 百分比高度的堆叠 div（文字由 HTML 渲染，保持清晰）；命中率是下方独立的细条，
+  用一层 `preserveAspectRatio="none"` 的 SVG overlay 画单调三次曲线（曲线没有文字，压缩不失真），
+  两段共用同一条 X 轴。命中率条的纵轴由可见范围的数据决定（min − 10% 跨度 → max + 10% 跨度），
+  所以 90%–98% 的命中率也能看出起伏，而不是贴在 0–100% 的顶端；
+- **配色**：三套色板（primer / cvd / muted）全部落成根节点的 CSS 变量，浅/深由 `prefers-color-scheme` 覆盖——
+  宿主只提供 `--dsw-alias-*` 语义 token，没有图表色板 token（实测 `app.asar` 里 `--dsw-chart-*` 为 0 命中）。
 - **环形图**：SVG `circle` + `stroke-dasharray/​stroke-dashoffset`，按占比切段。
 
 ## 5. 验证证据

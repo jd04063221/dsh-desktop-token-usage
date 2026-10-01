@@ -12,6 +12,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > reports `schema` or `absent` for this plugin, together with whether the process has been restarted since your change; `boot.json`
 > is rewritten by every `apply`, so its existence only tells you when the fiber was last remounted.
 
+## [Unreleased]
+
+### Added
+
+- **A grouping option**: by actual model (same-named models merged across providers), by API provider, or both. With
+  "both", the trend section and the breakdown section each carry their own chip, switchable independently.
+- **A palette option**: primer (GitHub's default), cvd (Okabe-Ito, colour-blind friendly) or muted (low-saturation),
+  each shipping a light and a dark set of variables that follows the system theme automatically.
+
+### Changed
+
+- **The trend section is now two stacked panels**: token stacked bars on top, a thin cache hit-rate strip below, both
+  sharing one X axis; the hit rate is no longer squeezed onto the bars' 0–100% right-hand axis.
+- **The hit-rate strip's Y axis is data-driven**: the period's min/max set the range with 10% of the span padded at
+  each end; the curve keeps the monotone cubic interpolation.
+- **Hit-rate semantics**: miss now includes cacheWrite (hit / (hit + miss)), matching the official definition; on this
+  machine cacheWrite is always 0, so no number changes.
+
 ## [0.1.4] - 2026-09-30
 
 ### Changed
