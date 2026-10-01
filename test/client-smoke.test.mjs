@@ -1655,6 +1655,17 @@ test('the heatmap renders a Monday-aligned calendar with axes and a metric switc
     /\.dtu-heat \.dtu-cell\[data-level="0"\]\{[^}]*background:transparent[^}]*var\(--dtu-heat-0\)\}/.test(styles2),
     'an empty day is a step-0 hairline, not a solid block',
   )
+  // The hover tooltip hangs past the shortest calendar by a pixel or so. If the
+  // scroll box may scroll vertically, that pixel raises a vertical bar, which
+  // narrows the box and drags in a horizontal bar after it.
+  const scrollRule = (styles2.match(/\.dtu-heatScroll\{([^}]*)\}/) ?? [])[1]
+  assert.ok(scrollRule?.includes('overflow-x:auto'), 'the calendar still scrolls sideways on a narrow card')
+  assert.ok(
+    scrollRule.includes('overflow-y:hidden'),
+    'and never vertically: a tooltip must not be able to raise a scrollbar',
+  )
+  const headroom = Number((/padding-bottom:(\d+)px/.exec(scrollRule) ?? [])[1])
+  assert.ok(headroom >= 12, 'the scroll box keeps bottom headroom for the tooltip to hang into')
   assert.ok(
     /\.dtu-heat \.dtu-cell\[data-today="true"\] \.dtu-cellFill\{[^}]*--dsw-alias-bg-layer-1[^}]*--dsw-alias-label-primary\)\}/.test(styles2),
     'today wears two rings, so one of them always reads against the cell colour',

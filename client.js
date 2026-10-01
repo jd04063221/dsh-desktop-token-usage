@@ -281,7 +281,12 @@ window.__ModuleLoader__.load({
 .dtu-dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
 .dtu-heatHead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dtu-heatControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.dtu-heatScroll{overflow-x:auto;padding-bottom:4px}
+/* Sideways only. A scroll box that also scrolls vertically grows a scrollbar
+   the moment the hover tooltip hangs past the calendar — it sits 6px down and is
+   ~90px tall, while the shortest calendar (an 11px cell) is 95px, so 1px of
+   overhang was enough to raise a vertical bar, narrow the box and drag in the
+   horizontal one after it. The extra bottom padding is the tooltip's headroom. */
+.dtu-heatScroll{overflow-x:auto;overflow-y:hidden;padding-bottom:12px}
 /* 53 fixed weeks, but the card is not: the whole block stretches to the row it
    sits in, every week growing on the same 11px basis so the cells stay square
    and the month axis keeps step. Only a card too narrow for an 11px cell falls
