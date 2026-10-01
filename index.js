@@ -48,17 +48,17 @@ export const Config = Schema.object({
   hours: Schema.natural()
     .max(23)
     .default(0)
-    .description('看板「配置窗口」里最近多少小时的用量（0-23）；0 表示关闭这个窗口。'),
+    .description('0-23 · 0 = off'),
   days: Schema.natural()
     .max(30)
     .default(0)
-    .description('看板「配置窗口」里最近多少天的用量（1-30）；0 表示关闭这个窗口。'),
+    .description('0-30 · 0 = off'),
   groupBy: Schema.union([...GROUP_BY])
     .default('both')
-    .description('看板统计口径：按实际模型 / 按 API 供应商 / 都统计（都统计时图表上出现切换 chip）。'),
+    .description('model / provider / both'),
   palette: Schema.union([...PALETTES])
     .default('primer')
-    .description('看板配色：primer（GitHub 默认）/ cvd（色盲友好）/ muted（低饱和）。浅色与深色由系统主题决定。'),
+    .description('primer / cvd / muted · light/dark follows DSH'),
 })
 
 /**
@@ -255,7 +255,7 @@ class UsageService {
   async setConfig(patch) {
     const next = parseConfigPatch(patch)
     const entry = this.entry()
-    if (entry === undefined) throw new Error('找不到本插件的 Loader 条目，无法写入配置')
+    if (entry === undefined) throw new Error('no Loader entry for dsh-desktop-token-usage; edit cordis.patch.yml instead')
     await this.configEditor.edit(entry, (current) => ({ ...current, ...next }))
     return { ...this.windows, ...next, writable: true }
   }

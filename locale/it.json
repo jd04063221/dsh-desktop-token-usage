@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Utilizzo token",
+    "description": "Raccoglie l'utilizzo dei token DSH dai log locali delle sessioni: totali, andamento giornaliero, percentuale di cache hit e quota per modello. Nessun accesso alla rete. Verificato su DSH Desktop 0.1.7-rc.2 e 0.2.0-rc.1."
+  }
+}

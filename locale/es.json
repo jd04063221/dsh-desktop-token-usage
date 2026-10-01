@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Uso de Tokens",
+    "description": "Agrega el uso de Tokens de DSH a partir de registros de sesiones locales: totales, tendencia diaria, tasa de aciertos de caché y cuota por modelo. No accede a la red. Verificado en DSH Desktop 0.1.7-rc.2 y 0.2.0-rc.1."
+  }
+}

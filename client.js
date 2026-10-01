@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
 
     const SERIES = ['var(--dtu-s1)', 'var(--dtu-s2)', 'var(--dtu-s3)', 'var(--dtu-s4)', 'var(--dtu-s5)']
     const OTHER = 'var(--dtu-other)'
-    /** The folded bucket key: its label is 其他 everywhere. */
+    /** The folded bucket key: every language labels it through `trend.other`. */
     const OTHER_KEY = '__other__'
     /** Ranks beyond this fold into the grey bucket. */
     const TOP_N = 5
@@ -32,22 +32,1354 @@ window.__ModuleLoader__.load({
     /** Quiet refresh period; keeps hour windows honest without polling hard. */
     const REFRESH_MS = 5 * 60_000
 
+    // ── locale ──────────────────────────────────────────────────────────────
+
+    /**
+     * Copy lives in `locales/<id>.json` and reaches this file as one generated
+     * block: the browser half is a single dependency-free file, so it cannot read
+     * a JSON file at runtime. See `scripts/build-dicts.mjs`.
+     */
+    const NS = REMOTE_PACKAGE
+
+/* @generated from locales/*.json by scripts/build-dicts.mjs - do not edit by hand */
+    const DICT = {
+      'en': {
+        'range.7d': 'Last 7 days',
+        'range.14d': 'Last 14 days',
+        'range.30d': 'Last 30 days',
+        'range.90d': 'Last 90 days',
+        'range.all': 'All',
+        'range.custom': 'Custom',
+        'range.aria': 'Time range',
+        'source.all': 'All',
+        'source.client': 'Desktop · Web',
+        'source.cli': 'CLI · Bots',
+        'source.subagent': 'Subagents',
+        'source.aria': 'Session source',
+        'group.model': 'By model',
+        'group.provider': 'By provider',
+        'group.both': 'Both (switchable in the charts)',
+        'group.aria': 'Grouping',
+        'action.refresh': 'Refresh',
+        'config.title': 'Time span of the dashboard\'s configured windows',
+        'config.hint': '0 turns a window off; with both off only the all-time figure is shown. Windows snap to the local hour and apply as soon as they are saved; they do not follow the source filter at the top of the dashboard.',
+        'config.hours': 'Hours back (0-23)',
+        'config.days': 'Days back (0-30)',
+        'config.palette': 'Palette',
+        'config.palette.primer': 'Primer (GitHub default)',
+        'config.palette.cvd': 'Colour-blind friendly (Okabe–Ito)',
+        'config.palette.muted': 'Muted',
+        'config.save': 'Save',
+        'config.saving': 'Saving…',
+        'config.current': 'Current: {text}',
+        'config.readonly': 'This profile exposes no config editor; edit its cordis.patch.yml instead.',
+        'window.hours': 'Last {hours} hours',
+        'window.days': 'Last {days} days',
+        'window.all': 'All time',
+        'sidebar.title': 'Token usage',
+        'sidebar.open': 'Open the token usage dashboard',
+        'sidebar.rail': 'Token usage · {value}',
+        'sidebar.error': 'Could not read - open for details',
+        'sidebar.errorShort': 'Read failed',
+        'detail.inputOutput': 'Input {input} · Output {output}',
+        'detail.cacheHit': 'Cache hit {rate}',
+        'state.loading': 'Reading local session logs…',
+        'state.empty': 'No usage recorded for this filter.',
+        'state.waiting': 'Waiting for the Host usage service… (if this persists, check the console with Ctrl+Shift+I)',
+        'state.error': 'Could not read: {message}',
+        'state.configError': 'Could not read the configuration',
+        'state.badResponse': 'The usage service returned an unrecognised response',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': 'Uncached input {uncached} · Cache read {cached} · Output {output}',
+        'card.turns': 'Completed turns',
+        'card.requests': 'Requests',
+        'card.requests.sub': 'Billable model calls',
+        'card.activeDays': 'Active days',
+        'card.hitRate': 'Average cache hit rate',
+        'card.hitRate.sub': 'Cache hits / (hits + misses)',
+        'card.topProvider': 'Top provider',
+        'card.topModel': 'Top model',
+        'card.share': '{percent} of total',
+        'section.windows': 'Configured windows',
+        'section.windows.hint': 'Fixed look-back windows; they ignore the source filter above. Adjust them under Plugins → Token usage.',
+        'section.heat': 'Activity heatmap',
+        'section.heat.hint': 'Follows the source filter; the calendar always shows the full history',
+        'section.trend': 'Daily token trend',
+        'section.breakdown': 'Usage breakdown',
+        'heat.metric.aria': 'Heatmap metric',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'Turns',
+        'heat.scope.weeks': 'Last {weeks} weeks',
+        'heat.scope.filter': 'Current filter',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': 'turns',
+        'heat.less': 'Less',
+        'heat.more': 'More',
+        'trend.hint': 'Bars stack tokens; the cache hit-rate curve is overlaid on the same chart (real percentages on the right)',
+        'trend.other': 'Other',
+        'trend.hitRate': 'Cache hit rate',
+        'trend.breakdownAria': 'Breakdown by',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'Turns',
+        'tip.requests': 'Requests',
+        'dash.title': 'Token usage',
+        'filter.start': 'Start date',
+        'filter.end': 'End date',
+        'foot.updated': 'Updated {time}',
+        'foot.source': 'Source: local session logs ({files}, offline)',
+        'foot.inference1': 'Sources are inferred from local signals: desktop and web cannot be told apart offline, and both are reported as ',
+        'foot.inference2': '; ',
+        'foot.inference3': ' covers sessions with no client.',
+        'error.render': '{package} failed to render ({label}): {message}',
+        'a11y.dashboard': 'Central dashboard',
+        'a11y.sidebar': 'Sidebar card',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.one': '{scope} · {days} day with activity · {total} {unit} in total',
+        'heat.legend.other': '{scope} · {days} days with activity · {total} {unit} in total',
+        'unit.turns.one': '{n} turn',
+        'unit.turns.other': '{n} turns',
+        'unit.sessions.one': '{n} session',
+        'unit.sessions.other': '{n} sessions',
+        'unit.files.one': '{n} file',
+        'unit.files.other': '{n} files',
+      },
+      'zh': {
+        'range.7d': '最近 7 天',
+        'range.14d': '最近 14 天',
+        'range.30d': '最近 30 天',
+        'range.90d': '最近 90 天',
+        'range.all': '全部',
+        'range.custom': '自定义',
+        'range.aria': '时间范围',
+        'source.all': '全部',
+        'source.client': '桌面·网页',
+        'source.cli': '命令行·机器人',
+        'source.subagent': '子代理',
+        'source.aria': '会话来源',
+        'group.model': '按模型',
+        'group.provider': '按供应商',
+        'group.both': '都统计（图表上可切换）',
+        'group.aria': '统计口径',
+        'action.refresh': '刷新',
+        'config.title': '看板「配置窗口」的时间跨度',
+        'config.hint': '0 表示关闭该窗口；两个都关闭时只显示累计值。窗口按本地时间取整到小时，保存后立即生效；它们不随看板上方的来源筛选变化。',
+        'config.hours': '最近多少小时（0-23）',
+        'config.days': '最近多少天（0-30）',
+        'config.palette': '配色方案',
+        'config.palette.primer': 'Primer（GitHub 默认）',
+        'config.palette.cvd': '色盲友好（Okabe–Ito）',
+        'config.palette.muted': '低饱和雾面',
+        'config.save': '保存',
+        'config.saving': '保存中…',
+        'config.current': '当前：{text}',
+        'config.readonly': '这个 profile 没有提供配置编辑器，请改 profile 的 cordis.patch.yml。',
+        'window.hours': '近 {hours} 小时',
+        'window.days': '近 {days} 天',
+        'window.all': '累计',
+        'sidebar.title': 'Token 用量',
+        'sidebar.open': '打开 Token 用量看板',
+        'sidebar.rail': 'Token 用量 · {value}',
+        'sidebar.error': '读取失败，点开查看原因',
+        'sidebar.errorShort': '读取失败',
+        'detail.inputOutput': '输入 {input} · 输出 {output}',
+        'detail.cacheHit': '缓存命中 {rate}',
+        'state.loading': '正在读取本地会话日志…',
+        'state.empty': '该筛选条件下没有用量记录。',
+        'state.waiting': '等待 Host 用量服务…（若长时间不变，按 Ctrl+Shift+I 看控制台报错）',
+        'state.error': '读取失败：{message}',
+        'state.configError': '配置读取失败',
+        'state.badResponse': '用量服务返回了无法识别的响应',
+        'card.tokens': 'Tokens 用量',
+        'card.tokens.sub': '未缓存输入 {uncached} · 缓存读取 {cached} · 输出 {output}',
+        'card.turns': '完成轮次',
+        'card.requests': '请求数量',
+        'card.requests.sub': '计费模型调用次数',
+        'card.activeDays': '活跃天数',
+        'card.hitRate': '平均缓存命中率',
+        'card.hitRate.sub': '缓存命中 / (缓存命中 + 未命中)',
+        'card.topProvider': '最常用供应商',
+        'card.topModel': '最常用模型',
+        'card.share': '占比 {percent}',
+        'section.windows': '配置窗口',
+        'section.windows.hint': '固定回溯窗口，不随上方来源筛选变化；在 插件 → Token 用量 里调整',
+        'section.heat': '活跃热力图',
+        'section.heat.hint': '跟随来源筛选；日历始终显示完整历史',
+        'section.trend': '按天 Token 趋势',
+        'section.breakdown': '用量拆分',
+        'heat.metric.aria': '热力图指标',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': '轮次',
+        'heat.scope.weeks': '近 {weeks} 周',
+        'heat.scope.filter': '当前筛选',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': '轮',
+        'heat.less': '较少',
+        'heat.more': '较多',
+        'trend.hint': '柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）',
+        'trend.other': '其他',
+        'trend.hitRate': '缓存命中率',
+        'trend.breakdownAria': '拆分口径',
+        'tip.tokens': 'Tokens',
+        'tip.turns': '轮次',
+        'tip.requests': '请求',
+        'dash.title': 'Token 用量',
+        'filter.start': '开始日期',
+        'filter.end': '结束日期',
+        'foot.updated': '统计截至 {time}',
+        'foot.source': '数据源：本地会话日志（{files}，未联网）',
+        'foot.inference1': '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归「',
+        'foot.inference2': '」；「',
+        'foot.inference3': '」指无客户端的会话。',
+        'error.render': '{package} 渲染失败（{label}）：{message}',
+        'a11y.dashboard': '中央看板',
+        'a11y.sidebar': '侧边栏卡片',
+        'list.separator': '、',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.other': '{scope}共 {days} 天有活动 · 合计 {total} {unit}',
+        'unit.turns.other': '{n} 轮',
+        'unit.sessions.other': '会话 {n} 个',
+        'unit.files.other': '{n} 个文件',
+      },
+      'zh-TW': {
+        'range.7d': '最近 7 天',
+        'range.14d': '最近 14 天',
+        'range.30d': '最近 30 天',
+        'range.90d': '最近 90 天',
+        'range.all': '全部',
+        'range.custom': '自訂',
+        'range.aria': '時間範圍',
+        'source.all': '全部',
+        'source.client': '桌面 · 網頁',
+        'source.cli': 'CLI · 機器人',
+        'source.subagent': '子代理',
+        'source.aria': '工作階段來源',
+        'group.model': '按模型',
+        'group.provider': '按供應商',
+        'group.both': '都統計（圖表上可切換）',
+        'group.aria': '分組方式',
+        'action.refresh': '重新整理',
+        'config.title': '儀表板「設定窗口」的時間跨度',
+        'config.hint': '0 表示關閉該窗口；兩個都關閉時只顯示累計值。窗口按本地時間取整到小時，儲存後立即生效；它們不隨儀表板頂部的來源篩選變化。',
+        'config.hours': '最近多少小時（0-23）',
+        'config.days': '最近多少天（0-30）',
+        'config.palette': '配色',
+        'config.palette.primer': 'Primer（GitHub 預設）',
+        'config.palette.cvd': '色盲友善（Okabe–Ito）',
+        'config.palette.muted': '低飽和霧面',
+        'config.save': '儲存',
+        'config.saving': '儲存中…',
+        'config.current': '目前：{text}',
+        'config.readonly': '這個 profile 沒有提供設定編輯器，請改編其 cordis.patch.yml。',
+        'window.hours': '近 {hours} 小時',
+        'window.days': '近 {days} 天',
+        'window.all': '累計',
+        'sidebar.title': 'Token 用量',
+        'sidebar.open': '開啟 Token 用量儀表板',
+        'sidebar.rail': 'Token 用量 · {value}',
+        'sidebar.error': '讀取失敗，點開查看詳情',
+        'sidebar.errorShort': '讀取失敗',
+        'detail.inputOutput': '輸入 {input} · 輸出 {output}',
+        'detail.cacheHit': '快取命中 {rate}',
+        'state.loading': '正在讀取本機工作階段記錄…',
+        'state.empty': '此篩選條件下沒有用量紀錄。',
+        'state.waiting': '正在等待 Host 用量服務…（若長時間不變，按 Ctrl+Shift+I 查看主控台）',
+        'state.error': '無法讀取：{message}',
+        'state.configError': '無法讀取設定',
+        'state.badResponse': '用量服務傳回了無法識別的回應',
+        'card.tokens': 'Tokens 用量',
+        'card.tokens.sub': '未快取輸入 {uncached} · 快取讀取 {cached} · 輸出 {output}',
+        'card.turns': '完成輪次',
+        'card.requests': '請求',
+        'card.requests.sub': '計費的模型呼叫',
+        'card.activeDays': '活躍天數',
+        'card.hitRate': '平均快取命中率',
+        'card.hitRate.sub': '快取命中 / (快取命中 + 未命中)',
+        'card.topProvider': '最常用供應商',
+        'card.topModel': '最常用模型',
+        'card.share': '佔比 {percent}',
+        'section.windows': '設定窗口',
+        'section.windows.hint': '固定的回溯窗口；不隨上方的來源篩選變化。可在 外掛 → Token 用量 中調整。',
+        'section.heat': '活動熱力圖',
+        'section.heat.hint': '跟隨來源篩選；日曆始終顯示完整歷史',
+        'section.trend': '每日 Token 趨勢',
+        'section.breakdown': '用量拆分',
+        'heat.metric.aria': '熱力圖指標',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': '輪次',
+        'heat.scope.weeks': '近 {weeks} 週',
+        'heat.scope.filter': '目前篩選',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': '輪次',
+        'heat.less': '較少',
+        'heat.more': '較多',
+        'trend.hint': '長條堆疊 Token；快取命中率曲線疊加在同一張圖上（右側標示實際百分比）',
+        'trend.other': '其他',
+        'trend.hitRate': '快取命中率',
+        'trend.breakdownAria': '拆分方式',
+        'tip.tokens': 'Tokens',
+        'tip.turns': '輪次',
+        'tip.requests': '請求',
+        'dash.title': 'Token 用量',
+        'filter.start': '開始日期',
+        'filter.end': '結束日期',
+        'foot.updated': '更新於 {time}',
+        'foot.source': '資料來源：本機工作階段記錄（{files}，離線）',
+        'foot.inference1': '來源由本機訊號推斷：桌面與網頁離線時無法區分，二者同歸「',
+        'foot.inference2': '」；「',
+        'foot.inference3': '」指沒有用戶端的工作階段。',
+        'error.render': '{package} 渲染失敗（{label}）：{message}',
+        'a11y.dashboard': '中央儀表板',
+        'a11y.sidebar': '側邊欄卡片',
+        'list.separator': '、',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.other': '{scope}共 {days} 天有活動 · 合計 {total} {unit}',
+        'unit.turns.other': '{n} 輪次',
+        'unit.sessions.other': '{n} 個工作階段',
+        'unit.files.other': '{n} 個檔案',
+      },
+      'zh-HK': {
+        'range.7d': '最近 7 天',
+        'range.14d': '最近 14 天',
+        'range.30d': '最近 30 天',
+        'range.90d': '最近 90 天',
+        'range.all': '全部',
+        'range.custom': '自訂',
+        'range.aria': '時間範圍',
+        'source.all': '全部',
+        'source.client': '桌面 · 網頁',
+        'source.cli': 'CLI · 機械人',
+        'source.subagent': '子代理',
+        'source.aria': '工作階段來源',
+        'group.model': '按模型',
+        'group.provider': '按供應商',
+        'group.both': '兩者都要（圖表上可切換）',
+        'group.aria': '統計口徑',
+        'action.refresh': '重新整理',
+        'config.title': '儀表板「配置窗口」的時間跨度',
+        'config.hint': '0 表示關閉該窗口；兩個都關閉時只顯示累計值。窗口按本地時間取整到小時，儲存後立即生效；它們不會跟隨儀表板頂部的來源篩選。',
+        'config.hours': '最近多少小時（0-23）',
+        'config.days': '最近多少天（0-30）',
+        'config.palette': '配色',
+        'config.palette.primer': 'Primer（GitHub 預設）',
+        'config.palette.cvd': '色盲友好（Okabe–Ito）',
+        'config.palette.muted': '低飽和霧面',
+        'config.save': '儲存',
+        'config.saving': '儲存中…',
+        'config.current': '目前：{text}',
+        'config.readonly': '這個 profile 沒有提供配置編輯器，請改為編輯它的 cordis.patch.yml。',
+        'window.hours': '近 {hours} 小時',
+        'window.days': '近 {days} 天',
+        'window.all': '累計',
+        'sidebar.title': 'Token 用量',
+        'sidebar.open': '開啟 Token 用量儀表板',
+        'sidebar.rail': 'Token 用量 · {value}',
+        'sidebar.error': '讀取失敗，點開查看詳情',
+        'sidebar.errorShort': '讀取失敗',
+        'detail.inputOutput': '輸入 {input} · 輸出 {output}',
+        'detail.cacheHit': '緩存命中 {rate}',
+        'state.loading': '正在讀取本地工作階段日誌…',
+        'state.empty': '這個篩選條件下沒有用量記錄。',
+        'state.waiting': '等待 Host 用量服務…（若長時間如此，按 Ctrl+Shift+I 查看控制台）',
+        'state.error': '讀取失敗：{message}',
+        'state.configError': '無法讀取配置',
+        'state.badResponse': '用量服務回傳了無法識別的回應',
+        'card.tokens': 'Tokens 用量',
+        'card.tokens.sub': '未緩存輸入 {uncached} · 緩存讀取 {cached} · 輸出 {output}',
+        'card.turns': '完成輪次',
+        'card.requests': '請求數',
+        'card.requests.sub': '計費的模型調用次數',
+        'card.activeDays': '活躍天數',
+        'card.hitRate': '平均緩存命中率',
+        'card.hitRate.sub': '緩存命中 / (緩存命中 + 未命中)',
+        'card.topProvider': '最常用供應商',
+        'card.topModel': '最常用模型',
+        'card.share': '佔比 {percent}',
+        'section.windows': '配置窗口',
+        'section.windows.hint': '固定回溯窗口，不隨上方的來源篩選變化；在 插件 → Token 用量 裡調整。',
+        'section.heat': '活動熱力圖',
+        'section.heat.hint': '跟隨來源篩選；日曆始終顯示完整歷史',
+        'section.trend': '每日 Token 趨勢',
+        'section.breakdown': '用量拆分',
+        'heat.metric.aria': '熱力圖指標',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': '輪次',
+        'heat.scope.weeks': '近 {weeks} 週',
+        'heat.scope.filter': '目前篩選',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': '輪',
+        'heat.less': '較少',
+        'heat.more': '較多',
+        'trend.hint': '柱按 Token 堆疊；緩存命中率曲線疊加在同一張圖上（右側為真實百分比）',
+        'trend.other': '其他',
+        'trend.hitRate': '緩存命中率',
+        'trend.breakdownAria': '拆分口徑',
+        'tip.tokens': 'Tokens',
+        'tip.turns': '輪次',
+        'tip.requests': '請求',
+        'dash.title': 'Token 用量',
+        'filter.start': '開始日期',
+        'filter.end': '結束日期',
+        'foot.updated': '統計截至 {time}',
+        'foot.source': '數據來源：本地工作階段日誌（{files}，未聯網）',
+        'foot.inference1': '來源按本地可觀測信號推斷：桌面端與網頁端無法離線區分，二者同歸「',
+        'foot.inference2': '」；「',
+        'foot.inference3': '」指沒有客戶端的工作階段。',
+        'error.render': '{package} 渲染失敗（{label}）：{message}',
+        'a11y.dashboard': '中央儀表板',
+        'a11y.sidebar': '側邊欄卡片',
+        'list.separator': '、',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.other': '{scope}共 {days} 天有活動 · 合計 {total} {unit}',
+        'unit.turns.other': '{n} 輪',
+        'unit.sessions.other': '{n} 個工作階段',
+        'unit.files.other': '{n} 個檔案',
+      },
+      'de': {
+        'range.7d': 'Letzte 7 Tage',
+        'range.14d': 'Letzte 14 Tage',
+        'range.30d': 'Letzte 30 Tage',
+        'range.90d': 'Letzte 90 Tage',
+        'range.all': 'Alle',
+        'range.custom': 'Benutzerdefiniert',
+        'range.aria': 'Zeitraum',
+        'source.all': 'Alle',
+        'source.client': 'Desktop · Web',
+        'source.cli': 'CLI · Bots',
+        'source.subagent': 'Subagenten',
+        'source.aria': 'Sitzungsquelle',
+        'group.model': 'Nach Modell',
+        'group.provider': 'Nach Anbieter',
+        'group.both': 'Beides (in den Diagrammen umschaltbar)',
+        'group.aria': 'Gruppierung',
+        'action.refresh': 'Aktualisieren',
+        'config.title': 'Zeitraum der konfigurierten Fenster des Dashboards',
+        'config.hint': '0 schaltet ein Fenster ab; wenn beide aus sind, wird nur der Gesamtwert angezeigt. Die Fenster rasten auf die volle Stunde und gelten sofort nach dem Speichern; sie folgen nicht dem Quellfilter oben im Dashboard.',
+        'config.hours': 'Stunden zurück (0-23)',
+        'config.days': 'Tage zurück (0-30)',
+        'config.palette': 'Palette',
+        'config.palette.primer': 'Primer (GitHub-Standard)',
+        'config.palette.cvd': 'Farbenblind-freundlich (Okabe–Ito)',
+        'config.palette.muted': 'Gedämpft',
+        'config.save': 'Speichern',
+        'config.saving': 'Speichern…',
+        'config.current': 'Aktuell: {text}',
+        'config.readonly': 'Dieses Profil bietet keinen Konfigurationseditor; bearbeiten Sie stattdessen seine cordis.patch.yml.',
+        'window.hours': 'Letzte {hours} Stunden',
+        'window.days': 'Letzte {days} Tage',
+        'window.all': 'Gesamter Zeitraum',
+        'sidebar.title': 'Token-Nutzung',
+        'sidebar.open': 'Dashboard der Token-Nutzung öffnen',
+        'sidebar.rail': 'Token-Nutzung · {value}',
+        'sidebar.error': 'Konnte nicht gelesen werden - Details öffnen',
+        'sidebar.errorShort': 'Lesen fehlgeschlagen',
+        'detail.inputOutput': 'Eingabe {input} · Ausgabe {output}',
+        'detail.cacheHit': 'Cache-Treffer {rate}',
+        'state.loading': 'Lokale Sitzungsprotokolle werden gelesen…',
+        'state.empty': 'Für diesen Filter ist keine Nutzung aufgezeichnet.',
+        'state.waiting': 'Warten auf den Host-Nutzungsdienst… (wenn das anhält, prüfen Sie die Konsole mit Ctrl+Shift+I)',
+        'state.error': 'Konnte nicht gelesen werden: {message}',
+        'state.configError': 'Die Konfiguration konnte nicht gelesen werden',
+        'state.badResponse': 'Der Nutzungsdienst hat eine unbekannte Antwort zurückgegeben',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': 'Ungecachte Eingabe {uncached} · Cache-Lesungen {cached} · Ausgabe {output}',
+        'card.turns': 'Abgeschlossene Runden',
+        'card.requests': 'Anfragen',
+        'card.requests.sub': 'Abrechenbare Modellaufrufe',
+        'card.activeDays': 'Aktive Tage',
+        'card.hitRate': 'Durchschnittliche Cache-Trefferquote',
+        'card.hitRate.sub': 'Cache-Treffer / (Treffer + Fehltreffer)',
+        'card.topProvider': 'Führender Anbieter',
+        'card.topModel': 'Führendes Modell',
+        'card.share': '{percent} des Gesamtwerts',
+        'section.windows': 'Konfigurierte Fenster',
+        'section.windows.hint': 'Feste Rückblick-Fenster; sie ignorieren den Quellfilter oben. Anpassen unter Plugins → Token-Nutzung.',
+        'section.heat': 'Aktivitäts-Heatmap',
+        'section.heat.hint': 'Folgt dem Quellfilter; der Kalender zeigt immer die vollständige Historie',
+        'section.trend': 'Täglicher Token-Verlauf',
+        'section.breakdown': 'Nutzungsaufschlüsselung',
+        'heat.metric.aria': 'Heatmap-Metrik',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'Runden',
+        'heat.scope.weeks': 'Letzte {weeks} Wochen',
+        'heat.scope.filter': 'Aktueller Filter',
+        'heat.unit.tokens': 'Tokens',
+        'heat.unit.turns': 'Runden',
+        'heat.less': 'Weniger',
+        'heat.more': 'Mehr',
+        'trend.hint': 'Die Balken stapeln Tokens; die Kurve der Cache-Trefferquote liegt über demselben Diagramm (reale Prozentwerte rechts)',
+        'trend.other': 'Sonstige',
+        'trend.hitRate': 'Cache-Trefferquote',
+        'trend.breakdownAria': 'Aufschlüsselung nach',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'Runden',
+        'tip.requests': 'Anfragen',
+        'dash.title': 'Token-Nutzung',
+        'filter.start': 'Startdatum',
+        'filter.end': 'Enddatum',
+        'foot.updated': 'Aktualisiert {time}',
+        'foot.source': 'Quelle: Lokale Sitzungsprotokolle ({files}, offline)',
+        'foot.inference1': 'Quellen werden aus lokalen Signalen abgeleitet: Desktop und Web lassen sich offline nicht unterscheiden; beide werden gemeldet als ',
+        'foot.inference2': '; ',
+        'foot.inference3': ' deckt Sitzungen ohne Client ab.',
+        'error.render': '{package} konnte nicht gerendert werden ({label}): {message}',
+        'a11y.dashboard': 'Zentrales Dashboard',
+        'a11y.sidebar': 'Karte in der Seitenleiste',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.one': '{scope} · {days} Tag mit Aktivität · {total} {unit} insgesamt',
+        'heat.legend.other': '{scope} · {days} Tage mit Aktivität · {total} {unit} insgesamt',
+        'unit.turns.one': '{n} Runde',
+        'unit.turns.other': '{n} Runden',
+        'unit.sessions.one': '{n} Sitzung',
+        'unit.sessions.other': '{n} Sitzungen',
+        'unit.files.one': '{n} Datei',
+        'unit.files.other': '{n} Dateien',
+      },
+      'fr': {
+        'range.7d': '7 derniers jours',
+        'range.14d': '14 derniers jours',
+        'range.30d': '30 derniers jours',
+        'range.90d': '90 derniers jours',
+        'range.all': 'Tout',
+        'range.custom': 'Personnalisé',
+        'range.aria': 'Plage temporelle',
+        'source.all': 'Toutes',
+        'source.client': 'Desktop · Web',
+        'source.cli': 'CLI · Bots',
+        'source.subagent': 'Sous-agents',
+        'source.aria': 'Source de la session',
+        'group.model': 'Par modèle',
+        'group.provider': 'Par fournisseur',
+        'group.both': 'Les deux (commutable dans les graphiques)',
+        'group.aria': 'Regroupement',
+        'action.refresh': 'Actualiser',
+        'config.title': 'Plage temporelle des fenêtres configurées du tableau de bord',
+        'config.hint': '0 désactive une fenêtre ; avec les deux désactivées, seule la valeur cumulée de toute la période est affichée. Les fenêtres sont arrondies à l\'heure locale et prennent effet dès leur enregistrement ; elles ne suivent pas le filtre de source en haut du tableau de bord.',
+        'config.hours': 'Heures en arrière (0-23)',
+        'config.days': 'Jours en arrière (0-30)',
+        'config.palette': 'Palette',
+        'config.palette.primer': 'Primer (défaut GitHub)',
+        'config.palette.cvd': 'Accessible aux daltoniens (Okabe–Ito)',
+        'config.palette.muted': 'Atténuée',
+        'config.save': 'Enregistrer',
+        'config.saving': 'Enregistrement…',
+        'config.current': 'Actuel : {text}',
+        'config.readonly': 'Ce profile n\'expose pas d\'éditeur de configuration ; modifiez plutôt son cordis.patch.yml.',
+        'window.hours': 'Dernières {hours} heures',
+        'window.days': 'Derniers {days} jours',
+        'window.all': 'Tout l\'historique',
+        'sidebar.title': 'Utilisation des tokens',
+        'sidebar.open': 'Ouvrir le tableau de bord d\'utilisation des tokens',
+        'sidebar.rail': 'Utilisation des tokens · {value}',
+        'sidebar.error': 'Lecture impossible - ouvrir pour plus de détails',
+        'sidebar.errorShort': 'Échec de la lecture',
+        'detail.inputOutput': 'Entrée {input} · Sortie {output}',
+        'detail.cacheHit': 'Réussite du cache {rate}',
+        'state.loading': 'Lecture des journaux de sessions locaux…',
+        'state.empty': 'Aucun usage enregistré pour ce filtre.',
+        'state.waiting': 'En attente du service d\'usage du Host… (si cela persiste, vérifiez la console avec Ctrl+Shift+I)',
+        'state.error': 'Lecture impossible : {message}',
+        'state.configError': 'Impossible de lire la configuration',
+        'state.badResponse': 'Le service d\'usage a renvoyé une réponse non reconnue',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': 'Entrée non mise en cache {uncached} · Lecture de cache {cached} · Sortie {output}',
+        'card.turns': 'Tours terminés',
+        'card.requests': 'Requêtes',
+        'card.requests.sub': 'Appels de modèle facturables',
+        'card.activeDays': 'Jours d\'activité',
+        'card.hitRate': 'Taux de réussite du cache moyen',
+        'card.hitRate.sub': 'Réussites du cache / (réussites + échecs)',
+        'card.topProvider': 'Fournisseur principal',
+        'card.topModel': 'Modèle principal',
+        'card.share': '{percent} du total',
+        'section.windows': 'Fenêtres configurées',
+        'section.windows.hint': 'Fenêtres de recul fixes ; elles ignorent le filtre de source ci-dessus. Ajustez-les sous Plugins → Utilisation des tokens.',
+        'section.heat': 'Carte de chaleur d\'activité',
+        'section.heat.hint': 'Suit le filtre de source ; le calendrier montre toujours tout l\'historique',
+        'section.trend': 'Tendance quotidienne des tokens',
+        'section.breakdown': 'Répartition de l\'usage',
+        'heat.metric.aria': 'Métrique de la carte de chaleur',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'Tours',
+        'heat.scope.weeks': 'Dernières {weeks} semaines',
+        'heat.scope.filter': 'Filtre actuel',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': 'tours',
+        'heat.less': 'Moins',
+        'heat.more': 'Plus',
+        'trend.hint': 'Les barres empilent les tokens ; la courbe de taux de réussite du cache est superposée au même graphique (pourcentages réels à droite)',
+        'trend.other': 'Autre',
+        'trend.hitRate': 'Taux de réussite du cache',
+        'trend.breakdownAria': 'Répartition par',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'Tours',
+        'tip.requests': 'Requêtes',
+        'dash.title': 'Utilisation des tokens',
+        'filter.start': 'Date de début',
+        'filter.end': 'Date de fin',
+        'foot.updated': 'Mis à jour {time}',
+        'foot.source': 'Source : journaux de sessions locaux ({files}, hors ligne)',
+        'foot.inference1': 'Les sources sont déduites de signaux locaux : le desktop et le web ne peuvent pas être distingués hors ligne, et les deux sont rapportés comme ',
+        'foot.inference2': '; ',
+        'foot.inference3': ' couvrent les sessions sans client.',
+        'error.render': '{package} n\'a pas pu s\'afficher ({label}) : {message}',
+        'a11y.dashboard': 'Tableau de bord central',
+        'a11y.sidebar': 'Carte de la barre latérale',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.one': '{scope} · {days} jour avec activité · {total} {unit} au total',
+        'heat.legend.many': '{scope} · {days} jours avec activité · {total} {unit} au total',
+        'heat.legend.other': '{scope} · {days} jours avec activité · {total} {unit} au total',
+        'unit.turns.one': '{n} tour',
+        'unit.turns.many': '{n} tours',
+        'unit.turns.other': '{n} tours',
+        'unit.sessions.one': '{n} session',
+        'unit.sessions.many': '{n} sessions',
+        'unit.sessions.other': '{n} sessions',
+        'unit.files.one': '{n} fichier',
+        'unit.files.many': '{n} fichiers',
+        'unit.files.other': '{n} fichiers',
+      },
+      'es': {
+        'range.7d': 'Últimos 7 días',
+        'range.14d': 'Últimos 14 días',
+        'range.30d': 'Últimos 30 días',
+        'range.90d': 'Últimos 90 días',
+        'range.all': 'Todo',
+        'range.custom': 'Personalizado',
+        'range.aria': 'Intervalo de tiempo',
+        'source.all': 'Todos',
+        'source.client': 'Desktop · Web',
+        'source.cli': 'CLI · Bots',
+        'source.subagent': 'Subagentes',
+        'source.aria': 'Origen de la sesión',
+        'group.model': 'Por modelo',
+        'group.provider': 'Por proveedor',
+        'group.both': 'Ambos (cambiable en los gráficos)',
+        'group.aria': 'Agrupación',
+        'action.refresh': 'Actualizar',
+        'config.title': 'Intervalo de tiempo de las ventanas configuradas del panel',
+        'config.hint': '0 desactiva una ventana; con las dos desactivadas solo se muestra la cifra de todo el periodo. Las ventanas se ajustan a la hora local y se aplican en cuanto se guardan; no siguen el filtro de origen de la parte superior del panel.',
+        'config.hours': 'Horas hacia atrás (0-23)',
+        'config.days': 'Días hacia atrás (0-30)',
+        'config.palette': 'Paleta',
+        'config.palette.primer': 'Primer (predeterminado de GitHub)',
+        'config.palette.cvd': 'Apto para daltónicos (Okabe–Ito)',
+        'config.palette.muted': 'Desaturado',
+        'config.save': 'Guardar',
+        'config.saving': 'Guardando…',
+        'config.current': 'Actual: {text}',
+        'config.readonly': 'Este profile no expone un editor de configuración; edite en su lugar su cordis.patch.yml.',
+        'window.hours': 'Últimas {hours} horas',
+        'window.days': 'Últimos {days} días',
+        'window.all': 'Todo el periodo',
+        'sidebar.title': 'Uso de Tokens',
+        'sidebar.open': 'Abrir el panel de uso de Tokens',
+        'sidebar.rail': 'Uso de Tokens · {value}',
+        'sidebar.error': 'No se pudo leer - ábralo para ver los detalles',
+        'sidebar.errorShort': 'Error de lectura',
+        'detail.inputOutput': 'Entrada {input} · Salida {output}',
+        'detail.cacheHit': 'Acierto de caché {rate}',
+        'state.loading': 'Leyendo registros de sesiones locales…',
+        'state.empty': 'No hay uso registrado con este filtro.',
+        'state.waiting': 'Esperando al servicio de uso del Host… (si persiste, compruebe la consola con Ctrl+Shift+I)',
+        'state.error': 'No se pudo leer: {message}',
+        'state.configError': 'No se pudo leer la configuración',
+        'state.badResponse': 'El servicio de uso devolvió una respuesta no reconocida',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': 'Entrada sin caché {uncached} · Lectura de caché {cached} · Salida {output}',
+        'card.turns': 'Turnos completados',
+        'card.requests': 'Solicitudes',
+        'card.requests.sub': 'Llamadas al modelo facturables',
+        'card.activeDays': 'Días activos',
+        'card.hitRate': 'Tasa media de aciertos de caché',
+        'card.hitRate.sub': 'Aciertos de caché / (aciertos + fallos)',
+        'card.topProvider': 'Proveedor principal',
+        'card.topModel': 'Modelo principal',
+        'card.share': '{percent} del total',
+        'section.windows': 'Ventanas configuradas',
+        'section.windows.hint': 'Ventanas fijas hacia atrás en el tiempo; ignoran el filtro de origen de arriba. Ajuste las ventanas en Plugins → Uso de Tokens.',
+        'section.heat': 'Mapa de calor de actividad',
+        'section.heat.hint': 'Sigue el filtro de origen; el calendario siempre muestra todo el historial',
+        'section.trend': 'Tendencia diaria de Tokens',
+        'section.breakdown': 'Desglose del uso',
+        'heat.metric.aria': 'Métrica del mapa de calor',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'Turnos',
+        'heat.scope.weeks': 'Últimas {weeks} semanas',
+        'heat.scope.filter': 'Filtro actual',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': 'turnos',
+        'heat.less': 'Menos',
+        'heat.more': 'Más',
+        'trend.hint': 'Las barras apilan los Tokens; la curva de tasa de aciertos de caché se superpone en el mismo gráfico (porcentajes reales a la derecha)',
+        'trend.other': 'Otros',
+        'trend.hitRate': 'Tasa de aciertos de caché',
+        'trend.breakdownAria': 'Desglose por',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'Turnos',
+        'tip.requests': 'Solicitudes',
+        'dash.title': 'Uso de Tokens',
+        'filter.start': 'Fecha de inicio',
+        'filter.end': 'Fecha de fin',
+        'foot.updated': 'Actualizado {time}',
+        'foot.source': 'Origen: registros de sesiones locales ({files}, sin conexión)',
+        'foot.inference1': 'Los orígenes se infieren de señales locales: escritorio y web no se pueden distinguir sin conexión, y ambos se reportan como ',
+        'foot.inference2': '; ',
+        'foot.inference3': ' cubre las sesiones sin cliente.',
+        'error.render': '{package} no se pudo renderizar ({label}): {message}',
+        'a11y.dashboard': 'Panel central',
+        'a11y.sidebar': 'Tarjeta de la barra lateral',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.one': '{scope} · {days} día con actividad · {total} {unit} en total',
+        'heat.legend.many': '{scope} · {days} días con actividad · {total} {unit} en total',
+        'heat.legend.other': '{scope} · {days} días con actividad · {total} {unit} en total',
+        'unit.turns.one': '{n} turno',
+        'unit.turns.many': '{n} turnos',
+        'unit.turns.other': '{n} turnos',
+        'unit.sessions.one': '{n} sesión',
+        'unit.sessions.many': '{n} sesiones',
+        'unit.sessions.other': '{n} sesiones',
+        'unit.files.one': '{n} archivo',
+        'unit.files.many': '{n} archivos',
+        'unit.files.other': '{n} archivos',
+      },
+      'it': {
+        'range.7d': 'Ultimi 7 giorni',
+        'range.14d': 'Ultimi 14 giorni',
+        'range.30d': 'Ultimi 30 giorni',
+        'range.90d': 'Ultimi 90 giorni',
+        'range.all': 'Tutto',
+        'range.custom': 'Personalizzato',
+        'range.aria': 'Intervallo di tempo',
+        'source.all': 'Tutte',
+        'source.client': 'Desktop · Web',
+        'source.cli': 'CLI · Bots',
+        'source.subagent': 'Subagent',
+        'source.aria': 'Origine della sessione',
+        'group.model': 'Per modello',
+        'group.provider': 'Per provider',
+        'group.both': 'Entrambi (commutabile nei grafici)',
+        'group.aria': 'Raggruppamento',
+        'action.refresh': 'Aggiorna',
+        'config.title': 'Intervallo di tempo delle finestre configurate del pannello',
+        'config.hint': '0 disattiva una finestra; con entrambe disattive viene mostrato solo il valore complessivo. Le finestre si arrotondano all\'ora locale e si applicano appena salvate; non seguono il filtro origine in cima al pannello.',
+        'config.hours': 'Ore indietro (0-23)',
+        'config.days': 'Giorni indietro (0-30)',
+        'config.palette': 'Palette',
+        'config.palette.primer': 'Primer (predefinito di GitHub)',
+        'config.palette.cvd': 'Adatto ai daltonici (Okabe–Ito)',
+        'config.palette.muted': 'Desaturato',
+        'config.save': 'Salva',
+        'config.saving': 'Salvataggio…',
+        'config.current': 'Corrente: {text}',
+        'config.readonly': 'Questo profile non espone un editor di configurazione; modifica invece il suo cordis.patch.yml.',
+        'window.hours': 'Ultime {hours} ore',
+        'window.days': 'Ultimi {days} giorni',
+        'window.all': 'Tutto il periodo',
+        'sidebar.title': 'Utilizzo token',
+        'sidebar.open': 'Apri il pannello dell\'utilizzo token',
+        'sidebar.rail': 'Utilizzo token · {value}',
+        'sidebar.error': 'Lettura non riuscita - apri per i dettagli',
+        'sidebar.errorShort': 'Lettura non riuscita',
+        'detail.inputOutput': 'Input {input} · Output {output}',
+        'detail.cacheHit': 'Cache hit {rate}',
+        'state.loading': 'Lettura dei log locali delle sessioni…',
+        'state.empty': 'Nessun utilizzo registrato per questo filtro.',
+        'state.waiting': 'In attesa del servizio di utilizzo dell\'Host… (se persiste, controlla la console con Ctrl+Shift+I)',
+        'state.error': 'Lettura non riuscita: {message}',
+        'state.configError': 'Impossibile leggere la configurazione',
+        'state.badResponse': 'Il servizio di utilizzo ha restituito una risposta non riconosciuta',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': 'Input senza cache {uncached} · Lettura cache {cached} · Output {output}',
+        'card.turns': 'Turni completati',
+        'card.requests': 'Richieste',
+        'card.requests.sub': 'Chiamate al modello fatturabili',
+        'card.activeDays': 'Giorni attivi',
+        'card.hitRate': 'Percentuale media di cache hit',
+        'card.hitRate.sub': 'Cache hit / (hit + miss)',
+        'card.topProvider': 'Provider principale',
+        'card.topModel': 'Modello principale',
+        'card.share': '{percent} del totale',
+        'section.windows': 'Finestre configurate',
+        'section.windows.hint': 'Finestre di retrospettiva fisse; ignorano il filtro origine sopra. Modificale in Plugin → Utilizzo token.',
+        'section.heat': 'Mappa di calore dell\'attività',
+        'section.heat.hint': 'Segue il filtro origine; il calendario mostra sempre lo storico completo',
+        'section.trend': 'Andamento giornaliero dei token',
+        'section.breakdown': 'Scomposizione dell\'utilizzo',
+        'heat.metric.aria': 'Metrica della mappa di calore',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'Turni',
+        'heat.scope.weeks': 'Ultime {weeks} settimane',
+        'heat.scope.filter': 'Filtro corrente',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': 'turni',
+        'heat.less': 'Meno',
+        'heat.more': 'Più',
+        'trend.hint': 'Le barre impilano i token; la curva della percentuale di cache hit è sovrapposta allo stesso grafico (percentuali reali a destra)',
+        'trend.other': 'Altro',
+        'trend.hitRate': 'Percentuale di cache hit',
+        'trend.breakdownAria': 'Scomposizione per',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'Turni',
+        'tip.requests': 'Richieste',
+        'dash.title': 'Utilizzo token',
+        'filter.start': 'Data di inizio',
+        'filter.end': 'Data di fine',
+        'foot.updated': 'Aggiornato {time}',
+        'foot.source': 'Origine: log locali delle sessioni ({files}, offline)',
+        'foot.inference1': 'Le origini si deducono da segnali locali: desktop e web non si distinguono offline e vengono entrambi riportati come ',
+        'foot.inference2': '; ',
+        'foot.inference3': ' copre le sessioni senza client.',
+        'error.render': '{package} non è riuscito a eseguire il rendering ({label}): {message}',
+        'a11y.dashboard': 'Pannello centrale',
+        'a11y.sidebar': 'Scheda della barra laterale',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.one': '{scope} · {days} giorno con attività · {total} {unit} in totale',
+        'heat.legend.many': '{scope} · {days} giorni con attività · {total} {unit} in totale',
+        'heat.legend.other': '{scope} · {days} giorni con attività · {total} {unit} in totale',
+        'unit.turns.one': '{n} turno',
+        'unit.turns.many': '{n} turni',
+        'unit.turns.other': '{n} turni',
+        'unit.sessions.one': '{n} sessione',
+        'unit.sessions.many': '{n} sessioni',
+        'unit.sessions.other': '{n} sessioni',
+        'unit.files.one': '{n} file',
+        'unit.files.many': '{n} file',
+        'unit.files.other': '{n} file',
+      },
+      'ja': {
+        'range.7d': '直近7日間',
+        'range.14d': '直近14日間',
+        'range.30d': '直近30日間',
+        'range.90d': '直近90日間',
+        'range.all': '全期間',
+        'range.custom': 'カスタム',
+        'range.aria': '時間範囲',
+        'source.all': 'すべて',
+        'source.client': 'デスクトップ · Web',
+        'source.cli': 'CLI · ボット',
+        'source.subagent': 'サブエージェント',
+        'source.aria': 'セッションのソース',
+        'group.model': 'モデル別',
+        'group.provider': 'プロバイダー別',
+        'group.both': '両方（チャートで切替可能）',
+        'group.aria': '集計単位',
+        'action.refresh': '更新',
+        'config.title': 'ダッシュボードの設定ウィンドウの時間範囲',
+        'config.hint': '0でウィンドウをオフにします。両方オフのときは全期間の値のみが表示されます。ウィンドウはローカル時計に基づき時間単位に丸められ、保存するとすぐに適用されます。ダッシュボード上部のソースフィルターには追従しません。',
+        'config.hours': '遡る時間数（0-23）',
+        'config.days': '遡る日数（0-30）',
+        'config.palette': 'パレット',
+        'config.palette.primer': 'Primer（GitHubデフォルト）',
+        'config.palette.cvd': '色覚多様性に配慮（Okabe–Ito）',
+        'config.palette.muted': 'ミュート',
+        'config.save': '保存',
+        'config.saving': '保存中…',
+        'config.current': '現在：{text}',
+        'config.readonly': 'このprofileには設定エディターがありません。代わりにそのcordis.patch.ymlを編集してください。',
+        'window.hours': '直近{hours}時間',
+        'window.days': '直近{days}日',
+        'window.all': '全期間',
+        'sidebar.title': 'Token使用量',
+        'sidebar.open': 'Token使用量ダッシュボードを開く',
+        'sidebar.rail': 'Token使用量 · {value}',
+        'sidebar.error': '読み取れませんでした — 開いて詳細を確認',
+        'sidebar.errorShort': '読み取り失敗',
+        'detail.inputOutput': '入力 {input} · 出力 {output}',
+        'detail.cacheHit': 'キャッシュヒット {rate}',
+        'state.loading': 'ローカルのセッションログを読み取り中…',
+        'state.empty': 'このフィルターに一致する使用量の記録はありません。',
+        'state.waiting': 'Hostの使用量サービスを待機中…（続く場合は Ctrl+Shift+I でコンソールを確認）',
+        'state.error': '読み取れませんでした：{message}',
+        'state.configError': '設定を読み取れませんでした',
+        'state.badResponse': '使用量サービスから認識できない応答が返されました',
+        'card.tokens': 'Tokens',
+        'card.tokens.sub': '未キャッシュ入力 {uncached} · キャッシュ読み取り {cached} · 出力 {output}',
+        'card.turns': '完了ターン',
+        'card.requests': 'リクエスト',
+        'card.requests.sub': '課金対象のモデル呼び出し',
+        'card.activeDays': 'アクティブな日数',
+        'card.hitRate': '平均キャッシュヒット率',
+        'card.hitRate.sub': 'キャッシュヒット / (ヒット + ミス)',
+        'card.topProvider': 'トッププロバイダー',
+        'card.topModel': 'トップモデル',
+        'card.share': '全体の{percent}',
+        'section.windows': '設定ウィンドウ',
+        'section.windows.hint': '固定の遡及ウィンドウで、上のソースフィルターには影響されません。プラグイン → Token使用量 で調整できます。',
+        'section.heat': 'アクティビティヒートマップ',
+        'section.heat.hint': 'ソースフィルターに追従します。カレンダーは常に全履歴を表示します',
+        'section.trend': '日次のTokenトレンド',
+        'section.breakdown': '使用量の内訳',
+        'heat.metric.aria': 'ヒートマップの指標',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': 'ターン',
+        'heat.scope.weeks': '直近{weeks}週間',
+        'heat.scope.filter': '現在のフィルター',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': 'ターン',
+        'heat.less': '少ない',
+        'heat.more': '多い',
+        'trend.hint': '棒はTokenを積み上げ、キャッシュヒット率の曲線を同じチャートに重ねています（右側が実際のパーセンテージ）',
+        'trend.other': 'その他',
+        'trend.hitRate': 'キャッシュヒット率',
+        'trend.breakdownAria': '内訳の単位',
+        'tip.tokens': 'Tokens',
+        'tip.turns': 'ターン',
+        'tip.requests': 'リクエスト',
+        'dash.title': 'Token使用量',
+        'filter.start': '開始日',
+        'filter.end': '終了日',
+        'foot.updated': '最終更新 {time}',
+        'foot.source': 'ソース：ローカルのセッションログ（{files}、オフライン）',
+        'foot.inference1': 'ソースはローカルのシグナルから推定されます。デスクトップとWebはオフラインでは区別できず、どちらも「',
+        'foot.inference2': '」として扱われ、「',
+        'foot.inference3': '」はクライアントを持たないセッションです。',
+        'error.render': '{package} のレンダリングに失敗しました（{label}）：{message}',
+        'a11y.dashboard': '中央ダッシュボード',
+        'a11y.sidebar': 'サイドバーカード',
+        'list.separator': '、',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.other': '{scope} · 活動があった日数 {days} 日 · 合計 {total} {unit}',
+        'unit.turns.other': '{n}ターン',
+        'unit.sessions.other': '{n}セッション',
+        'unit.files.other': '{n}ファイル',
+      },
+      'ko': {
+        'range.7d': '최근 7일',
+        'range.14d': '최근 14일',
+        'range.30d': '최근 30일',
+        'range.90d': '최근 90일',
+        'range.all': '전체',
+        'range.custom': '사용자 지정',
+        'range.aria': '시간 범위',
+        'source.all': '전체',
+        'source.client': '데스크톱 · 웹',
+        'source.cli': 'CLI · 봇',
+        'source.subagent': '서브에이전트',
+        'source.aria': '세션 소스',
+        'group.model': '모델별',
+        'group.provider': '공급자별',
+        'group.both': '둘 다 (차트에서 전환 가능)',
+        'group.aria': '분류',
+        'action.refresh': '새로고침',
+        'config.title': '대시보드의 설정된 윈도우 시간 범위',
+        'config.hint': '0이면 해당 윈도우를 끕니다. 둘 다 끄면 전체 기간 수치만 표시됩니다. 윈도우는 로컬 시간의 정각에 맞추고 저장 즉시 적용됩니다. 대시보드 상단의 소스 필터를 따르지 않습니다.',
+        'config.hours': '최근 몇 시간(0-23)',
+        'config.days': '최근 며칠(0-30)',
+        'config.palette': '팔레트',
+        'config.palette.primer': 'Primer(GitHub 기본값)',
+        'config.palette.cvd': '색각 장애 친화적(Okabe–Ito)',
+        'config.palette.muted': '저채도',
+        'config.save': '저장',
+        'config.saving': '저장 중…',
+        'config.current': '현재: {text}',
+        'config.readonly': '이 profile에는 설정 편집기가 없습니다. 대신 profile의 cordis.patch.yml을 편집하세요.',
+        'window.hours': '최근 {hours}시간',
+        'window.days': '최근 {days}일',
+        'window.all': '전체 기간',
+        'sidebar.title': 'Token 사용량',
+        'sidebar.open': 'Token 사용량 대시보드 열기',
+        'sidebar.rail': 'Token 사용량 · {value}',
+        'sidebar.error': '읽기 실패 - 자세한 내용은 열어서 확인하세요',
+        'sidebar.errorShort': '읽기 실패',
+        'detail.inputOutput': '입력 {input} · 출력 {output}',
+        'detail.cacheHit': '캐시 적중 {rate}',
+        'state.loading': '로컬 세션 로그를 읽는 중…',
+        'state.empty': '이 필터에는 사용량 기록이 없습니다.',
+        'state.waiting': 'Host 사용량 서비스를 기다리는 중…(계속되면 Ctrl+Shift+I로 콘솔을 확인하세요)',
+        'state.error': '읽기 실패: {message}',
+        'state.configError': '설정을 읽지 못했습니다',
+        'state.badResponse': '사용량 서비스가 인식할 수 없는 응답을 반환했습니다',
+        'card.tokens': 'Token 사용량',
+        'card.tokens.sub': '미캐시 입력 {uncached} · 캐시 읽기 {cached} · 출력 {output}',
+        'card.turns': '완료된 턴',
+        'card.requests': '요청',
+        'card.requests.sub': '과금 대상 모델 호출',
+        'card.activeDays': '활동 일수',
+        'card.hitRate': '평균 캐시 적중률',
+        'card.hitRate.sub': '캐시 적중 / (적중 + 미적중)',
+        'card.topProvider': '최다 공급자',
+        'card.topModel': '최다 모델',
+        'card.share': '전체의 {percent}',
+        'section.windows': '설정된 윈도우',
+        'section.windows.hint': '고정된 과거 기간 윈도우입니다. 위의 소스 필터는 무시합니다. 플러그인 → Token 사용량에서 조정하세요.',
+        'section.heat': '활동 히트맵',
+        'section.heat.hint': '소스 필터를 따릅니다. 캘린더는 항상 전체 이력을 표시합니다',
+        'section.trend': '일별 Token 추세',
+        'section.breakdown': '사용량 구성',
+        'heat.metric.aria': '히트맵 지표',
+        'heat.metric.tokens': 'Tokens',
+        'heat.metric.turns': '턴',
+        'heat.scope.weeks': '최근 {weeks}주',
+        'heat.scope.filter': '현재 필터',
+        'heat.unit.tokens': 'tokens',
+        'heat.unit.turns': '턴',
+        'heat.less': '적음',
+        'heat.more': '많음',
+        'trend.hint': '막대는 Token을 쌓고, 캐시 적중률 곡선을 같은 차트에 겹칩니다(오른쪽이 실제 백분율)',
+        'trend.other': '기타',
+        'trend.hitRate': '캐시 적중률',
+        'trend.breakdownAria': '구성 기준',
+        'tip.tokens': 'Tokens',
+        'tip.turns': '턴',
+        'tip.requests': '요청',
+        'dash.title': 'Token 사용량',
+        'filter.start': '시작 날짜',
+        'filter.end': '종료 날짜',
+        'foot.updated': '{time} 기준 갱신',
+        'foot.source': '소스: 로컬 세션 로그({files}, 오프라인)',
+        'foot.inference1': '소스는 로컬 신호로 추론합니다. 데스크톱과 웹은 오프라인에서 구분할 수 없어 둘 모두 다음으로 표시됩니다: ',
+        'foot.inference2': '; ',
+        'foot.inference3': '는 클라이언트가 없는 세션을 포함합니다.',
+        'error.render': '{package} 렌더링 실패({label}): {message}',
+        'a11y.dashboard': '중앙 대시보드',
+        'a11y.sidebar': '사이드바 카드',
+        'list.separator': ', ',
+        'lang.zh-TW': '繁體中文（臺灣）',
+        'lang.zh-HK': '繁體中文（香港）',
+        'lang.de': 'Deutsch',
+        'lang.fr': 'Français',
+        'lang.es': 'Español',
+        'lang.it': 'Italiano',
+        'lang.ja': '日本語',
+        'lang.ko': '한국어',
+        'heat.legend.other': '{scope} · 활동한 날 {days}일 · 합계 {total} {unit}',
+        'unit.turns.other': '{n} 턴',
+        'unit.sessions.other': '{n}개 세션',
+        'unit.files.other': '{n}개 파일',
+      },
+    }
+/* @end generated */
+
+    /**
+     * Language packs this half adds to the DSH catalog. DSH ships `zh` and `en`
+     * itself; every other entry here is ours, and `fallback` is the language both
+     * DSH and this file fall back to for a key the pack does not carry.
+     */
+    const PACKS = [
+      { id: 'zh-TW', fallback: 'zh' },
+      { id: 'zh-HK', fallback: 'zh' },
+      { id: 'de', fallback: 'en' },
+      { id: 'fr', fallback: 'en' },
+      { id: 'es', fallback: 'en' },
+      { id: 'it', fallback: 'en' },
+      { id: 'ja', fallback: 'en' },
+      { id: 'ko', fallback: 'en' },
+    ]
+
+    /** Lookup chain per language: the pack, its parent language, then English. */
+    const FALLBACKS = { en: null, zh: 'en' }
+    for (const pack of PACKS) FALLBACKS[pack.id] = pack.fallback
+
+    const CHAINS = new Map()
+    function chainOf(locale) {
+      const start = DICT[locale] ? locale : 'en'
+      let chain = CHAINS.get(start)
+      if (!chain) {
+        chain = []
+        let current = start
+        while (current && !chain.includes(current)) {
+          chain.push(current)
+          current = FALLBACKS[current] ?? null
+        }
+        CHAINS.set(start, chain)
+      }
+      return chain
+    }
+
+    function interpolate(template, params) {
+      return template.replace(/\{(\w+)\}/g, (match, name) => (name in params ? String(params[name]) : match))
+    }
+
+    /** A key no language carries renders as itself, which is what a test can see. */
+    function translate(locale, key, params) {
+      for (const id of chainOf(locale)) {
+        const value = DICT[id][key]
+        if (value !== undefined) return params ? interpolate(value, params) : value
+      }
+      return key
+    }
+
+    /** The locale service, once it is mounted; absent on a Host that ships none. */
+    let localeFace = null
+    let activeLocale = 'en'
+    let detachFace = null
+
+    /**
+     * Renders subscribe here rather than to the service directly. The two plugins
+     * mount in whichever order the shell picks, so the service can arrive after
+     * this half's first render — a subscription taken at mount time would have
+     * captured `null` and never fired again.
+     */
+    const localeWatchers = new Set()
+    function watchLocale(watcher) {
+      localeWatchers.add(watcher)
+      return () => localeWatchers.delete(watcher)
+    }
+    function notifyLocale() {
+      for (const watcher of [...localeWatchers]) watcher()
+    }
+
+    /**
+     * Add one language pack to DSH's catalog. A language DSH already ships cannot be
+     * added again — the service refuses the duplicate — and a throw here would take
+     * the whole dashboard down over a menu entry. Stand down instead: the service's
+     * own definition is the better one, and the dictionary below still gets
+     * registered, so the copy is ours either way.
+     */
+    function addPack(locale, pack) {
+      try {
+        return locale.addLanguage({ id: pack.id, label: translate('en', 'lang.' + pack.id), fallback: pack.fallback })
+      } catch (error) {
+        console.warn('[dsh-desktop-token-usage] the locale service already ships', pack.id, error)
+        return () => {}
+      }
+    }
+
+    /** Take (or drop) the locale service, then re-read the language through it. */
+    function attachFace(face) {
+      if (detachFace) {
+        detachFace()
+        detachFace = null
+      }
+      localeFace = face && typeof face.getLocale === 'function' ? face : null
+      if (localeFace && typeof localeFace.subscribe === 'function') {
+        detachFace = localeFace.subscribe(notifyLocale)
+      }
+      const before = activeLocale
+      syncLocale()
+      if (activeLocale !== before) notifyLocale()
+    }
+
+    const ID_BY_LOWER = Object.fromEntries(Object.keys(DICT).map((id) => [id.toLowerCase(), id]))
+    /** Chinese script and region tags that name one of our two Traditional packs. */
+    const ALIASES = {
+      'zh-hans': 'zh', 'zh-cn': 'zh', 'zh-sg': 'zh', 'zh-my': 'zh',
+      'zh-hant': 'zh-TW', 'zh-tw': 'zh-TW', 'zh-hk': 'zh-HK', 'zh-mo': 'zh-HK',
+    }
+
+    /** The dictionary id a tag names, or null when no dictionary here speaks it. */
+    function supportedId(tag) {
+      const text = String(tag ?? '').trim().toLowerCase()
+      if (text === '') return null
+      if (ID_BY_LOWER[text]) return ID_BY_LOWER[text]
+      if (ALIASES[text]) return ALIASES[text]
+      const parts = text.split('-')
+      if (parts[0] === 'zh') {
+        if (parts.some((part) => part === 'hant' || part === 'tw')) return 'zh-TW'
+        if (parts.some((part) => part === 'hk' || part === 'mo')) return 'zh-HK'
+        return 'zh'
+      }
+      return ID_BY_LOWER[parts[0]] ?? null
+    }
+
+    /** Browser languages, best match first — the rule DSH itself uses. */
+    function browserLocale() {
+      const list =
+        typeof navigator === 'undefined'
+          ? []
+          : Array.isArray(navigator.languages)
+            ? navigator.languages
+            : [navigator.language]
+      for (const tag of list) {
+        const hit = supportedId(tag)
+        if (hit) return hit
+      }
+      return 'en'
+    }
+
+    /**
+     * Re-read the active language. With the locale service mounted we follow it
+     * exactly (a tag we have no dictionary for becomes English, matching the
+     * service's own fallback); without one, the browser decides.
+     */
+    function syncLocale() {
+      if (localeFace && typeof localeFace.getLocale === 'function') {
+        const snapshot = localeFace.getLocale()
+        if (snapshot && typeof snapshot.active === 'string') {
+          activeLocale = supportedId(snapshot.active) ?? 'en'
+          return activeLocale
+        }
+      }
+      activeLocale = browserLocale()
+      return activeLocale
+    }
+
+    /**
+     * Re-read the language on every render and re-render on a switch. Watching the
+     * hub here rather than trusting the slot factory to re-run is what makes a
+     * switch visible without a remount, and it costs nothing when no service is
+     * mounted.
+     */
+    function useLocale() {
+      const [, setRevision] = React.useState(0)
+      React.useEffect(() => watchLocale(() => setRevision((revision) => revision + 1)), [])
+      syncLocale()
+    }
+
+    const FORMATS = new Map()
+    function formatOf(kind, locale) {
+      const key = kind + '|' + locale
+      let format = FORMATS.get(key)
+      if (format === undefined) {
+        format =
+          kind === 'grouped'
+            ? new Intl.NumberFormat(locale)
+            : kind === 'compact'
+              ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 2 })
+              : kind === 'plain'
+                ? new Intl.NumberFormat(locale, { useGrouping: false })
+                : kind === 'percent'
+                  ? new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 })
+                : kind === 'date'
+                  ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' })
+                  : kind === 'monthDay'
+                    ? new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit' })
+                    : null
+        FORMATS.set(key, format)
+      }
+      return format
+    }
+
+    const grouped = (value) => formatOf('grouped', activeLocale).format(Math.round(value))
+    /**
+     * A compact figure, with one correction: a locale that has no unit for this
+     * magnitude returns the plain digits and drops the separators the grouped form
+     * keeps (zh renders 5,200 as "5200"), so that band is handed to `grouped`.
+     */
+    function compact(value) {
+      if (!Number.isFinite(value) || value === 0) return '0'
+      const short = formatOf('compact', activeLocale).format(value)
+      return short === formatOf('plain', activeLocale).format(value) ? grouped(value) : short
+    }
+    const percent = (ratio) => formatOf('percent', activeLocale).format(ratio)
+    const stamp = (ms) => formatOf('date', activeLocale).format(new Date(ms))
+
+    /** A `YYYY-MM-DD` data key as a local month and day. */
+    function dayLabel(key) {
+      const [year, month, day] = key.split('-').map(Number)
+      return formatOf('monthDay', activeLocale).format(new Date(year, month - 1, day))
+    }
+
+    /** Weekday initials and short month names, Monday first. */
+    const CALENDARS = new Map()
+    function calendar() {
+      let value = CALENDARS.get(activeLocale)
+      if (!value) {
+        const weekday = new Intl.DateTimeFormat(activeLocale, { weekday: 'narrow' })
+        const month = new Intl.DateTimeFormat(activeLocale, { month: 'short' })
+        // 2024-01-01 was a Monday, and the calendar's columns start there too.
+        value = {
+          days: [0, 1, 2, 3, 4, 5, 6].map((index) => weekday.format(new Date(2024, 0, 1 + index))),
+          months: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((index) => month.format(new Date(2024, index, 1))),
+        }
+        CALENDARS.set(activeLocale, value)
+      }
+      return value
+    }
+
+    const t = (key, params) => translate(activeLocale, key, params)
+
+    const PLURALS = new Map()
+    function pluralCategory(count) {
+      let rules = PLURALS.get(activeLocale)
+      if (!rules) {
+        rules = new Intl.PluralRules(activeLocale)
+        PLURALS.set(activeLocale, rules)
+      }
+      return rules.select(count)
+    }
+
+    /**
+     * Pick the CLDR plural form of a countable key. `{n}` carries the grouped
+     * figure, so a language places the number wherever its own sentence wants it.
+     */
+    const pluralKey = (key, count) => key + '.' + pluralCategory(count)
+    const countOf = (key, count, params) => t(pluralKey(key, count), { n: grouped(count), ...params })
+
     // ── filter model ────────────────────────────────────────────────────────
 
     const RANGES = [
-      { id: '7d', label: '最近 7 天', days: 7 },
-      { id: '14d', label: '最近 14 天', days: 14 },
-      { id: '30d', label: '最近 30 天', days: 30 },
-      { id: '90d', label: '最近 90 天', days: 90 },
-      { id: 'all', label: '全部', days: null },
-      { id: 'custom', label: '自定义', days: null },
+      { id: '7d', labelKey: 'range.7d', days: 7 },
+      { id: '14d', labelKey: 'range.14d', days: 14 },
+      { id: '30d', labelKey: 'range.30d', days: 30 },
+      { id: '90d', labelKey: 'range.90d', days: 90 },
+      { id: 'all', labelKey: 'range.all', days: null },
+      { id: 'custom', labelKey: 'range.custom', days: null },
     ]
     // Only these are derivable offline; see docs/DESIGN.md.
     const SOURCES = [
-      { id: 'all', label: '全部', wire: null },
-      { id: 'client', label: '桌面·网页', wire: ['client'] },
-      { id: 'cli', label: '命令行·机器人', wire: ['cli'] },
-      { id: 'subagent', label: '子代理', wire: ['subagent'] },
+      { id: 'all', labelKey: 'source.all', wire: null },
+      { id: 'client', labelKey: 'source.client', wire: ['client'] },
+      { id: 'cli', labelKey: 'source.cli', wire: ['cli'] },
+      { id: 'subagent', labelKey: 'source.subagent', wire: ['subagent'] },
     ]
 
     function dayKeyOf(date) {
@@ -95,11 +1427,16 @@ window.__ModuleLoader__.load({
     let snapshot = {
       status: 'idle',
       error: null,
+      // A failure this half names itself is stored as a key, not as a sentence:
+      // the catalogue is what turns it into copy, at render time, in the
+      // language the user is reading.
+      errorKey: null,
       data: null,
       filter: { range: 'all', source: 'all', since: '', until: '' },
       config: null,
       configStatus: 'idle',
       configError: null,
+      configErrorKey: null,
     }
     let ticket = 0
 
@@ -127,6 +1464,8 @@ window.__ModuleLoader__.load({
       return failure ? failure.message ?? failure.code : undefined
     }
     const messageOf = (error) => (error && error.message ? error.message : String(error))
+    /** A Host message is shown verbatim; a local one is a catalogue key. */
+    const failureText = (message, key) => message ?? (key ? t(key) : '')
 
     async function load(filter = snapshot.filter, { silent = false } = {}) {
       const mine = ++ticket
@@ -136,7 +1475,7 @@ window.__ModuleLoader__.load({
         patch({ status: snapshot.data ? 'ready' : 'waiting', filter })
         return
       }
-      if (!silent) patch({ status: snapshot.data ? 'ready' : 'loading', filter, error: null })
+      if (!silent) patch({ status: snapshot.data ? 'ready' : 'loading', filter, error: null, errorKey: null })
       else patch({ filter })
       try {
         const response = await namespace.summary(wireFilterOf(filter))
@@ -144,13 +1483,14 @@ window.__ModuleLoader__.load({
         // A Remote returns its `{ ok, value }` envelope as-is: a failure is a
         // value, not a throw, so the branch must be read before trusting it.
         if (!response || response.ok !== true) {
-          patch({ status: 'error', error: failureOf(response) || '用量服务返回了无法识别的响应' })
+          const failure = failureOf(response)
+          patch({ status: 'error', error: failure ?? null, errorKey: failure ? null : 'state.badResponse' })
           return
         }
         patch({ status: 'ready', data: response.value, error: null })
       } catch (error) {
         if (mine !== ticket) return
-        patch({ status: 'error', error: messageOf(error) })
+        patch({ status: 'error', error: messageOf(error), errorKey: null })
       }
     }
 
@@ -159,16 +1499,21 @@ window.__ModuleLoader__.load({
         patch({ configStatus: 'waiting' })
         return
       }
-      patch({ configStatus: snapshot.config ? 'ready' : 'loading' })
+      patch({ configStatus: snapshot.config ? 'ready' : 'loading', configError: null, configErrorKey: null })
       try {
         const response = await namespace.config()
         if (!response || response.ok !== true) {
-          patch({ configStatus: 'error', configError: failureOf(response) || '配置读取失败' })
+          const failure = failureOf(response)
+          patch({
+            configStatus: 'error',
+            configError: failure ?? null,
+            configErrorKey: failure ? null : 'state.configError',
+          })
           return
         }
-        patch({ configStatus: 'ready', config: response.value, configError: null })
+        patch({ configStatus: 'ready', config: response.value, configError: null, configErrorKey: null })
       } catch (error) {
-        patch({ configStatus: 'error', configError: messageOf(error) })
+        patch({ configStatus: 'error', configError: messageOf(error), configErrorKey: null })
       }
     }
 
@@ -210,18 +1555,7 @@ window.__ModuleLoader__.load({
       return value
     }
 
-    // ── formatting ──────────────────────────────────────────────────────────
-
-    const grouped = (value) => Math.round(value).toLocaleString('en-US')
-
-    function compact(value) {
-      if (!Number.isFinite(value) || value === 0) return '0'
-      if (value >= 1e8) return `${(value / 1e8).toFixed(2)}亿`
-      if (value >= 1e4) return `${(value / 1e4).toFixed(1)}万`
-      return grouped(value)
-    }
-
-    const percent = (ratio) => `${(ratio * 100).toFixed(1)}%`
+    // ── bucket totals ───────────────────────────────────────────────────────
 
     const totalOf = (buckets) => buckets[0] + buckets[1] + buckets[2] + buckets[3]
 
@@ -371,7 +1705,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 .dtu-rowTotal{font-variant-numeric:tabular-nums;font-weight:600}
 .dtu-empty{color:var(--dsw-alias-label-secondary);padding:8px 0}
 /* One fact per line: three flex items of very different lengths read as a ragged
-   paragraph when they wrap, and the long one broke mid-sentence inside 「…」. */
+   paragraph when they wrap, and the long one broke mid-sentence inside a quote. */
 .dtu-foot{color:var(--dsw-alias-label-secondary);font-size:11.5px;display:flex;flex-direction:column;gap:3px;line-height:1.6}
 .dtu-footEntry{min-width:0}
 .dtu-nb{white-space:nowrap}
@@ -389,7 +1723,11 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 .dtu-field{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
 .dtu-input{width:96px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary);border-radius:6px;padding:4px 8px;font:inherit;text-align:right}
 .dtu-input:disabled{opacity:.55}
-.dtu-select{width:190px;text-align:left}
+/* Sized to its own options rather than a fixed 190px: a select clips its closed
+   label, and German and French name the grouping in 38-41 characters, which the
+   fixed width cut in half ("Beides (in den Diagramme"). Flex still shrinks it
+   when the row is narrow. */
+.dtu-select{width:auto;min-width:190px;max-width:100%;text-align:left}
 .dtu-formActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .dtu-save{appearance:none;border:1px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font:inherit;font-weight:600;padding:5px 16px;border-radius:8px;cursor:pointer}
 .dtu-save:disabled{opacity:.5;cursor:default}
@@ -455,7 +1793,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
               'aria-pressed': value === item.id,
               onClick: () => onSelect(item.id),
             },
-            item.label,
+            t(item.labelKey),
           ),
         ),
       )
@@ -506,7 +1844,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           return h(
             'div',
             { className: 'dtu-note', 'data-tone': 'error' },
-            `dsh-desktop-token-usage 渲染失败（${this.props.label}）：${message}`,
+            t('error.render', { package: REMOTE_PACKAGE, label: this.props.label, message }),
           )
         }
         return this.props.children
@@ -521,20 +1859,32 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
      * the cache-missing part plus the cached reads — so the pair reads the way a
      * user thinks about a request.
      */
-    function CardWindow({ block }) {
+    /**
+     * A configured window's own label. The Host still ships one, for a client
+     * older than this file; the id plus the card's own figures are what a
+     * localised label needs, and the shipped label stays the fallback.
+     */
+    function blockLabel(block, card) {
+      if (block.id === 'hours' && card && card.hours > 0) return t('window.hours', { hours: card.hours })
+      if (block.id === 'days' && card && card.days > 0) return t('window.days', { days: card.days })
+      if (block.id === 'all') return t('window.all')
+      return block.label
+    }
+
+    function CardWindow({ block, card }) {
       return h(
         'div',
         { className: 'dtu-window' },
-        h('div', { className: 'dtu-windowLabel' }, block.label),
+        h('div', { className: 'dtu-windowLabel' }, blockLabel(block, card)),
         h(
           'div',
           { className: 'dtu-windowValue' },
-          `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)}`,
+          t('detail.inputOutput', { input: compact(block.inputTokens), output: compact(block.outputTokens) }),
         ),
         h(
           'div',
           { className: 'dtu-windowMeta' },
-          `缓存命中 ${percent(block.cacheHitRate)} · ${block.turns} 轮`,
+          t('detail.cacheHit', { rate: percent(block.cacheHitRate) }) + ' · ' + countOf('unit.turns', block.turns),
         ),
       )
     }
@@ -550,7 +1900,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       const buckets = totals.buckets
       return {
         id: 'all',
-        label: '累计',
+        label: null,
         buckets,
         totalTokens: typeof totals.totalTokens === 'number' ? totals.totalTokens : totalOf(buckets),
         inputTokens: typeof totals.inputTokens === 'number' ? totals.inputTokens : buckets[0] + buckets[2],
@@ -572,12 +1922,13 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
      */
     function SidebarEntry(props) {
       const state = useStore()
+      useLocale()
       const card = state.data ? state.data.card : null
       const blocks = card ? card.blocks : []
       const all = card ? card.all : state.data ? cumulativeBlock(state.data.totals) : null
       const headline = blocks.length > 0 ? blocks[0].inputTokens + blocks[0].outputTokens : all ? all.totalTokens : 0
       if (props.wide === false) {
-        const label = `Token 用量 · ${compact(headline)}`
+        const label = t('sidebar.rail', { value: compact(headline) })
         return h(
           'button',
           { type: 'button', className: 'dtu-rail', title: label, 'aria-label': label, onClick: props.open },
@@ -586,38 +1937,42 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       }
       let body
       if (state.status === 'error') {
-        body = h('div', { className: 'dtu-windowMeta' }, '读取失败，点开查看原因')
+        body = h('div', { className: 'dtu-windowMeta' }, t('sidebar.error'))
       } else if (!state.data) {
-        body = h('div', { className: 'dtu-windowMeta' }, '正在读取本地会话日志…')
+        body = h('div', { className: 'dtu-windowMeta' }, t('state.loading'))
       } else if (blocks.length > 0) {
-        body = blocks.map((block) => h(CardWindow, { key: block.id, block }))
+        body = blocks.map((block) => h(CardWindow, { key: block.id, block, card }))
       } else if (!all) {
-        body = h('div', { className: 'dtu-windowMeta' }, '该筛选条件下没有用量记录。')
+        body = h('div', { className: 'dtu-windowMeta' }, t('state.empty'))
       } else {
         body = [
           h('div', { key: 'total', className: 'dtu-footValue' }, compact(all.totalTokens)),
           h(
             'div',
             { key: 'split', className: 'dtu-footRow' },
-            h('span', null, `输入 ${compact(all.inputTokens)} · 输出 ${compact(all.outputTokens)}`),
+            h('span', null, t('detail.inputOutput', { input: compact(all.inputTokens), output: compact(all.outputTokens) })),
           ),
           h(
             'div',
             { key: 'meta', className: 'dtu-footRow' },
-            h('span', null, `缓存命中 ${percent(all.cacheHitRate)}`),
-            h('span', null, `${all.turns} 轮`),
+            h('span', null, t('detail.cacheHit', { rate: percent(all.cacheHitRate) })),
+            h('span', null, countOf('unit.turns', all.turns)),
           ),
         ]
       }
       return h(
         'button',
-        { type: 'button', className: 'dtu-footCard', title: '打开 Token 用量看板', onClick: props.open },
+        { type: 'button', className: 'dtu-footCard', title: t('sidebar.open'), onClick: props.open },
         h(
           'div',
           { className: 'dtu-footTop' },
           h(Icon, { size: 14 }),
-          h('span', null, 'Token 用量'),
-          h('span', { style: { marginLeft: 'auto' } }, state.status === 'error' ? '读取失败' : ''),
+          h('span', null, t('sidebar.title')),
+          h(
+            'span',
+            { style: { marginLeft: 'auto' } },
+            state.status === 'error' ? t('sidebar.errorShort') : '',
+          ),
         ),
         body,
       )
@@ -625,12 +1980,12 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 
     // ── configuration form ──────────────────────────────────────────────────
 
-    /** `近 6 小时 + 近 7 天`, or `累计` when both windows are off. */
+    /** Two windows, or the all-time label when both are off. */
     function describeWindows(config) {
       const parts = []
-      if (config.hours > 0) parts.push(`近 ${config.hours} 小时`)
-      if (config.days > 0) parts.push(`近 ${config.days} 天`)
-      return parts.length > 0 ? parts.join(' + ') : '累计'
+      if (config.hours > 0) parts.push(t('window.hours', { hours: config.hours }))
+      if (config.days > 0) parts.push(t('window.days', { days: config.days }))
+      return parts.length > 0 ? parts.join(' + ') : t('window.all')
     }
 
     /**
@@ -641,6 +1996,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
      */
     function ConfigForm() {
       const state = useStore()
+      useLocale()
       const [draft, setDraft] = React.useState(null)
       const current = state.config ?? { hours: 0, days: 0, writable: false }
       const values = draft ?? {
@@ -658,16 +2014,16 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       return h(
         'div',
         { className: 'dtu-form' },
-        h('div', { className: 'dtu-formTitle' }, '看板「配置窗口」的时间跨度'),
+        h('div', { className: 'dtu-formTitle' }, t('config.title')),
         h(
           'div',
           { className: 'dtu-hint' },
-          '0 表示关闭该窗口；两个都关闭时只显示累计值。窗口按本地时间取整到小时，保存后立即生效；它们不随看板上方的来源筛选变化。',
+          t('config.hint'),
         ),
         h(
           'label',
           { className: 'dtu-field' },
-          h('span', null, '最近多少小时（0-23）'),
+          h('span', null, t('config.hours')),
           h('input', {
             className: 'dtu-input',
             type: 'number',
@@ -681,7 +2037,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
         h(
           'label',
           { className: 'dtu-field' },
-          h('span', null, '最近多少天（0-30）'),
+          h('span', null, t('config.days')),
           h('input', {
             className: 'dtu-input',
             type: 'number',
@@ -695,7 +2051,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
         h(
           'label',
           { className: 'dtu-field' },
-          h('span', null, '统计口径'),
+          h('span', null, t('group.aria')),
           h(
             'select',
             {
@@ -704,15 +2060,15 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
               disabled: locked,
               onChange: (event) => setDraft({ ...values, groupBy: event.target.value }),
             },
-            h('option', { value: 'both' }, '都统计（图表上可切换）'),
-            h('option', { value: 'model' }, '按实际模型'),
-            h('option', { value: 'provider' }, '按 API 供应商'),
+            h('option', { value: 'both' }, t('group.both')),
+            h('option', { value: 'model' }, t('group.model')),
+            h('option', { value: 'provider' }, t('group.provider')),
           ),
         ),
         h(
           'label',
           { className: 'dtu-field' },
-          h('span', null, '配色方案'),
+          h('span', null, t('config.palette')),
           h(
             'select',
             {
@@ -721,9 +2077,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
               disabled: locked,
               onChange: (event) => setDraft({ ...values, palette: event.target.value }),
             },
-            h('option', { value: 'primer' }, 'Primer（GitHub 默认）'),
-            h('option', { value: 'cvd' }, '色盲友好（Okabe–Ito）'),
-            h('option', { value: 'muted' }, '低饱和雾面'),
+            h('option', { value: 'primer' }, t('config.palette.primer')),
+            h('option', { value: 'cvd' }, t('config.palette.cvd')),
+            h('option', { value: 'muted' }, t('config.palette.muted')),
           ),
         ),
         h(
@@ -732,18 +2088,22 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           h(
             'button',
             { type: 'button', className: 'dtu-save', disabled: locked, onClick: () => void saveConfig(values) },
-            busy ? '保存中…' : '保存',
+            busy ? t('config.saving') : t('config.save'),
           ),
-          h('span', { className: 'dtu-formStatus' }, `当前：${describeWindows(current)}`),
+          h('span', { className: 'dtu-formStatus' }, t('config.current', { text: describeWindows(current) })),
         ),
-        state.configError
-          ? h('div', { className: 'dtu-formStatus', 'data-tone': 'error' }, state.configError)
+        state.configError || state.configErrorKey
+          ? h(
+              'div',
+              { className: 'dtu-formStatus', 'data-tone': 'error' },
+              failureText(state.configError, state.configErrorKey),
+            )
           : null,
         current.writable === false && state.configStatus !== 'loading'
           ? h(
               'div',
               { className: 'dtu-formStatus', 'data-tone': 'error' },
-              '这个 profile 没有提供配置编辑器，请改 profile 的 cordis.patch.yml。',
+              t('config.readonly'),
             )
           : null,
       )
@@ -751,10 +2111,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 
     // ── charts ──────────────────────────────────────────────────────────────
 
-    const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
     const HEAT_METRICS = [
-      { id: 'tokens', label: 'Tokens' },
-      { id: 'turns', label: '轮次' },
+      { id: 'tokens', labelKey: 'heat.metric.tokens' },
+      { id: 'turns', labelKey: 'heat.metric.turns' },
     ]
 
     /** Local midnight of the Monday starting the week that contains an instant. */
@@ -785,7 +2144,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           }))
       const byDay = new Map(entries.map((day) => [day.day, day]))
       const weeks = heatmap && heatmap.weeks ? heatmap.weeks : 53
-      const scope = heatmap ? `近 ${weeks} 周` : '当前筛选'
+      const scope = heatmap ? t('heat.scope.weeks', { weeks }) : t('heat.scope.filter')
       const today = Date.now()
       const firstWeek = weekStartOf(today - (weeks - 1) * 7 * DAY_MS)
       const todayKey = dayKeyOf(new Date(today))
@@ -809,7 +2168,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           if (offset === 0) {
             const month = new Date(ms).getMonth()
             if (month !== previousMonth) {
-              monthLabel = `${month + 1}月`
+              monthLabel = calendar().months[month]
               previousMonth = month
             }
           }
@@ -837,7 +2196,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       const high = quantile(0.75)
       const levelOf = (value) => (value <= 0 ? 0 : value <= low ? 1 : value <= mid ? 2 : value <= high ? 3 : 4)
       const total = values.reduce((sum, value) => sum + value, 0)
-      const metricLabel = metric === 'tokens' ? 'tokens' : '轮'
+      const metricLabel = metric === 'tokens' ? t('heat.unit.tokens') : t('heat.unit.turns')
 
       return h(
         'div',
@@ -848,16 +2207,25 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           h(
             'div',
             { className: 'dtu-legend' },
-            h('span', null, `${scope}共 ${values.length} 天有活动 · 合计 ${metric === 'tokens' ? compact(total) : grouped(total)} ${metricLabel}`),
+            h(
+              'span',
+              null,
+              t(pluralKey('heat.legend', values.length), {
+                scope,
+                days: grouped(values.length),
+                total: metric === 'tokens' ? compact(total) : grouped(total),
+                unit: metricLabel,
+              }),
+            ),
           ),
           h(
             'div',
             { className: 'dtu-heatControls' },
-            h(ChipGroup, { items: HEAT_METRICS, value: metric, onSelect: setMetric, label: '热力图指标' }),
+            h(ChipGroup, { items: HEAT_METRICS, value: metric, onSelect: setMetric, label: t('heat.metric.aria') }),
             h(
               'div',
               { className: 'dtu-heatScale' },
-              h('span', null, '较少'),
+              h('span', null, t('heat.less')),
               [1, 2, 3, 4].map((level) =>
                 h(
                   'span',
@@ -868,7 +2236,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   }),
                 ),
               ),
-              h('span', null, '较多'),
+              h('span', null, t('heat.more')),
             ),
           ),
         ),
@@ -887,7 +2255,11 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
             h(
               'div',
               { className: 'dtu-weekdays' },
-              WEEKDAY_LABELS.map((label, index) => h('span', { key: label }, index % 2 === 0 && index < 5 ? label : '')),
+              // A narrow weekday can repeat (English gives T for Tuesday and
+              // Thursday), so the key is the row, never the letter.
+              calendar().days.map((day, index) =>
+                h('span', { key: index }, index % 2 === 0 && index < 5 ? day : ''),
+              ),
             ),
             h(
               'div',
@@ -948,9 +2320,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   // The same compact formatter the stat cards and the trend tooltip use:
                   // a full 1,451,563,110 would be the widest thing in a box that has to
                   // lean inside half a column span.
-                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, compact(hovered.tokens))),
-                  h('div', { className: 'dtu-tipRow' }, '轮次', h('b', null, grouped(hovered.turns))),
-                  h('div', { className: 'dtu-tipRow' }, '请求', h('b', null, grouped(hovered.requests))),
+                  h('div', { className: 'dtu-tipRow' }, t('tip.tokens'), h('b', null, compact(hovered.tokens))),
+                  h('div', { className: 'dtu-tipRow' }, t('tip.turns'), h('b', null, grouped(hovered.turns))),
+                  h('div', { className: 'dtu-tipRow' }, t('tip.requests'), h('b', null, grouped(hovered.requests))),
                 )
               : null,
           ),
@@ -1036,8 +2408,8 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
     }
 
     const CHIP_GROUPS = [
-      { id: 'model', label: '按模型' },
-      { id: 'provider', label: '按供应商' },
+      { id: 'model', labelKey: 'group.model' },
+      { id: 'provider', labelKey: 'group.provider' },
     ]
 
     function TrendSection({ days, groups, groupBy }) {
@@ -1081,9 +2453,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
         h(
           'div',
           { className: 'dtu-trendHead' },
-          h('div', { className: 'dtu-hint' }, '柱按 token 堆叠，缓存命中率曲线叠加在同一张图上（右侧为真实百分比）'),
+          h('div', { className: 'dtu-hint' }, t('trend.hint')),
           groupBy === 'both'
-            ? h(ChipGroup, { items: CHIP_GROUPS, value: mode, onSelect: setMode, label: '统计口径' })
+            ? h(ChipGroup, { items: CHIP_GROUPS, value: mode, onSelect: setMode, label: t('group.aria') })
             : null,
         ),
         h(
@@ -1097,8 +2469,8 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
               entry.key,
             ),
           ),
-          h('span', null, h('span', { className: 'dtu-dot', style: { background: OTHER } }), '其他'),
-          h('span', null, h('span', { className: 'dtu-lineKey' }), '缓存命中率'),
+          h('span', null, h('span', { className: 'dtu-dot', style: { background: OTHER } }), t('trend.other')),
+          h('span', null, h('span', { className: 'dtu-lineKey' }), t('trend.hitRate')),
         ),
         h(
           'div',
@@ -1151,7 +2523,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
             h(
               'div',
               { className: 'dtu-axisHit' },
-              bandTicks.map((tick) => h('span', { key: tick, style: { top: hitY(tick / 100) + '%' } }, tick.toFixed(1) + '%')),
+              bandTicks.map((tick) =>
+                h('span', { key: tick, style: { top: hitY(tick / 100) + '%' } }, percent(tick / 100)),
+              ),
             ),
             h(
               'div',
@@ -1204,7 +2578,9 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           h(
             'div',
             { className: 'dtu-axisX' },
-            labelled.map((index) => h('span', { key: index, style: { left: axisX(index) + '%' } }, columns[index].day.slice(5))),
+            labelled.map((index) =>
+              h('span', { key: index, style: { left: axisX(index) + '%' } }, dayLabel(columns[index].day)),
+            ),
           ),
           hovered
             ? h(
@@ -1222,7 +2598,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   // figure per row — gluing the date to a number reads as one string,
                   // and a long total would widen the box past its rails.
                   h('div', { className: 'dtu-tipTitle' }, hovered.day),
-                  h('div', { className: 'dtu-tipRow' }, 'Tokens', h('b', null, compact(hovered.total))),
+                  h('div', { className: 'dtu-tipRow' }, t('tip.tokens'), h('b', null, compact(hovered.total))),
                   hovered.segments
                     .filter((segment) => segment.value > 0)
                     .map((segment) =>
@@ -1235,11 +2611,16 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                         }),
                         // A long model name is ellipsised, never wrapped: the label
                         // and its figure have to stay on the same line to be readable.
-                        h('span', { className: 'dtu-tipKey' }, segment.key === OTHER_KEY ? '其他' : segment.key),
+                        h('span', { className: 'dtu-tipKey' }, segment.key === OTHER_KEY ? t('trend.other') : segment.key),
                         h('b', null, compact(segment.value)),
                       ),
                     ),
-                  h('div', { className: 'dtu-tipRow' }, '缓存命中率', h('b', null, hovered.hit === null ? '—' : percent(hovered.hit))),
+                  h(
+                    'div',
+                    { className: 'dtu-tipRow' },
+                    t('trend.hitRate'),
+                    h('b', null, hovered.hit === null ? '—' : percent(hovered.hit)),
+                  ),
                 ),
               )
             : null,
@@ -1290,7 +2671,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           'div',
           { className: 'dtu-donutCenter' },
           h('div', { className: 'dtu-donutTotal' }, compact(totalTokens)),
-          h('div', { className: 'dtu-donutLabel' }, 'Tokens 用量'),
+          h('div', { className: 'dtu-donutLabel' }, t('card.tokens')),
         ),
       )
     }
@@ -1301,7 +2682,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
      * The grouping this half renders. A Host newer than this Client ships
      * `groups`/`byGroup` with the summary; an older one only carries route-keyed
      * `byModel`/`models`, and the Client can hot-update before the Host restarts —
-     * so rebuild both groupings locally instead of degrading into one grey "其他"
+     * so rebuild both groupings locally instead of degrading into one grey "other"
      * bar and an empty breakdown. Mirrors the Host's split (provider/model of the
      * route, provider = model = route without a slash) and its ranking:
      * totalTokens desc, then key asc.
@@ -1368,6 +2749,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 
     function DashboardBody() {
       const state = useStore()
+      useLocale()
       const [hovered, setHovered] = React.useState(null)
 
       const data = state.data
@@ -1381,7 +2763,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       const grouping = normalizeGrouping(data)
       const activeGroups = (grouping.groups && grouping.groups[activeBreakdown]) || []
       const topGroup = activeGroups.length > 0 ? activeGroups[0] : null
-      // Spec §2.3: the donut and the detail list fold to Top5 + 其他. The stat
+      // Spec §2.3: the donut and the detail list fold to a top five plus the
       // card keeps the true #1 (topGroup), the trend folds its own stack.
       const shown = activeGroups.slice(0, TOP_N)
       if (activeGroups.length > TOP_N) {
@@ -1396,12 +2778,22 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
       const head = h(
         'div',
         { className: 'dtu-head' },
-        h('div', { className: 'dtu-title' }, 'Token 用量'),
+        h('div', { className: 'dtu-title' }, t('dash.title')),
         h(
           'div',
           { className: 'dtu-controls' },
-          h(ChipGroup, { items: RANGES, value: filter.range, onSelect: (range) => setFilter({ range }), label: '时间范围' }),
-          h(ChipGroup, { items: SOURCES, value: filter.source, onSelect: (source) => setFilter({ source }), label: '会话来源' }),
+          h(ChipGroup, {
+            items: RANGES,
+            value: filter.range,
+            onSelect: (range) => setFilter({ range }),
+            label: t('range.aria'),
+          }),
+          h(ChipGroup, {
+            items: SOURCES,
+            value: filter.source,
+            onSelect: (source) => setFilter({ source }),
+            label: t('source.aria'),
+          }),
           custom
             ? h(
                 React.Fragment,
@@ -1410,7 +2802,7 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   className: 'dtu-date',
                   type: 'date',
                   value: filter.since,
-                  'aria-label': '开始日期',
+                  'aria-label': t('filter.start'),
                   onChange: (event) => setFilter({ since: event.target.value }),
                 }),
                 h('span', { style: { color: 'var(--dsw-alias-label-secondary)' } }, '→'),
@@ -1418,28 +2810,32 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   className: 'dtu-date',
                   type: 'date',
                   value: filter.until,
-                  'aria-label': '结束日期',
+                  'aria-label': t('filter.end'),
                   onChange: (event) => setFilter({ until: event.target.value }),
                 }),
               )
             : null,
-          h('button', { type: 'button', className: 'dtu-refresh', onClick: reload }, '刷新'),
+          h('button', { type: 'button', className: 'dtu-refresh', onClick: reload }, t('action.refresh')),
         ),
       )
 
       let body
       if (state.status === 'error') {
-        body = h('div', { className: 'dtu-note', 'data-tone': 'error' }, `读取失败：${state.error}`)
+        body = h(
+          'div',
+          { className: 'dtu-note', 'data-tone': 'error' },
+          t('state.error', { message: failureText(state.error, state.errorKey) }),
+        )
       } else if (state.status === 'waiting') {
         body = h(
           'div',
           { className: 'dtu-note' },
-          '等待 Host 用量服务…（若长时间不变，按 Ctrl+Shift+I 看控制台报错）',
+          t('state.waiting'),
         )
       } else if (!data) {
-        body = h('div', { className: 'dtu-note' }, '正在读取本地会话日志…')
+        body = h('div', { className: 'dtu-note' }, t('state.loading'))
       } else if (totals.totalTokens === 0 && totals.turns === 0) {
-        body = h('div', { className: 'dtu-note' }, '该筛选条件下没有用量记录。')
+        body = h('div', { className: 'dtu-note' }, t('state.empty'))
       } else {
         body = h(
           React.Fragment,
@@ -1448,22 +2844,36 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
             'div',
             { className: 'dtu-cards' },
             h(Card, {
-              label: 'Tokens 用量',
+              label: t('card.tokens'),
               value: grouped(totals.totalTokens),
-              sub: `未缓存输入 ${compact(buckets[0])} · 缓存读取 ${compact(buckets[2])} · 输出 ${compact(buckets[1])}`,
+              sub: t('card.tokens.sub', {
+                uncached: compact(buckets[0]),
+                cached: compact(buckets[2]),
+                output: compact(buckets[1]),
+              }),
             }),
-            h(Card, { label: '完成轮次', value: grouped(totals.turns) }),
-            h(Card, { label: '请求数量', value: grouped(totals.requests), sub: '计费模型调用次数' }),
-            h(Card, { label: '活跃天数', value: grouped(totals.activeDays), sub: `会话 ${grouped(totals.sessions)} 个` }),
+            h(Card, { label: t('card.turns'), value: grouped(totals.turns) }),
             h(Card, {
-              label: '平均缓存命中率',
+              label: t('card.requests'),
+              value: grouped(totals.requests),
+              sub: t('card.requests.sub'),
+            }),
+            h(Card, {
+              label: t('card.activeDays'),
+              value: grouped(totals.activeDays),
+              sub: countOf('unit.sessions', totals.sessions),
+            }),
+            h(Card, {
+              label: t('card.hitRate'),
               value: percent(totals.cacheHitRate),
-              sub: '缓存命中 / (缓存命中 + 未命中)',
+              sub: t('card.hitRate.sub'),
             }),
             h(Card, {
-              label: activeBreakdown === 'provider' ? '最常用供应商' : '最常用模型',
+              label: t(activeBreakdown === 'provider' ? 'card.topProvider' : 'card.topModel'),
               value: topGroup ? topGroup.key : '—',
-              sub: topGroup ? '占比 ' + percent(topGroup.totalTokens / Math.max(1, totals.totalTokens)) : null,
+              sub: topGroup
+                ? t('card.share', { percent: percent(topGroup.totalTokens / Math.max(1, totals.totalTokens)) })
+                : null,
               title: topGroup ? topGroup.key : undefined,
             }),
           ),
@@ -1474,12 +2884,8 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
             ? h(
                 Section,
                 {
-                  title: '配置窗口',
-                  extra: h(
-                    'span',
-                    { className: 'dtu-hint' },
-                    '固定回溯窗口，不随上方来源筛选变化；在 插件 → Token 用量 里调整',
-                  ),
+                  title: t('section.windows'),
+                  extra: h('span', { className: 'dtu-hint' }, t('section.windows.hint')),
                 },
                 h(
                   'div',
@@ -1487,9 +2893,17 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                   (data.card.blocks.length > 0 ? data.card.blocks : data.card.all ? [data.card.all] : []).map((block) =>
                     h(Card, {
                       key: block.id,
-                      label: block.label,
+                      label: blockLabel(block, data.card),
                       value: grouped(block.totalTokens),
-                      sub: `输入 ${compact(block.inputTokens)} · 输出 ${compact(block.outputTokens)} · 缓存命中 ${percent(block.cacheHitRate)} · ${grouped(block.turns)} 轮`,
+                      sub:
+                        t('detail.inputOutput', {
+                          input: compact(block.inputTokens),
+                          output: compact(block.outputTokens),
+                        }) +
+                        ' · ' +
+                        t('detail.cacheHit', { rate: percent(block.cacheHitRate) }) +
+                        ' · ' +
+                        countOf('unit.turns', block.turns),
                     }),
                   ),
                 ),
@@ -1497,18 +2911,31 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
             : null,
           h(
             Section,
-            { title: '活跃热力图', extra: h('span', { className: 'dtu-hint' }, '跟随来源筛选；日历始终显示完整历史') },
+            { title: t('section.heat'), extra: h('span', { className: 'dtu-hint' }, t('section.heat.hint')) },
             h(Heatmap, { heatmap: data.heatmap, days: data.days }),
           ),
-          h(Section, { title: '按天 Token 趋势' }, h(TrendSection, { days: grouping.days, groups: grouping.groups, groupBy: groupByMode })),
+          h(
+            Section,
+            { title: t('section.trend') },
+            h(TrendSection, { days: grouping.days, groups: grouping.groups, groupBy: groupByMode }),
+          ),
           h(
             Section,
             {
-              title: '用量拆分',
+              title: t('section.breakdown'),
               extra:
                 groupByMode === 'both'
-                  ? h(ChipGroup, { items: CHIP_GROUPS, value: breakdownMode, onSelect: setBreakdownMode, label: '拆分口径' })
-                  : h('span', { className: 'dtu-hint' }, activeBreakdown === 'provider' ? '按供应商' : '按模型'),
+                  ? h(ChipGroup, {
+                      items: CHIP_GROUPS,
+                      value: breakdownMode,
+                      onSelect: setBreakdownMode,
+                      label: t('trend.breakdownAria'),
+                    })
+                  : h(
+                      'span',
+                      { className: 'dtu-hint' },
+                      t(activeBreakdown === 'provider' ? 'group.provider' : 'group.model'),
+                    ),
             },
             h(
               'div',
@@ -1530,16 +2957,20 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
                       'div',
                       {
                         className: 'dtu-rowName',
-                        title: entry.key === OTHER_KEY ? (entry.folded ?? []).join('、') : entry.key,
+                        title: entry.key === OTHER_KEY ? (entry.folded ?? []).join(t('list.separator')) : entry.key,
                       },
                       h('span', {
                         className: 'dtu-dot',
                         style: { background: entry.key === OTHER_KEY ? OTHER : seriesAt(index) },
                       }),
-                      entry.key === OTHER_KEY ? '其他' : entry.key,
+                      entry.key === OTHER_KEY ? t('trend.other') : entry.key,
                     ),
                     h('div', { className: 'dtu-rowTotal' }, compact(entry.totalTokens)),
-                    h('div', { className: 'dtu-rowShare' }, totals.totalTokens > 0 ? percent(entry.totalTokens / totals.totalTokens) : '0%'),
+                    h(
+                      'div',
+                      { className: 'dtu-rowShare' },
+                      totals.totalTokens > 0 ? percent(entry.totalTokens / totals.totalTokens) : percent(0),
+                    ),
                   ),
                 ),
               ),
@@ -1560,18 +2991,18 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
           h(
             'div',
             { className: 'dtu-foot' },
-            h('span', null, `统计截至 ${new Date(data ? data.generatedAt : Date.now()).toLocaleString('zh-CN')}`),
-            h('span', null, `数据源：本地会话日志（${data ? data.coverage.files : 0} 个文件，未联网）`),
+            h('span', null, t('foot.updated', { time: stamp(data ? data.generatedAt : Date.now()) })),
+            h('span', null, t('foot.source', { files: countOf('unit.files', data ? data.coverage.files : 0) })),
             h(
               'span',
               { className: 'dtu-footEntry' },
-              '来源按本地可观测信号推断：桌面端与网页端无法离线区分，二者同归',
-              // Keep each 「…」 term whole; CJK text may otherwise break between
-              // any two characters, leaving 「 or 」 dangling at a line edge.
-              h('span', { className: 'dtu-nb' }, '「桌面·网页」'),
-              '；',
-              h('span', { className: 'dtu-nb' }, '「命令行·机器人」'),
-              '指无客户端的会话。',
+              t('foot.inference1'),
+              // Keep each surface name whole: a term may otherwise break between
+              // any two characters and leave its quote dangling at a line edge.
+              h('span', { className: 'dtu-nb' }, t('source.client')),
+              t('foot.inference2'),
+              h('span', { className: 'dtu-nb' }, t('source.cli')),
+              t('foot.inference3'),
             ),
           ),
         ),
@@ -1582,12 +3013,14 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
 
     /** Central panel: a render failure must show text, never a blank seat. */
     function Dashboard(props) {
-      return h(Boundary, { label: '中央看板' }, h(DashboardBody, props))
+      useLocale()
+      return h(Boundary, { label: t('a11y.dashboard') }, h(DashboardBody, props))
     }
 
     /** Sidebar foot card, guarded for the same reason. */
     function UsageEntry(props) {
-      return h(Boundary, { label: '侧边栏卡片' }, h(SidebarEntry, props))
+      useLocale()
+      return h(Boundary, { label: t('a11y.sidebar') }, h(SidebarEntry, props))
     }
 
     // ── wire contribution + slots ───────────────────────────────────────────
@@ -1636,6 +3069,41 @@ body:not([data-ds-dark-theme]) .dtu-root{color-scheme:light}
         refresh: reload,
         open: () => ctx.get('layout')?.selectPanel(PANEL_ID),
         close: () => ctx.get('layout')?.selectPanel(null),
+      })
+
+      // The locale service owns the language catalog and the dictionaries: this
+      // half contributes its pack of languages plus one namespace. Both are
+      // owned effects, so unloading the plugin takes them back out of the
+      // selector and out of the registry.
+      //
+      // `inject` (rather than a direct `ctx.get`) is what lets the plugin load
+      // against a Host that ships no locale service at all: the callback simply
+      // never runs, and `syncLocale` then follows the browser's own languages.
+      ctx.inject(['locale'], (localeCtx) => {
+        const locale = localeCtx.locale
+        if (!locale || typeof locale.register !== 'function') return
+        attachFace(locale)
+        for (const pack of PACKS) {
+          localeCtx.effect(
+            () => addPack(locale, pack),
+            `dsh-desktop-token-usage: language ${pack.id}`,
+          )
+        }
+        // DSH requires both shipped locales in one call; a pack registers alone.
+        localeCtx.effect(
+          () => locale.register(NS, { zh: DICT.zh, en: DICT.en }),
+          'dsh-desktop-token-usage: dictionary zh/en',
+        )
+        for (const pack of PACKS) {
+          localeCtx.effect(
+            () => locale.register(NS, pack.id, DICT[pack.id]),
+            `dsh-desktop-token-usage: dictionary ${pack.id}`,
+          )
+        }
+        localeCtx.effect(
+          () => () => attachFace(null),
+          'dsh-desktop-token-usage: locale subscription',
+        )
       })
 
       // Styles belong to the plugin fiber: registered once, removed on unload.

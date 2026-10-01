@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Token-Nutzung",
+    "description": "Aggregiert die Token-Nutzung aus lokalen Sitzungsprotokollen: Summen, täglicher Verlauf, Cache-Trefferquote und der Anteil je Modell. Kein Netzwerkzugriff. Verifiziert auf DSH Desktop 0.1.7-rc.2 und 0.2.0-rc.1."
+  }
+}

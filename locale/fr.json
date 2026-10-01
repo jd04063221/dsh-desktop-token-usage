@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Utilisation des tokens",
+    "description": "Agrège l'utilisation des tokens de DSH à partir des journaux de sessions locaux : totaux, tendance quotidienne, taux de réussite du cache et part par modèle. Aucun accès réseau. Vérifié sur DSH Desktop 0.1.7-rc.2 et 0.2.0-rc.1."
+  }
+}

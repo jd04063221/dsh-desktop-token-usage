@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Token 用量",
+    "description": "從本地工作階段日誌聚合 DSH Token 用量：總量、每日趨勢、緩存命中率與各模型佔比。完全不接觸網絡。已在 DSH Desktop 0.1.7-rc.2 與 0.2.0-rc.1 上驗證。"
+  }
+}
