@@ -1,0 +1,58 @@
+# Continuous verification for pushes to main and pull requests.
+#
+# Modelled on Duskriver/dsh-opencode-go's verify.yml. Two differences are
+# deliberate:
+#
+#   * No `cache: npm`. This repository gitignores `package-lock.json` (see
+#     .gitignore), so there is no lockfile for setup-node to hash and no `npm ci`
+#     to run — the install is a plain `npm install`.
+#   * Two jobs rather than three. The reference's package-manager install matrix
+#     and host-compatibility job have no counterpart here; this plugin's published
+#     artifact is checked by `npm run test:package` instead.
+#
+# The tests that need real session logs skip themselves when $DSH_HOME has none,
+# so the suite still asserts the plugin offline on a clean runner.
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22.19.0', '24']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run the test suite
+        run: npm test
+
+  package:
+    name: package (tarball contents and install)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify the published tarball
+        run: npm run test:package

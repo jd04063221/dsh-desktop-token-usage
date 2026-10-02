@@ -26,6 +26,8 @@
   ],
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
+    "test:package": "node scripts/verify-package.mjs",
+    "verify": "npm test && npm run test:package",
     "prepublishOnly": "npm test"
   },
   "engines": {
