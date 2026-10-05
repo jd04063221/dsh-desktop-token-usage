@@ -6,7 +6,7 @@
 
 - GitHub：<https://github.com/jd04063221/dsh-desktop-token-usage>
 - npm：<https://www.npmjs.com/package/dsh-desktop-token-usage>
-- 许可证：MIT｜当前 npm 最新版：0.1.5（仓库 `main` 另有待发布的 0.1.6，见文末「版本说明」）
+- 许可证：MIT｜当前 npm 最新版：0.1.6
 
 **项目介绍**
 
@@ -25,7 +25,7 @@
 - **按天趋势**：token 堆叠柱上叠加缓存命中率曲线（右侧标真实百分比，纵轴按统计期最小值/最大值留 10% 余量）；
 - **设置页**（设置 → 插件 → Token 用量）：两个窗口的跨度（小时 0–23、天数 1–30）、统计口径
   （按模型 / 按供应商 / 都统计）与配色方案（primer / cvd / muted 三套，各自的浅色与深色跟随 DSH 自己的明暗开关）；
-- **多语言**（`main` 上待发布的 0.1.6，npm 上的 0.1.5 尚无）：看板跟随 **DSH 自身的语言设置**，插件没有自己的语言选择器；内置 en / zh 字典，
+- **多语言**（0.1.6 起）：看板跟随 **DSH 自身的语言设置**，插件没有自己的语言选择器；内置 en / zh 字典，
   另把 zh-TW、zh-HK、de、fr、es、it、ja、ko 注册进 DSH 的语言目录；数字、百分比、日期与复数全部走 `Intl`。
 
 **与 DSH 的集成方式**
@@ -126,8 +126,8 @@ Node 按 realpath 缓存 ESM，重新启用插件、重装甚至改包名都不�
 - **卡片刷新有延迟**：没有 Host → Client 的推送通道，靠 5 分钟定时刷新，想立刻更新可点开看板按「刷新」；
 - **只翻译了十种语言**：其余六种（pt-BR、ru、vi、th、id、ar）设计已定稿、尚未实现。
 
-**版本说明**：npm 上最新发布版是 **0.1.5**；仓库 `main` 另有待发布的 0.1.6，
-包含十种语言的本地化、热力图与趋势图的可读性修复、以及侧边栏卡片与设置页的渲染图。想用多语言请从源码安装。
+**版本说明**：npm 上最新发布版是 **0.1.6**，包含十种语言的本地化、热力图与趋势图的可读性修复、
+以及侧边栏卡片与设置页的渲染图。安装方式就是上面那条 `install_bundle`。
 
 ---
 
@@ -166,9 +166,8 @@ offline from the plugin's own components with sample data.
 
 **Install:** `plugin_manager action: install_bundle target: dsh-desktop-token-usage` — a plain npm install from the
 official registry (the manager queries it with `pnpm view` and then `pnpm add`s the package into the current profile);
-`remove_bundle target: dsh-desktop-token-usage` uninstalls. npm `latest` is 0.1.5; the localization and the latest
-heatmap/trend fixes are on `main`, waiting for 0.1.6 — get those from a source checkout (`npm install`, then
-`install_bundle` with the directory's absolute path).
+`remove_bundle target: dsh-desktop-token-usage` uninstalls. npm `latest` is 0.1.6 — it carries the localization,
+the latest heatmap/trend fixes and the new sidebar/settings renders.
 
 **Tested environment:** DSH Desktop `0.1.7-rc.2` and `0.2.0-rc.2` (full verification), `0.2.0-rc.1`
 (compatibility check); Electron 44 / Chromium 152 / Node 24.18.1; Windows 11 Pro, build 26200, AMD64.
