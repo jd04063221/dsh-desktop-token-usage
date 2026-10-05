@@ -12,6 +12,15 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
 > informa `schema` o `absent` para este plugin, junto con si el proceso se ha reiniciado desde su cambio; `boot.json`
 > se reescribe con cada `apply`, así que su existencia solo le dice cuándo se montó por última vez el fiber.
 
+## [Unreleased]
+
+### Planificado
+
+- **Localización, el nivel restante**: los seis códigos de idioma `pt-BR`, `ru`, `vi`, `th`, `id` y `ar` están diseñados pero aún
+  no implementados. `ar` además necesita el shell de derecha a izquierda —insets reflejados, ventanas de ayuda y lados de los
+  ejes, con el eje temporal de izquierda a derecha—, que ninguno de los diez idiomas incluidos requiere. Consulte
+  [el diseño](../docs/superpowers/specs/2026-10-01-i18n-design.md).
+
 ## [0.1.6] - 2026-10-05
 
 ### Añadido
@@ -34,13 +43,6 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
   bajo el cursor —anclada a la izquierda en la mitad izquierda, anclada a la derecha en la derecha— en lugar de centrarse dentro
   de una caja limitada, y un nombre de modelo largo como `deepseek-v4.1-flash` se corta con puntos suspensivos en una sola línea
   en lugar de empujarse a una segunda.
-
-### Planificado
-
-- **Localización, el nivel restante**: los seis códigos de idioma `pt-BR`, `ru`, `vi`, `th`, `id` y `ar` están diseñados pero aún
-  no implementados. `ar` además necesita el shell de derecha a izquierda —insets reflejados, ventanas de ayuda y lados de los
-  ejes, con el eje temporal de izquierda a derecha—, que ninguno de los diez idiomas incluidos requiere. Consulte
-  [el diseño](../docs/superpowers/specs/2026-10-01-i18n-design.md).
 
 ## [0.1.5] - 2026-10-01
 
