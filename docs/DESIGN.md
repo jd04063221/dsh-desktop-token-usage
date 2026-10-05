@@ -340,10 +340,21 @@ fiber.runtime?.Config == null  → 'absent'        // 模块里没有 Config 导
 | 卡片数字 | 侧边栏卡片的窗口行（输入/输出/命中率）与轮次 | 人工确认通过 |
 | 文档中英对拍 | 脚本比对两份的标题层级序列、代码围栏数量、行内代码 token 集合与数字集合 | 一致（README 15 个标题 / 6 个代码块；CHANGELOG 12 个标题，行内 token 各 108 个） |
 | **看板视觉（含重做后的热力图）** | **需要人眼确认** | 本环境无浏览器控制，未验证 |
+| DSH `0.2.1-alpha.1` 契约 diff | 逐包 diff 本插件触及的公开 API 与类型（对 `0.2.0-rc.2`） | 用到的**未变或纯新增**，见下 |
+| DSH `0.2.1-alpha.1` 运行时回归 | `scripts/dsh-compat.mjs`：用 0.2.1 自己的编码器写日志 → 本插件解析/折叠 → 与 0.2.1 自己的 `tokenUsage` 投影对拍 | 全等：4 个桶逐字段一致、turns=2 / requests=3 / reasoning=35、命名 10/10、多代目录取最高代、subagent 头被接受 |
 
 > **实测环境**：DSH Desktop `0.1.7-rc.2`（`@deepseek-ai/dsh-desktop@0.1.7-rc.2`）、
-> Windows 11 专业版 build 26200（AMD64）、Node v25.2.1。其他 DSH 版本未测试；
-> `engines.dsh` 是声明性字段，DSH 目前不强制它。
+> Windows 11 专业版 build 26200（AMD64）、Node v25.2.1。**在真实桌面端完整跑通的是 `0.1.7-rc.2` 与 `0.2.0-rc.2`**，
+> `0.2.0-rc.1` 只做了结构核对。`engines.dsh` 是声明性字段，DSH 目前不强制它。
+>
+> `0.2.1-alpha.1` 是**源码级核对，不是在 0.2.1 桌面端跑过**（本机没有该构建）。复现：
+> `node scripts/dsh-compat.mjs <node_modules/@deepseek-ai> <label>`。逐包 diff 结果：
+> `dsh-client-locale`、`dsh-client-ui-slots`、`dsh-config-editor`、`dsh-typert-protocol`、
+> `dsh-session-persistence-jsonl`、`dsh-session`（33 个事件，0 增 0 删）、`dsh-token-meter`、`schemastery`
+> 以及 `dsh-package-manifest` 的 bundle/patch/client/engines 契约行（0 处变化）——**本插件用到的部分未变**；
+> `dsh-api-remotes/lib/client.js` 只有新增（`tokenUsage` schema）；`dsh-client-ui-renderer` 少了一个没人用的
+> `./invariant` 导出；`dsh-invariants` 包被整体移除（本插件不依赖）；`layout.selectPanel(panelId)` 与
+> `main` 槽位签名不变。`SESSION_FORMAT_VERSION` 两版都是 **4**。
 
 
 ### 5.1 看板没数据时先看这两个文件
