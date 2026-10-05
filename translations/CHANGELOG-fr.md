@@ -12,7 +12,7 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 > rapporte `schema` ou `absent` pour ce plugin, ainsi que si le processus a été redémarré depuis votre modification ; `boot.json`
 > est réécrit par chaque `apply`, sa présence ne dit donc que quand le fiber a été remonté pour la dernière fois.
 
-## [Unreleased]
+## [0.1.6] - 2026-10-05
 
 ### Ajouté
 
