@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: github/codeql-action/init@28eb9ff0117f0af3a4f5ebe0c2a4a6b0b0990b2d # v3.29.0
+      - uses: github/codeql-action/init@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3
         with:
           languages: javascript
-      - uses: github/codeql-action/analyze@28eb9ff0117f0af3a4f5ebe0c2a4a6b0b0990b2d # v3.29.0
+      - uses: github/codeql-action/analyze@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3
