@@ -159,13 +159,27 @@ jobs:
             exit 1
           fi
           echo "registry confirms $name@$published"
-          # Install the registry copy (not the local tarball) and load both faces.
+          # Install the registry copy (not the local tarball) and load the Host
+          # half from it. client.js cannot be imported in Node — it registers with
+          # the page module loader and needs `window` — so it is resolved and read.
+          # The probe is single-quoted, so the shell interpolates nothing into it.
           rm -rf "$RUNNER_TEMP/reg-probe" && mkdir -p "$RUNNER_TEMP/reg-probe"
           cd "$RUNNER_TEMP/reg-probe"
           npm init -y >/dev/null 2>&1
           npm pkg set type=module
           npm install --no-audit --no-fund "$name@$version"
-          node --input-type=module -e "await import('$name'); await import('$name/client').catch(() => import('$name')); console.log('registry copy loads')" 2>/dev/null || node --input-type=module -e "const m = await import('$name'); if (!m.apply) { throw new Error('Host apply missing') }; console.log('registry copy Host loads')"
+          PROBE_NAME="$name" node --input-type=module -e '
+          import assert from "node:assert/strict";
+          import fs from "node:fs";
+          import { fileURLToPath } from "node:url";
+          const NAME = process.env.PROBE_NAME;
+          const host = await import(NAME);
+          assert.equal(typeof host.apply, "function", "Host apply must be exported");
+          const client = fileURLToPath(import.meta.resolve(NAME + "/client"));
+          assert.ok(client.endsWith("client.js"), "./client must resolve to client.js");
+          assert.ok(fs.readFileSync(client, "utf8").includes("__ModuleLoader__"), "client.js must register a DSH client module");
+          console.log("registry copy loads: Host + client (read)");
+          '
 
       - name: Create the GitHub Release from this version's changelog
         env:
