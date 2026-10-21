@@ -75,6 +75,6 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.3"
+    "@deepseek-ai/schemastery": "^3.18.5"
   }
 }
