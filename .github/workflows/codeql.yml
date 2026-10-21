@@ -18,6 +18,11 @@ permissions:
 jobs:
   analyze:
     name: Analyze (javascript)
+    # Dependabot-triggered runs never receive `security-events: write` (GitHub
+    # downgrades their GITHUB_TOKEN), so the job dies in "Set up job" three
+    # seconds in. Dependency PRs are covered by Verify plus the next push to
+    # main; skip them here instead of leaving a permanently red check.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
