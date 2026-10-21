@@ -53,11 +53,11 @@
 
 ## 相容性與測試環境
 
-**已在 DSH Desktop 0.1.7-rc.2 與 0.2.0-rc.2 上完整驗證，並針對 0.2.0-rc.1 做了相容性核對。**
+**已在 DSH Desktop 0.1.7-rc.2、0.2.0-rc.2 與 0.2.1-rc.2 上完整驗證，並針對 0.2.0-rc.1 做了相容性核對。**
 
 | 項目 | 實測環境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` 與 `0.2.0-rc.2`（完整驗證）、`0.2.0-rc.1`（相容性核對） |
+| DSH | Desktop `0.1.7-rc.2`、`0.2.0-rc.2` 與 `0.2.1-rc.2`（完整驗證）、`0.2.0-rc.1`（相容性核對） |
 | 內建執行環境 | Electron 44 / Chromium 152 / Node 24.18.1（把席位變成縱向列需要 `:has()`，Chrome 105+；配色主題需要 `light-dark()`，Chrome 123+） |
 | 作業系統 | Windows 11 專業版，build 26200，AMD64 |
 | Node（用來執行測試） | v25.2.1、v26.7.0 |
@@ -78,7 +78,7 @@ diff：`dsh-plugin-manager` 位元組完全一致；而在 `dsh-client-ui-sideba
 並不會拒收不相容的 Host。
 
 **上表以外的版本未經測試。** 更早的 DSH 版本可能缺少本插件使用的 `plugins.bundle.config` 槽與 `configEditor` 服務
-（缺少它們就沒有設定卡，設定只能手動編輯 profile patch）；比 `0.2.0-rc.2` 更新的版本尚未驗證。
+（缺少它們就沒有設定卡，設定只能手動編輯 profile patch）；比 `0.2.1-rc.2` 更新的版本尚未驗證。
 
 ## 寫入磁碟的內容
 

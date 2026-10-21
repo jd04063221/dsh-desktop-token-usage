@@ -21,6 +21,20 @@
   時間軸保持從左到右——這是已推出的十種語言都不需要的。見
   [設計稿](../docs/superpowers/specs/2026-10-01-i18n-design.md)。
 
+## [0.1.7] - 2026-10-21
+
+### 新增
+
+- **DSH 0.2.1-rc.2**：用 `scripts/dsh-compat.mjs` 對着該版本自己的工作階段編碼器與 token 用量投影做了核對
+  （VERDICT PASS），並在一台真實的 DSH Desktop 0.2.1-rc.2 上驗證：Host 半邊四個啟用階段全部走通，且持續應答
+  Remote 調用（`calls.json`）。README 的相容性表已列出該版本。
+
+### 變更
+
+- **CI 與發布自動化**：Verify 工作流增加每週定時執行、改用提交進倉庫的鎖檔跑 `npm ci`、矩陣補上 Node 26，
+  並把字典塊檢查單列一步；新增 Dependabot、CodeQL 與手動觸發的 DSH 相容性工作流；
+  `scripts/prepare-release.mjs` 一條命令完成備版，打包校驗新增體積預算。
+
 ## [0.1.6] - 2026-10-05
 
 ### 新增

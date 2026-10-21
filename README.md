@@ -62,11 +62,11 @@ page in the Plugins manager carries the window spans, the grouping and the palet
 
 ## Compatibility and tested environment
 
-**Fully verified on DSH Desktop 0.1.7-rc.2 and 0.2.0-rc.2; checked for compatibility with 0.2.0-rc.1.**
+**Fully verified on DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 and 0.2.1-rc.2; checked for compatibility with 0.2.0-rc.1.**
 
 | Item | Tested environment |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` and `0.2.0-rc.2` (full verification); `0.2.0-rc.1` (compatibility check) |
+| DSH | Desktop `0.1.7-rc.2`, `0.2.0-rc.2` and `0.2.1-rc.2` (full verification); `0.2.0-rc.1` (compatibility check) |
 | Bundled runtime | Electron 44 / Chromium 152 / Node 24.18.1 (turning the seat into a column needs `:has()`, Chrome 105+; palette theming needs `light-dark()`, Chrome 123+) |
 | Operating system | Windows 11 Pro, build 26200, AMD64 |
 | Node (used to run the tests) | v25.2.1, v26.7.0 |
@@ -90,7 +90,7 @@ only: the official documentation states plainly that declaring a range does not 
 
 **Versions other than the table above are untested.** Earlier DSH builds may lack the `plugins.bundle.config` slot and
 the `configEditor` service this plugin uses (without them there is no config card, and configuration can only be edited
-by hand in the profile patch); builds newer than `0.2.0-rc.2` have not been verified yet.
+by hand in the profile patch); builds newer than `0.2.1-rc.2` have not been verified yet.
 
 ## What it writes to disk
 

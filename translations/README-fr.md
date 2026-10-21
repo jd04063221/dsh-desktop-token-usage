@@ -68,11 +68,11 @@ ci-dessus. La page du plugin dans le gestionnaire de plugins porte les plages de
 
 ## Compatibilité et environnement testé
 
-**Entièrement vérifié sur DSH Desktop 0.1.7-rc.2 et 0.2.0-rc.2, contrôlé pour compatibilité avec 0.2.0-rc.1.**
+**Entièrement vérifié sur DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 et 0.2.1-rc.2, contrôlé pour compatibilité avec 0.2.0-rc.1.**
 
 | Élément | Environnement testé |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` et `0.2.0-rc.2` (vérification complète), `0.2.0-rc.1` (contrôle de compatibilité) |
+| DSH | Desktop `0.1.7-rc.2`, `0.2.0-rc.2` et `0.2.1-rc.2` (vérification complète), `0.2.0-rc.1` (contrôle de compatibilité) |
 | Environnement d'exécution embarqué | Electron 44 / Chromium 152 / Node 24.18.1 (transformer le siège en colonne nécessite `:has()`, Chrome 105+ ; le thème des palettes nécessite `light-dark()`, Chrome 123+) |
 | Système d'exploitation | Windows 11 Pro, build 26200, AMD64 |
 | Node (utilisé pour lancer les tests) | v25.2.1, v26.7.0 |

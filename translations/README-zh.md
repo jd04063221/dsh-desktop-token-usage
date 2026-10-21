@@ -54,11 +54,11 @@
 
 ## 兼容性与测试环境
 
-**已在 DSH Desktop 0.1.7-rc.2 与 0.2.0-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对。**
+**已在 DSH Desktop 0.1.7-rc.2、0.2.0-rc.2 与 0.2.1-rc.2 上完整验证，并针对 0.2.0-rc.1 做了兼容性核对。**
 
 | 项目 | 实测环境 |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` 与 `0.2.0-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对） |
+| DSH | Desktop `0.1.7-rc.2`、`0.2.0-rc.2` 与 `0.2.1-rc.2`（完整验证）、`0.2.0-rc.1`（兼容性核对） |
 | 内置运行时 | Electron 44 / Chromium 152 / Node 24.18.1（把席位改成纵向列需要 `:has()`，Chrome 105+；配色跟随明暗需要 `light-dark()`，Chrome 123+） |
 | 操作系统 | Windows 11 专业版，build 26200，AMD64 |
 | Node（跑测试用） | v25.2.1、v26.7.0 |
@@ -77,7 +77,7 @@
 官方文档明确写着 declaring a range does not reject incompatible hosts。
 
 **上表之外的版本未测试。** 更早的 DSH 未必有本插件用到的 `plugins.bundle.config` 槽与 `configEditor` 服务
-（缺了配置卡，配置只能手改 profile patch）；比 `0.2.0-rc.2` 更新的版本还没验证过。
+（缺了配置卡，配置只能手改 profile patch）；比 `0.2.1-rc.2` 更新的版本还没验证过。
 
 ## 写入磁盘的内容
 

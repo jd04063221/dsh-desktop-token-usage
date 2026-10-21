@@ -61,11 +61,11 @@ plugin nel gestore dei plugin riporta gli intervalli delle finestre, il raggrupp
 
 ## Compatibilità e ambiente testato
 
-**Verificato completamente su DSH Desktop 0.1.7-rc.2 e 0.2.0-rc.2, controllato per la compatibilità con 0.2.0-rc.1.**
+**Verificato completamente su DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 e 0.2.1-rc.2, controllato per la compatibilità con 0.2.0-rc.1.**
 
 | Voce | Ambiente testato |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` e `0.2.0-rc.2` (verifica completa), `0.2.0-rc.1` (controllo di compatibilità) |
+| DSH | Desktop `0.1.7-rc.2`, `0.2.0-rc.2` e `0.2.1-rc.2` (verifica completa), `0.2.0-rc.1` (controllo di compatibilità) |
 | Runtime inclusa | Electron 44 / Chromium 152 / Node 24.18.1 (trasformare la sede in colonna richiede `:has()`, Chrome 105+; il tema della palette richiede `light-dark()`, Chrome 123+) |
 | Sistema operativo | Windows 11 Pro, build 26200, AMD64 |
 | Node (usato per eseguire i test) | v25.2.1, v26.7.0 |
@@ -89,7 +89,7 @@ la documentazione ufficiale dichiara chiaramente che dichiarare un range non rif
 
 **Le versioni diverse dalla tabella sopra non sono state testate.** Le build DSH precedenti possono mancare dello slot `plugins.bundle.config` e del
 servizio `configEditor` usato da questo plugin (senza di esse non c'è scheda di configurazione, e la configurazione si può modificare
-solo a mano nel patch del profile); le build più recenti di `0.2.0-rc.2` non sono state verificate ancora.
+solo a mano nel patch del profile); le build più recenti di `0.2.1-rc.2` non sono state verificate ancora.
 
 ## Cosa scrive su disco
 

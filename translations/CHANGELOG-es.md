@@ -21,6 +21,23 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
   ejes, con el eje temporal de izquierda a derecha—, que ninguno de los diez idiomas incluidos requiere. Consulte
   [el diseño](../docs/superpowers/specs/2026-10-01-i18n-design.md).
 
+## [0.1.7] - 2026-10-21
+
+### Añadido
+
+- **DSH 0.2.1-rc.2**: verificado con `scripts/dsh-compat.mjs` contra los propios codificadores de sesión y
+  la proyección de consumo de tokens de esa versión (VERDICT PASS), y en un DSH Desktop 0.2.1-rc.2 real: la mitad
+  Host superó las cuatro etapas de activación y siguió respondiendo llamadas Remote (`calls.json`). La tabla
+  de compatibilidad del README ya la incluye.
+
+### Cambiado
+
+- **CI y automatización de publicación**: el workflow Verify ganó una ejecución semanal, `npm ci` con el
+  lockfile versionado, una entrada de Node 26 en la matriz y una comprobación explícita del bloque de diccionarios;
+  se añadieron Dependabot, CodeQL y un workflow manual de compatibilidad con DSH;
+  `scripts/prepare-release.mjs` prepara una versión con un solo comando y la comprobación del tarball impone
+  ahora un presupuesto de tamaño.
+
 ## [0.1.6] - 2026-10-05
 
 ### Añadido

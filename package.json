@@ -1,7 +1,7 @@
 {
   "name": "dsh-desktop-token-usage",
-  "version": "0.1.6",
-  "description": "Local-only DSH token usage dashboard: aggregates session logs under $DSH_HOME and renders them in the sidebar. Verified on DSH Desktop 0.1.7-rc.2 and 0.2.0-rc.2.",
+  "version": "0.1.7",
+  "description": "Local-only DSH token usage dashboard: aggregates session logs under $DSH_HOME and renders them in the sidebar. Verified on DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 and 0.2.1-rc.2.",
   "icon": "./icon.svg",
   "type": "module",
   "exports": {
@@ -24,10 +24,14 @@
     "translations/CHANGELOG-zh.md",
     "!docs"
   ],
+  "//translations-policy": "Only the Chinese document pair ships on npm; the other sixteen translated documents are GitHub-only. See scripts/verify-package.mjs, which asserts this list.",
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
     "test:package": "node scripts/verify-package.mjs",
     "verify": "npm test && npm run test:package",
+    "audit": "npm audit --omit=dev",
+    "check:dicts": "node scripts/build-dicts.mjs --check",
+    "check:release": "node scripts/prepare-release.mjs --check",
     "prepublishOnly": "npm test"
   },
   "engines": {

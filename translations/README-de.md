@@ -62,11 +62,11 @@ Plugins im Plugin-Manager enthält die Fenster-Zeiträume, die Gruppierung und d
 
 ## Kompatibilität und getestete Umgebung
 
-**Vollständig verifiziert auf DSH Desktop 0.1.7-rc.2 und 0.2.0-rc.2, auf Kompatibilität mit 0.2.0-rc.1 geprüft.**
+**Vollständig verifiziert auf DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 und 0.2.1-rc.2, auf Kompatibilität mit 0.2.0-rc.1 geprüft.**
 
 | Element | Getestete Umgebung |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` und `0.2.0-rc.2` (volle Verifikation), `0.2.0-rc.1` (Kompatibilitätsprüfung) |
+| DSH | Desktop `0.1.7-rc.2`, `0.2.0-rc.2` und `0.2.1-rc.2` (volle Verifikation), `0.2.0-rc.1` (Kompatibilitätsprüfung) |
 | Mitgelieferte Laufzeit | Electron 44 / Chromium 152 / Node 24.18.1 (der Platz wird erst durch `:has()` zur Spalte, Chrome 105+; Palette-Theming braucht `light-dark()`, Chrome 123+) |
 | Betriebssystem | Windows 11 Pro, Build 26200, AMD64 |
 | Node (für die Tests) | v25.2.1, v26.7.0 |
@@ -90,7 +90,7 @@ die offizielle Dokumentation sagt klar, dass eine deklarierte Range inkompatible
 
 **Andere Versionen als in der Tabelle oben sind ungetestet.** Frühere DSH-Builds können den `plugins.bundle.config`-Slot und
 den `configEditor`-Dienst fehlen, den dieses Plugin nutzt (ohne sie gibt es keine Konfigurationskarte, und die Konfiguration lässt sich nur von Hand
-im Profil-Patch ändern); Builds neuer als `0.2.0-rc.2` wurden noch nicht verifiziert.
+im Profil-Patch ändern); Builds neuer als `0.2.1-rc.2` wurden noch nicht verifiziert.
 
 ## Was es auf die Festplatte schreibt
 

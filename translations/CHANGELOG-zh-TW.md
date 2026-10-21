@@ -20,6 +20,20 @@
   從右到左的外殼——內距、提示框與座標軸側別都要鏡像，而時間軸仍保持由左至右——這十種發佈語言都不需要。見
   [設計文件](../docs/superpowers/specs/2026-10-01-i18n-design.md)。
 
+## [0.1.7] - 2026-10-21
+
+### 新增
+
+- **DSH 0.2.1-rc.2**：用 `scripts/dsh-compat.mjs` 對著該版本自己的工作階段編碼器與 token 用量投影做了核對
+  （VERDICT PASS），並在一台真實的 DSH Desktop 0.2.1-rc.2 上驗證：Host 半邊四個啟用階段全部走通，且持續應答
+  Remote 調用（`calls.json`）。README 的相容性表已列出該版本。
+
+### 變更
+
+- **CI 與發布自動化**：Verify 工作流增加每週定時執行、改用提交進倉庫的鎖檔跑 `npm ci`、矩陣補上 Node 26，
+  並把字典塊檢查單列一步；新增 Dependabot、CodeQL 與手動觸發的 DSH 相容性工作流；
+  `scripts/prepare-release.mjs` 一條命令完成備版，打包校驗新增體積預算。
+
 ## [0.1.6] - 2026-10-05
 
 ### 新增

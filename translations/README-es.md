@@ -64,11 +64,11 @@ página del plugin en el gestor de plugins contiene los intervalos de las ventan
 
 ## Compatibilidad y entorno probado
 
-**Verificado por completo en DSH Desktop 0.1.7-rc.2 y 0.2.0-rc.2, comprobado para compatibilidad con 0.2.0-rc.1.**
+**Verificado por completo en DSH Desktop 0.1.7-rc.2, 0.2.0-rc.2 y 0.2.1-rc.2, comprobado para compatibilidad con 0.2.0-rc.1.**
 
 | Elemento | Entorno probado |
 |---|---|
-| DSH | Desktop `0.1.7-rc.2` y `0.2.0-rc.2` (verificación completa), `0.2.0-rc.1` (comprobación de compatibilidad) |
+| DSH | Desktop `0.1.7-rc.2`, `0.2.0-rc.2` y `0.2.1-rc.2` (verificación completa), `0.2.0-rc.1` (comprobación de compatibilidad) |
 | Runtime incluido | Electron 44 / Chromium 152 / Node 24.18.1 (convertir el asiento en columna necesita `:has()`, Chrome 105+; el temado de las paletas necesita `light-dark()`, Chrome 123+) |
 | Sistema operativo | Windows 11 Pro, compilación 26200, AMD64 |
 | Node (para ejecutar las pruebas) | v25.2.1, v26.7.0 |

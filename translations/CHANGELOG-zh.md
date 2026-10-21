@@ -19,6 +19,20 @@
   RTL 外壳（内缩、悬停框、坐标轴侧别镜像，时间轴仍保持从左到右），当前这十种语言都不需要。见
   [设计稿](../docs/superpowers/specs/2026-10-01-i18n-design.md)。
 
+## [0.1.7] - 2026-10-21
+
+### 新增
+
+- **DSH 0.2.1-rc.2**：用 `scripts/dsh-compat.mjs` 对着该版本自己的会话编码器与 token 用量投影做了核对
+  （VERDICT PASS），并在一台真实的 DSH Desktop 0.2.1-rc.2 上验证：Host 半边四个激活阶段全部走通，且持续应答
+  Remote 调用（`calls.json`）。README 的兼容性表已列出该版本。
+
+### 变更
+
+- **CI 与发布自动化**：Verify 工作流增加每周定时运行、改用提交进仓库的锁文件跑 `npm ci`、矩阵补上 Node 26，
+  并把字典块检查单列一步；新增 Dependabot、CodeQL 与手动触发的 DSH 兼容性工作流；
+  `scripts/prepare-release.mjs` 一条命令完成备版，打包校验新增体积预算。
+
 ## [0.1.6] - 2026-10-05
 
 ### 新增
