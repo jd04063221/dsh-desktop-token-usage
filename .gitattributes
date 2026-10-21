@@ -1,0 +1,6 @@
+# Normalize line endings: text files are LF in the repo, checked out as LF.
+# (core.autocrlf=true on Windows still shows w/crlf locally; the blob stays LF.)
+* text=auto
+*.{js,mjs,cjs,yml,yaml,json,md,txt} text eol=lf
+*.png binary
+*.svg text eol=lf

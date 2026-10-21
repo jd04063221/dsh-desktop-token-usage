@@ -1,0 +1,28 @@
+name: Bug report
+description: Something renders wrong or reads wrong numbers
+labels: [bug]
+body:
+  - type: input
+    id: plugin-version
+    attributes: { label: Plugin version, description: npm version or commit }
+    validations: { required: true }
+  - type: input
+    id: dsh-version
+    attributes: { label: DSH version, description: e.g. Desktop 0.2.0-rc.2 }
+    validations: { required: true }
+  - type: input
+    id: os
+    attributes: { label: OS, description: e.g. Windows 11 build 26200 }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: What you saw vs what you expected }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: Reproduction, description: Clicks and settings, not log contents }
+    validations: { required: false }
+  - type: textarea
+    id: diag
+    attributes: { label: Diagnostics, description: $DSH_HOME/cache/dsh-desktop-token-usage/boot.json and calls.json tail, if relevant. Never paste session logs or tokens. }
+    validations: { required: false }

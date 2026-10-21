@@ -1,6 +1,8 @@
 # 依赖与临时产物
 node_modules/
-package-lock.json
+# NOTE: package-lock.json IS committed (reproducible CI via `npm ci` + `cache: npm`).
+# Keep this line for local-only scratch clones only by uncommenting; CI requires the lock.
+# package-lock.json
 docs/research/.cache/
 *.log
 

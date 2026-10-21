@@ -45,6 +45,15 @@ function npm(args, cwd = root) {
  * The whitelist by kind. `docs/` (the design record), `locales/` (the dictionary
  * source the generated block is built from), `test/` and `scripts/` are
  * repository-only and must never reach the tarball.
+ *
+ * Translation policy (deliberate, GitHub-only for the other eight languages):
+ * only the Chinese pair `translations/README-zh.md` + `translations/CHANGELOG-zh.md`
+ * ships on npm; the remaining sixteen translated documents live on GitHub alone.
+ * Rationale: the npm page renders the root English pair, the in-plugin surface
+ * needs only the Chinese pair for the largest reader group, and every extra
+ * language adds ~50 kB to a tarball dominated by screenshots already. Adding a
+ * new language must therefore add its `translations/*-<id>.md` files AND keep
+ * them out of `package.json`'s `files` list, or the assertion below goes red.
  */
 const EXACT = [
   'package.json',
@@ -115,6 +124,28 @@ try {
 
   const missing = REQUIRED.filter((file) => !files.includes(file))
   assert.deepEqual(missing, [], 'every runtime file must be in the tarball')
+
+  // Package-size budget: six PNGs already dominate the tarball (~600 kB of
+  // ~700 kB). Screenshots may be re-rendered but not blindly added to: every
+  // new file under assets/ must be referenced by the README (checked below)
+  // and the total must stay under 1.5 MB unpacked, or this fails with the
+  // number to compress against. See CONTRIBUTING.md for the compress command.
+  const unpackedBytes = entry.files.reduce((sum, file) => sum + (file.size || 0), 0)
+  const BUDGET_BYTES = 1536 * 1024
+  assert.ok(
+    unpackedBytes <= BUDGET_BYTES,
+    `unpacked tarball is ${(unpackedBytes / 1024).toFixed(0)} kB, budget is 1536 kB - compress assets/ (see CONTRIBUTING.md)`
+  )
+
+  // Companion guard of the translation policy above: exactly the Chinese pair
+  // ships. Any other `translations/*` entry in the tarball (e.g. after adding a
+  // language and widening `files` by habit) fails here until the policy comment
+  // is revisited deliberately.
+  assert.deepEqual(
+    files.filter((file) => file.startsWith('translations/')).sort(),
+    ['translations/CHANGELOG-zh.md', 'translations/README-zh.md'],
+    'only the Chinese document pair ships on npm; the rest is GitHub-only',
+  )
 
   // A screenshot the README embeds but the tarball omits is a broken image on npm.
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8')

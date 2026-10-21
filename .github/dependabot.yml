@@ -1,0 +1,20 @@
+# Keep the two SHA-pinned actions and the one npm dependency fresh.
+# Forgiving config for a single-maintainer plugin: one grouped npm PR
+# per week, one grouped actions PR per month. `npm ci` in CI guarantees
+# the update PR is tested against the same lockfile it ships.
+version: 2
+updates:
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    groups:
+      dependencies:
+        patterns: ['*']

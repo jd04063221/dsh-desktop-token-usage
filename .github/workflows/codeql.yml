@@ -1,0 +1,34 @@
+# CodeQL: default setup is preferred (no config needed), but this repo keeps
+# an explicit workflow so the scan runs on the same schedule as Verify and
+# its result is visible next to the test matrix. JS-only, no build step.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Same Monday as Verify, one hour later so the two do not queue together.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: github/codeql-action/init@28eb9ff0117f0af3a4f5ebe0c2a4a6b0b0990b2d # v3.29.0
+        with:
+          languages: javascript
+      - uses: github/codeql-action/analyze@28eb9ff0117f0af3a4f5ebe0c2a4a6b0b0990b2d # v3.29.0

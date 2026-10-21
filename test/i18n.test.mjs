@@ -168,6 +168,23 @@ test('the plugin manifests are translated, one per shipped language', () => {
   }
 })
 
+test('locale/ stubs stay stubs: meta only, never the view dictionaries', () => {
+  // `locale/` (DSH plugin manifests, shipped in the tarball) and `locales/`
+  // (view dictionary source, repository-only) differ by one letter; pasting a
+  // dictionary into the wrong directory fails silently at runtime. The stubs
+  // must carry only `meta` and share no key with the view dictionaries, so the
+  // mistake turns this test red instead.
+  const viewKeys = new Set(Object.keys(dicts.en))
+  for (const id of LOCALE_IDS) {
+    const stub = JSON.parse(fs.readFileSync(path.join(root, 'locale', `${id}.json`), 'utf8'))
+    assert.deepEqual(Object.keys(stub).sort(), ['meta'], `locale/${id}.json must hold only the meta stub`)
+    for (const key of Object.keys(stub)) {
+      assert.ok(!viewKeys.has(key), `locale/${id}.json key "${key}" belongs to locales/`)
+    }
+  }
+  assert.ok(viewKeys.has('range.7d'), 'locales/en.json still carries the view keys this guard relies on')
+})
+
 test('one document per language, in both classes', () => {
   for (const id of LOCALE_IDS) {
     const suffix = id === 'en' ? '' : `-${id}`

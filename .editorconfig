@@ -1,0 +1,13 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = two_spaces_off
+
+# JS/MJS/YML/JSON/MD: two spaces, LF everywhere so diffs do not churn on Windows.
+[*.{js,mjs,cjs,yml,yaml,json,md}]
+indent_style = space
+indent_size = 2

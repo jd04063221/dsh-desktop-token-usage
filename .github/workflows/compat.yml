@@ -1,0 +1,46 @@
+# DSH-version compatibility: runs scripts/dsh-compat.mjs against the DSH
+# packages of one release, using that release OWN encoders and projection.
+#
+# Trigger: manual only (workflow_dispatch with a version input), plus the
+# weekly Verify schedule does NOT call it: DSH packages are not on npm and
+# the versions to test come from the installed DSH on the maintainer machine.
+# To check a new DSH: install its @deepseek-ai packages into an empty dir,
+# point this workflow at them, and paste the VERDICT block into the compat
+# table in README (see CONTRIBUTING.md). Exit code is the verdict: a printed
+# FAIL with exit 0 would be a lie, so the script sets exit 1 on mismatch.
+name: DSH compatibility
+
+on:
+  workflow_dispatch:
+    inputs:
+      dsh_version:
+        description: 'DSH version under test (e.g. 0.2.1-alpha.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install the DSH packages of that release
+        run: |
+          rm -rf "$RUNNER_TEMP/dsh-live" && mkdir -p "$RUNNER_TEMP/dsh-live"
+          cd "$RUNNER_TEMP/dsh-live" && npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund \
+            "@deepseek-ai/dsh-session@${{ inputs.dsh_version }}" \
+            "@deepseek-ai/dsh-session-format@${{ inputs.dsh_version }}" \
+            "@deepseek-ai/dsh-session-format-catalog@${{ inputs.dsh_version }}" \
+            "@deepseek-ai/dsh-token-meter@${{ inputs.dsh_version }}"
+      - name: Run the compatibility harness
+        run: node scripts/dsh-compat.mjs "$RUNNER_TEMP/dsh-live/node_modules/@deepseek-ai" "${{ inputs.dsh_version }}"

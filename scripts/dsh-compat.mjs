@@ -31,11 +31,19 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import zlib from 'node:zlib'
 
 const dir = process.argv[2]
-const label = process.argv[3] ?? path.basename(dir)
-const load = (p) => import('file:///' + p)
+const label = process.argv[3] ?? (dir ? path.basename(dir) : '?')
+if (!dir) {
+  console.error('usage: node scripts/dsh-compat.mjs <node_modules/@deepseek-ai> [label]')
+  process.exit(2)
+}
+// `pathToFileURL` is the only correct way to turn an absolute Windows path into
+// an import specifier: the hand-rolled `'file:///' + p` form produced
+// `file:////C:/...` and failed with ERR_INVALID_FILE_URL_PATH.
+const load = (p) => import(pathToFileURL(p).href)
 const { sessionFormatLogFilename } = await load(dir + '/dsh-session-format/lib/index.js')
 const { sessionFormatCatalog } = await load(dir + '/dsh-session-format-catalog/lib/index.js')
 const { SESSION_FORMAT_VERSION } = await load(dir + '/dsh-session/lib/index.js')
@@ -45,7 +53,11 @@ const home = path.join(os.tmpdir(), 'dsh-compat-home-' + label)
 const root = path.join(home, 'sessions')
 fs.rmSync(home, { recursive: true, force: true })
 process.env.DSH_HOME = home
-const plugin = await load('C:/各类工作脚本/dsh-usage/lib/session-usage.js')
+// The plugin under test is this repository, not one machine checkout: resolve
+// lib/session-usage.js from the script location so the harness works on any
+// machine and in CI (a hardcoded absolute path silently tests the wrong copy).
+const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+const plugin = await load(path.join(repoRoot, 'lib', 'session-usage.js'))
 const target = plugin
 const NL = String.fromCharCode(10)
 const frame = (lines) => zlib.zstdCompressSync(Buffer.from(lines.join(NL) + NL))
@@ -119,3 +131,6 @@ console.log('  multi-generation dir resolves to: ' + JSON.stringify(multi) + (mu
 console.log('  subagent header: ' + (subagentOk ? 'accepted by this version\u2019s encoder; plugin surfaceCounts.subagent=' + payload.coverage.surfaces.subagent : 'not written'))
 const pass = keys.every((k) => expected[k] === mine[k]) && t.turns === 2 && names.every((n) => foundSet.has(n)) && multi.length === 1
 console.log('  VERDICT: ' + (pass ? 'PASS' : 'FAIL'))
+// CI and humans must be able to branch on the result: a printed PASS with
+// exit 0 is not checkable, and a printed FAIL with exit 0 is a lie.
+if (!pass) process.exitCode = 1

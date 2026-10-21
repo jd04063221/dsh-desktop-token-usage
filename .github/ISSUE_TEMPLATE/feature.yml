@@ -1,0 +1,12 @@
+name: Feature request
+description: A dashboard, grouping, or language you want
+labels: [enhancement]
+body:
+  - type: textarea
+    id: want
+    attributes: { label: What do you want, description: Behavior, not implementation }
+    validations: { required: true }
+  - type: textarea
+    id: why
+    attributes: { label: Why, description: Which question the dashboard cannot answer today }
+    validations: { required: false }

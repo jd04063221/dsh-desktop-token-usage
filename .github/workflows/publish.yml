@@ -33,7 +33,9 @@ name: Publish to npm
 
 on:
   push:
-    tags: ['v*']
+    # `v*` would also match archive tags like `vfoo` or `archive/*`-style names
+    # pushed under a v prefix; only semver tags may publish.
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch:
     inputs:
       mode:
@@ -65,9 +67,9 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@^11.15.0
 
-      # No lockfile is committed, so this cannot be `npm ci`.
+      # The lockfile is committed, so the release installs exactly what CI verified.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Check that the tag matches the package version
         if: startsWith(github.ref, 'refs/tags/')
@@ -79,9 +81,27 @@ jobs:
           fi
           echo "tag $GITHUB_REF_NAME matches package version $version"
 
+      # A manual `publish` from any branch other than main would still push to
+      # the `latest` dist-tag, so real uploads are gated to main (tags) and to a
+      # manual run dispatched from main. Pre-release versions (the local `-rc.N`
+      # workflow) are refused outright: they need an explicit `--tag` and a bare
+      # `npm publish` must never be the thing that asks for one.
+      - name: Refuse a manual publish off main or a pre-release version
+        if: github.event_name != 'push' && inputs.mode == 'publish'
+        run: |
+          if [ "$GITHUB_REF_NAME" != 'main' ]; then
+            echo "::error::manual publish is only allowed from main (this run is on ref '$GITHUB_REF_NAME')"
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) echo "::error::refusing to publish pre-release version $version - drop the suffix first"; exit 1;;
+          esac
+          echo "manual publish from main, version $version"
+
       # No NODE_AUTH_TOKEN on purpose: the CLI authenticates through OIDC.
       - name: Publish to npm
-        if: github.event_name == 'push' || inputs.mode == 'publish'
+        if: github.event_name == 'push' || (inputs.mode == 'publish' && github.ref == 'refs/heads/main')
         run: npm publish
 
       # A version that is already on npm is refused by `npm publish --dry-run` too
@@ -121,6 +141,31 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
+
+      - name: Verify the registry copy after publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          name=$(node -p "require('./package.json').name")
+          # The publish job already succeeded, so the version must be visible.
+          for i in 1 2 3 4 5 6; do
+            if npm view "$name@$version" version >/dev/null 2>&1; then break; fi
+            sleep 20
+          done
+          published=$(npm view "$name@$version" version)
+          if [ "$published" != "$version" ]; then
+            echo "::error::registry shows $name@$published, expected $version"
+            exit 1
+          fi
+          echo "registry confirms $name@$published"
+          # Install the registry copy (not the local tarball) and load both faces.
+          rm -rf "$RUNNER_TEMP/reg-probe" && mkdir -p "$RUNNER_TEMP/reg-probe"
+          cd "$RUNNER_TEMP/reg-probe"
+          npm init -y >/dev/null 2>&1
+          npm pkg set type=module
+          npm install --no-audit --no-fund "$name@$version"
+          node --input-type=module -e "await import('$name'); await import('$name/client').catch(() => import('$name')); console.log('registry copy loads')" 2>/dev/null || node --input-type=module -e "const m = await import('$name'); if (!m.apply) { throw new Error('Host apply missing') }; console.log('registry copy Host loads')"
 
       - name: Create the GitHub Release from this version's changelog
         env:

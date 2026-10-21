@@ -1,16 +1,18 @@
-# Continuous verification for pushes to main and pull requests.
+# Continuous verification for pushes to main and pull requests, plus a weekly
+# scheduled run so an upstream DSH release that silently breaks this plugin is
+# caught without anyone pushing.
 #
-# Modelled on Duskriver/dsh-opencode-go's verify.yml. Two differences are
+# Modelled on Duskriver/dsh-opencode-go verify.yml. Two differences are
 # deliberate:
 #
-#   * No `cache: npm`. This repository gitignores `package-lock.json` (see
-#     .gitignore), so there is no lockfile for setup-node to hash and no `npm ci`
-#     to run — the install is a plain `npm install`.
-#   * Two jobs rather than three. The reference's package-manager install matrix
-#     and host-compatibility job have no counterpart here; this plugin's published
-#     artifact is checked by `npm run test:package` instead.
+#   * Two jobs rather than three. The reference package-manager install matrix
+#     and host-compatibility job have no counterpart here; this plugin published
+#     artifact is checked by the tarball verifier instead, and DSH-version
+#     compatibility has its own manual workflow (compat.yml).
+#   * The lockfile IS committed: installs run npm ci with cache npm,
+#     so CI is reproducible and npm audit has a locked tree to check.
 #
-# The tests that need real session logs skip themselves when $DSH_HOME has none,
+# The tests that need real session logs skip themselves when DSH_HOME has none,
 # so the suite still asserts the plugin offline on a clean runner.
 name: Verify
 
@@ -18,7 +20,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Monday 03:17 UTC: catch upstream rot (DSH, schemastery, Node) weekly.
+    - cron: '17 3 * * 1'
   workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -30,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: ['22.19.0', '24']
+        node: ['22.19.0', '24', '26']
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -38,8 +47,14 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+      # npm test covers this indirectly through test/i18n.test.mjs, but a
+      # direct call fails with the fix command instead of an assertion diff,
+      # which is what a translation contributor needs to see.
+      - name: The dictionary block is fresh
+        run: node scripts/build-dicts.mjs --check
       - name: Run the test suite
         run: npm test
 
@@ -52,7 +67,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+      - name: The dictionary block is fresh
+        run: node scripts/build-dicts.mjs --check
       - name: Verify the published tarball
         run: npm run test:package
+      - name: Audit production dependencies
+        run: npm run audit
