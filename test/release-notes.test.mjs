@@ -45,7 +45,7 @@ test('every released version yields release notes from its changelog section', (
     } else {
       assert.match(
         lines.at(-1),
-        new RegExp(`^\\*\\*Full Changelog\\*\\*: ${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/compare/v\\d+\\.\\d+\\.\\d+\\.\\.\\.v${version.replace(/\./g, '\\.')}$`),
+        new RegExp(`^\\*\\*Full Changelog\\*\\*: ${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/compare/v\\d+\\.\\d+\\.\\d+\\.\\.\\.v${version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
         `${version} ends with a compare link`,
       )
     }
